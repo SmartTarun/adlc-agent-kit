@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ADLC Sprint Dashboard — Team Panchayat</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #080c14;
+    --surface: #0d1420;
+    --surface2: #121a28;
+    --border: rgba(99,179,255,0.12);
+    --border-bright: rgba(99,179,255,0.28);
+    --purple: #a78bfa;
+    --purple-dim: rgba(167,139,250,0.15);
+    --blue: #60a5fa;
+    --teal: #2dd4bf;
+    --coral: #fb7185;
+    --amber: #fbbf24;
+    --green: #4ade80;
+    --pink: #f472b6;
+    --gray: #94a3b8;
+    --text: #e2e8f0;
+    --text-dim: #64748b;
+    --font-mono: 'JetBrains Mono', monospace;
+    --font-display: 'Syne', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-mono);
+    min-height: 100vh;
+    padding: 24px;
+    background-image:
+      radial-gradient(ellipse 60% 40% at 20% 0%, rgba(99,102,241,0.07) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 30% at 80% 100%, rgba(45,212,191,0.05) 0%, transparent 60%);
+  }
+
+  /* HEADER */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 28px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .header-left { display: flex; flex-direction: column; gap: 4px; }
+  .header-badge {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--teal);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+  .header-title {
+    font-family: var(--font-display);
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.5px;
+  }
+  .header-subtitle {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+  .header-right { display: flex; align-items: center; gap: 12px; }
+  .live-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 8px var(--green);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(1.3)} }
+  .live-text { font-size: 11px; color: var(--green); letter-spacing: 2px; }
+  .sprint-badge {
+    background: var(--purple-dim);
+    border: 1px solid rgba(167,139,250,0.3);
+    border-radius: 6px;
+    padding: 6px 14px;
+    font-size: 12px;
+    color: var(--purple);
+    font-weight: 600;
+  }
+
+  /* TOP STATS */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    transition: border-color .2s;
+  }
+  .stat-card:hover { border-color: var(--border-bright); }
+  .stat-label { font-size: 10px; color: var(--text-dim); letter-spacing: 2px; text-transform: uppercase; }
+  .stat-value { font-family: var(--font-display); font-size: 28px; font-weight: 800; line-height: 1; }
+  .stat-sub { font-size: 10px; color: var(--text-dim); }
+  .stat-green .stat-value { color: var(--green); }
+  .stat-amber .stat-value { color: var(--amber); }
+  .stat-red .stat-value { color: var(--coral); }
+  .stat-blue .stat-value { color: var(--blue); }
+  .stat-purple .stat-value { color: var(--purple); }
+
+  /* ARJUN HUB */
+  .arjun-hub {
+    background: linear-gradient(135deg, rgba(167,139,250,0.1) 0%, rgba(139,92,246,0.05) 100%);
+    border: 1px solid rgba(167,139,250,0.3);
+    border-radius: 14px;
+    padding: 20px 24px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+  }
+  .arjun-left { display: flex; align-items: center; gap: 16px; }
+  .arjun-avatar {
+    width: 52px; height: 52px; border-radius: 12px;
+    background: var(--purple-dim);
+    border: 1.5px solid rgba(167,139,250,0.4);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display);
+    font-size: 20px; font-weight: 800;
+    color: var(--purple);
+    flex-shrink: 0;
+  }
+  .arjun-name { font-family: var(--font-display); font-size: 16px; font-weight: 700; color: var(--purple); }
+  .arjun-role { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+  .arjun-tools { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+  .tool-chip {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: .5px;
+  }
+  .arjun-message {
+    flex: 1;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 16px;
+  }
+  .msg-label { font-size: 9px; color: var(--purple); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 6px; }
+  .msg-text { font-size: 12px; color: var(--text); line-height: 1.5; }
+  .send-report-btn {
+    background: var(--purple-dim);
+    border: 1.5px solid rgba(167,139,250,0.4);
+    border-radius: 8px;
+    padding: 10px 18px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--purple);
+    cursor: pointer;
+    transition: all .2s;
+    white-space: nowrap;
+    letter-spacing: .5px;
+  }
+  .send-report-btn:hover { background: rgba(167,139,250,0.25); border-color: var(--purple); }
+
+  /* AGENT GRID */
+  .agents-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+  .agent-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: border-color .2s, transform .15s;
+  }
+  .agent-card:hover { border-color: var(--border-bright); transform: translateY(-1px); }
+  .agent-header {
+    padding: 14px 16px 10px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .agent-avatar {
+    width: 38px; height: 38px; border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display); font-size: 14px; font-weight: 700;
+    flex-shrink: 0;
+  }
+  .agent-info { flex: 1; min-width: 0; }
+  .agent-name { font-family: var(--font-display); font-size: 14px; font-weight: 700; }
+  .agent-role { font-size: 10px; color: var(--text-dim); margin-top: 1px; }
+  .status-pill {
+    padding: 3px 10px; border-radius: 20px;
+    font-size: 10px; font-weight: 600;
+    white-space: nowrap; letter-spacing: .5px;
+    cursor: pointer; transition: opacity .2s;
+    border: none; font-family: var(--font-mono);
+  }
+  .status-pill:hover { opacity: .8; }
+  .s-done { background: rgba(74,222,128,0.15); color: var(--green); border: 1px solid rgba(74,222,128,0.25); }
+  .s-wip { background: rgba(251,191,36,0.12); color: var(--amber); border: 1px solid rgba(251,191,36,0.25); }
+  .s-blocked { background: rgba(251,113,133,0.12); color: var(--coral); border: 1px solid rgba(251,113,133,0.25); }
+  .s-queue { background: rgba(148,163,184,0.1); color: var(--gray); border: 1px solid rgba(148,163,184,0.2); }
+
+  .agent-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
+  .task-label { font-size: 9px; color: var(--text-dim); letter-spacing: 2px; text-transform: uppercase; }
+  .task-name { font-size: 12px; color: var(--text); margin-top: 3px; line-height: 1.4; }
+  .tools-row { display: flex; gap: 5px; flex-wrap: wrap; }
+
+  .progress-area {}
+  .progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .progress-pct { font-family: var(--font-display); font-size: 18px; font-weight: 800; }
+  .progress-track {
+    height: 5px; background: rgba(255,255,255,0.06);
+    border-radius: 3px; overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%; border-radius: 3px;
+    transition: width .6s cubic-bezier(.4,0,.2,1);
+  }
+  .progress-slider {
+    width: 100%; margin-top: 8px;
+    -webkit-appearance: none; appearance: none;
+    height: 3px; border-radius: 2px;
+    background: rgba(255,255,255,0.08); outline: none; cursor: pointer;
+  }
+  .progress-slider::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 14px; height: 14px; border-radius: 50%;
+    background: var(--text); cursor: pointer;
+    box-shadow: 0 0 6px rgba(0,0,0,0.5);
+  }
+
+  .blocker-area {
+    background: rgba(251,113,133,0.07);
+    border: 1px solid rgba(251,113,133,0.2);
+    border-radius: 6px; padding: 8px 10px;
+  }
+  .blocker-label { font-size: 9px; color: var(--coral); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 4px; }
+  .blocker-input {
+    background: transparent; border: none; outline: none;
+    width: 100%; font-family: var(--font-mono);
+    font-size: 11px; color: var(--text); resize: none; height: 36px;
+  }
+  .blocker-input::placeholder { color: var(--text-dim); }
+
+  .last-update { font-size: 10px; color: var(--text-dim); }
+
+  /* COLOR VARIANTS */
+  .c-vikram .agent-avatar { background: rgba(251,113,133,0.15); color: var(--coral); border: 1px solid rgba(251,113,133,0.3); }
+  .c-vikram .agent-name { color: var(--coral); }
+  .c-vikram .progress-fill { background: var(--coral); }
+  .c-vikram .progress-pct { color: var(--coral); }
+
+  .c-rohan .agent-avatar { background: rgba(96,165,250,0.15); color: var(--blue); border: 1px solid rgba(96,165,250,0.3); }
+  .c-rohan .agent-name { color: var(--blue); }
+  .c-rohan .progress-fill { background: var(--blue); }
+  .c-rohan .progress-pct { color: var(--blue); }
+
+  .c-kiran .agent-avatar { background: rgba(45,212,191,0.15); color: var(--teal); border: 1px solid rgba(45,212,191,0.3); }
+  .c-kiran .agent-name { color: var(--teal); }
+  .c-kiran .progress-fill { background: var(--teal); }
+  .c-kiran .progress-pct { color: var(--teal); }
+
+  .c-rasool .agent-avatar { background: rgba(251,191,36,0.15); color: var(--amber); border: 1px solid rgba(251,191,36,0.3); }
+  .c-rasool .agent-name { color: var(--amber); }
+  .c-rasool .progress-fill { background: var(--amber); }
+  .c-rasool .progress-pct { color: var(--amber); }
+
+  .c-kavya .agent-avatar { background: rgba(244,114,182,0.15); color: var(--pink); border: 1px solid rgba(244,114,182,0.3); }
+  .c-kavya .agent-name { color: var(--pink); }
+  .c-kavya .progress-fill { background: var(--pink); }
+  .c-kavya .progress-pct { color: var(--pink); }
+
+  .c-keerthi .agent-avatar { background: rgba(74,222,128,0.15); color: var(--green); border: 1px solid rgba(74,222,128,0.3); }
+  .c-keerthi .agent-name { color: var(--green); }
+  .c-keerthi .progress-fill { background: var(--green); }
+  .c-keerthi .progress-pct { color: var(--green); }
+
+  /* REPORT MODAL */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.8);
+    display: none; align-items: center; justify-content: center;
+    z-index: 100; padding: 24px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface2);
+    border: 1px solid var(--border-bright);
+    border-radius: 16px; padding: 28px;
+    max-width: 640px; width: 100%;
+    max-height: 80vh; overflow-y: auto;
+  }
+  .modal-title {
+    font-family: var(--font-display); font-size: 18px; font-weight: 800;
+    color: var(--purple); margin-bottom: 4px;
+  }
+  .modal-sub { font-size: 11px; color: var(--text-dim); margin-bottom: 20px; }
+  .report-pre {
+    background: rgba(0,0,0,0.4); border: 1px solid var(--border);
+    border-radius: 8px; padding: 16px;
+    font-family: var(--font-mono); font-size: 11px;
+    color: var(--text); line-height: 1.8; white-space: pre;
+    overflow-x: auto;
+  }
+  .modal-actions { display: flex; gap: 10px; margin-top: 16px; justify-content: flex-end; }
+  .btn-copy {
+    background: var(--purple-dim); border: 1.5px solid rgba(167,139,250,0.4);
+    border-radius: 8px; padding: 8px 16px;
+    font-family: var(--font-mono); font-size: 11px; font-weight: 600;
+    color: var(--purple); cursor: pointer; transition: all .2s;
+  }
+  .btn-copy:hover { background: rgba(167,139,250,0.25); }
+  .btn-close {
+    background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+    border-radius: 8px; padding: 8px 16px;
+    font-family: var(--font-mono); font-size: 11px;
+    color: var(--text-dim); cursor: pointer; transition: all .2s;
+  }
+  .btn-close:hover { background: rgba(255,255,255,0.08); }
+
+  /* SPRINT NAME EDIT */
+  .sprint-input {
+    background: transparent; border: none; outline: none;
+    font-family: var(--font-mono); font-size: 12px; font-weight: 600;
+    color: var(--purple); width: 80px;
+    border-bottom: 1px dashed rgba(167,139,250,0.3);
+  }
+
+  /* HEALTH INDICATOR */
+  .health-bar {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 18px; margin-bottom: 24px;
+  }
+  .health-label { font-size: 10px; color: var(--text-dim); letter-spacing: 2px; text-transform: uppercase; flex-shrink: 0; }
+  .health-value { font-family: var(--font-display); font-size: 14px; font-weight: 700; }
+  .health-track { flex: 1; height: 6px; background: rgba(255,255,255,0.05); border-radius: 3px; overflow: hidden; }
+  .health-fill { height: 100%; border-radius: 3px; transition: width .8s cubic-bezier(.4,0,.2,1), background .5s; }
+  .eta-text { font-size: 11px; color: var(--text-dim); flex-shrink: 0; }
+  .eta-val { color: var(--text); font-weight: 600; }
+
+  @media (max-width: 900px) {
+    .agents-grid { grid-template-columns: repeat(2, 1fr); }
+    .stats-row { grid-template-columns: repeat(3, 1fr); }
+  }
+  @media (max-width: 600px) {
+    .agents-grid { grid-template-columns: 1fr; }
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+    .arjun-hub { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <span class="header-badge">Team Panchayat · ADLC</span>
+    <div class="header-title">Sprint Command Centre</div>
+    <div class="header-subtitle">AI-Driven Development Lifecycle — Live Sprint Dashboard</div>
+  </div>
+  <div class="header-right">
+    <div class="live-dot"></div>
+    <span class="live-text">LIVE</span>
+    <div class="sprint-badge">Sprint-<input class="sprint-input" id="sprintName" value="01" maxlength="6"/></div>
+  </div>
+</div>
+
+<!-- STATS ROW -->
+<div class="stats-row">
+  <div class="stat-card stat-green">
+    <div class="stat-label">Done</div>
+    <div class="stat-value" id="statDone">0</div>
+    <div class="stat-sub">tasks completed</div>
+  </div>
+  <div class="stat-card stat-amber">
+    <div class="stat-label">In Progress</div>
+    <div class="stat-value" id="statWip">0</div>
+    <div class="stat-sub">agents working</div>
+  </div>
+  <div class="stat-card stat-red">
+    <div class="stat-label">Blocked</div>
+    <div class="stat-value" id="statBlocked">0</div>
+    <div class="stat-sub">need unblocking</div>
+  </div>
+  <div class="stat-card stat-blue">
+    <div class="stat-label">Overall</div>
+    <div class="stat-value" id="statOverall">0%</div>
+    <div class="stat-sub">sprint progress</div>
+  </div>
+  <div class="stat-card stat-purple">
+    <div class="stat-label">ETA</div>
+    <div class="stat-value" id="statEta" style="font-size:18px;padding-top:4px">--</div>
+    <div class="stat-sub">to ship</div>
+  </div>
+</div>
+
+<!-- ARJUN HUB -->
+<div class="arjun-hub">
+  <div class="arjun-left">
+    <div class="arjun-avatar">A</div>
+    <div>
+      <div class="arjun-name">Arjun · PM / Scrum Master</div>
+      <div class="arjun-role">Central Orchestration Hub · Claude Opus</div>
+      <div class="arjun-tools">
+        <span class="tool-chip">Azure DevOps</span>
+        <span class="tool-chip">Sprint Planning</span>
+        <span class="tool-chip">Acceptance Criteria</span>
+        <span class="tool-chip">QA Gate</span>
+      </div>
+    </div>
+  </div>
+  <div class="arjun-message">
+    <div class="msg-label">Arjun's Broadcast</div>
+    <div class="msg-text" id="arjunMsg">All agents — Sprint-01 is active. Assignments dispatched via Azure DevOps. Report progress back to me only. Keerthi activates after all agents confirm ✅ DONE.</div>
+  </div>
+  <button class="send-report-btn" onclick="openReport()">📋 Sprint Report</button>
+</div>
+
+<!-- HEALTH BAR -->
+<div class="health-bar">
+  <span class="health-label">Sprint Health</span>
+  <span class="health-value" id="healthLabel">—</span>
+  <div class="health-track"><div class="health-fill" id="healthFill" style="width:0%"></div></div>
+  <span class="eta-text">ETA to ship: <span class="eta-val" id="etaLabel">calculating...</span></span>
+</div>
+
+<!-- AGENTS GRID -->
+<div class="agents-grid" id="agentsGrid"></div>
+
+<!-- REPORT MODAL -->
+<div class="modal-overlay" id="reportModal">
+  <div class="modal">
+    <div class="modal-title">Sprint Report — Team Panchayat</div>
+    <div class="modal-sub" id="reportTime">Generated now</div>
+    <pre class="report-pre" id="reportContent"></pre>
+    <div class="modal-actions">
+      <button class="btn-copy" onclick="copyReport()">Copy Report</button>
+      <button class="btn-close" onclick="closeReport()">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const AGENTS = [
+  {
+    id: 'vikram', cls: 'c-vikram', initial: 'V',
+    name: 'Vikram', role: 'Cloud Architect · Claude Sonnet',
+    tools: ['Terraform', 'AWS CLI', 'CMD Terminal', 'VS Code'],
+    task: 'AWS S3 + CloudWatch Terraform modules with IAM roles',
+    status: 'wip', progress: 60, blocker: '',
+    updated: '2 min ago'
+  },
+  {
+    id: 'rohan', cls: 'c-rohan', initial: 'R',
+    name: 'Rohan', role: 'Frontend Engineer · Claude Sonnet',
+    tools: ['VS Code', 'Chrome Browser', 'CMD', 'GitHub'],
+    task: 'Cost anomaly dashboard — React + Recharts components',
+    status: 'wip', progress: 45, blocker: '',
+    updated: '5 min ago'
+  },
+  {
+    id: 'kiran', cls: 'c-kiran', initial: 'K',
+    name: 'Kiran', role: 'Backend Engineer · Claude Sonnet',
+    tools: ['FastAPI', 'GitHub', 'VS Code', 'CMD'],
+    task: 'GET /api/v1/costs/anomalies endpoint with Pydantic schemas',
+    status: 'done', progress: 100, blocker: '',
+    updated: '12 min ago'
+  },
+  {
+    id: 'rasool', cls: 'c-rasool', initial: 'Ra',
+    name: 'Rasool', role: 'Database Agent · Claude Sonnet',
+    tools: ['PostgreSQL', 'Alembic', 'VS Code', 'CMD'],
+    task: 'cost_events table schema + migration + indexes',
+    status: 'done', progress: 100, blocker: '',
+    updated: '18 min ago'
+  },
+  {
+    id: 'kavya', cls: 'c-kavya', initial: 'Ka',
+    name: 'Kavya', role: 'UX Designer · Claude Sonnet',
+    tools: ['Chrome Browser', 'VS Code', 'CSS Tokens'],
+    task: 'Design tokens + component spec for cost dashboard',
+    status: 'done', progress: 100, blocker: '',
+    updated: '20 min ago'
+  },
+  {
+    id: 'keerthi', cls: 'c-keerthi', initial: 'Ke',
+    name: 'Keerthi', role: 'QA Agent · Claude Sonnet',
+    tools: ['pytest', 'Chrome Browser', 'VS Code', 'CMD'],
+    task: 'Awaiting all agents ✅ — then full QA sign-off',
+    status: 'queue', progress: 0, blocker: '',
+    updated: '—'
+  }
+];
+
+const STATUS_CYCLE = ['queue','wip','blocked','done'];
+const STATUS_LABELS = { done:'✅ DONE', wip:'🟡 IN PROGRESS', blocked:'🔴 BLOCKED', queue:'⏳ QUEUE' };
+const STATUS_CLASS = { done:'s-done', wip:'s-wip', blocked:'s-blocked', queue:'s-queue' };
+
+function renderAgents() {
+  const grid = document.getElementById('agentsGrid');
+  grid.innerHTML = AGENTS.map((a,i) => `
+    <div class="agent-card ${a.cls}" id="card-${a.id}">
+      <div class="agent-header">
+        <div class="agent-avatar">${a.initial}</div>
+        <div class="agent-info">
+          <div class="agent-name">${a.name}</div>
+          <div class="agent-role">${a.role}</div>
+        </div>
+        <button class="status-pill ${STATUS_CLASS[a.status]}" onclick="cycleStatus(${i})">${STATUS_LABELS[a.status]}</button>
+      </div>
+      <div class="agent-body">
+        <div>
+          <div class="task-label">Current Task</div>
+          <div class="task-name">${a.task}</div>
+        </div>
+        <div class="tools-row">
+          ${a.tools.map(t=>`<span class="tool-chip">${t}</span>`).join('')}
+        </div>
+        <div class="progress-area">
+          <div class="progress-header">
+            <span class="task-label">Progress</span>
+            <span class="progress-pct">${a.progress}%</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" style="width:${a.progress}%"></div>
+          </div>
+          <input type="range" class="progress-slider" min="0" max="100" value="${a.progress}"
+            oninput="updateProgress(${i}, this.value)"/>
+        </div>
+        ${a.status === 'blocked' ? `
+        <div class="blocker-area">
+          <div class="blocker-label">🔴 Blocker</div>
+          <textarea class="blocker-input" placeholder="Describe the blocker..."
+            oninput="updateBlocker(${i}, this.value)">${a.blocker}</textarea>
+        </div>` : ''}
+        <div class="last-update">Last update: ${a.updated}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function cycleStatus(i) {
+  const cur = STATUS_CYCLE.indexOf(AGENTS[i].status);
+  AGENTS[i].status = STATUS_CYCLE[(cur+1) % STATUS_CYCLE.length];
+  if(AGENTS[i].status === 'done') AGENTS[i].progress = 100;
+  if(AGENTS[i].status === 'queue') AGENTS[i].progress = 0;
+  AGENTS[i].updated = 'just now';
+  renderAgents();
+  updateStats();
+}
+
+function updateProgress(i, val) {
+  AGENTS[i].progress = parseInt(val);
+  AGENTS[i].updated = 'just now';
+  const fill = document.querySelector(`#card-${AGENTS[i].id} .progress-fill`);
+  const pct = document.querySelector(`#card-${AGENTS[i].id} .progress-pct`);
+  if(fill) fill.style.width = val+'%';
+  if(pct) pct.textContent = val+'%';
+  if(parseInt(val) === 100) { AGENTS[i].status = 'done'; renderAgents(); }
+  updateStats();
+}
+
+function updateBlocker(i, val) { AGENTS[i].blocker = val; }
+
+function updateStats() {
+  const done = AGENTS.filter(a=>a.status==='done').length;
+  const wip = AGENTS.filter(a=>a.status==='wip').length;
+  const blocked = AGENTS.filter(a=>a.status==='blocked').length;
+  const overall = Math.round(AGENTS.reduce((s,a)=>s+a.progress,0)/AGENTS.length);
+
+  document.getElementById('statDone').textContent = done;
+  document.getElementById('statWip').textContent = wip;
+  document.getElementById('statBlocked').textContent = blocked;
+  document.getElementById('statOverall').textContent = overall+'%';
+
+  // Health
+  let health, healthColor, eta;
+  if(blocked > 0) {
+    health='🔴 BLOCKED'; healthColor='#fb7185'; eta='Blocked — needs attention';
+  } else if(overall >= 80) {
+    health='🟢 ON TRACK'; healthColor='#4ade80'; eta='Near completion';
+  } else if(overall >= 40) {
+    health='🟡 IN PROGRESS'; healthColor='#fbbf24'; eta='Est. 2–4 hours';
+  } else {
+    health='🔵 STARTING'; healthColor='#60a5fa'; eta='Est. 6–8 hours';
+  }
+
+  document.getElementById('healthLabel').textContent = health;
+  document.getElementById('healthLabel').style.color = healthColor;
+  const hf = document.getElementById('healthFill');
+  hf.style.width = overall+'%';
+  hf.style.background = healthColor;
+  document.getElementById('etaLabel').textContent = eta;
+  document.getElementById('statEta').textContent = blocked>0 ? '🔴' : overall>=80 ? '<1h' : overall>=40 ? '~3h' : '~6h';
+
+  // Arjun message
+  if(blocked>0) {
+    document.getElementById('arjunMsg').textContent = `🔴 ALERT: ${blocked} agent(s) blocked. Escalating to Tarun for immediate unblocking. All other agents — hold dependent tasks.`;
+  } else if(done === AGENTS.length-1 && AGENTS.find(a=>a.id==='keerthi').status==='queue') {
+    document.getElementById('arjunMsg').textContent = `All agents reporting ✅ DONE. Activating Keerthi for QA sign-off. Final stretch — do not push any more changes.`;
+    AGENTS.find(a=>a.id==='keerthi').status = 'wip';
+    renderAgents();
+  } else if(done === AGENTS.length) {
+    document.getElementById('arjunMsg').textContent = `🚀 SPRINT COMPLETE! All agents done. Keerthi has signed off. Notifying Tarun. Ready to ship!`;
+  } else {
+    document.getElementById('arjunMsg').textContent = `Sprint-${document.getElementById('sprintName').value} in progress. ${done} of ${AGENTS.length} agents done. ${wip} working in parallel. ${overall}% overall. Monitoring...`;
+  }
+}
+
+function openReport() {
+  const now = new Date().toLocaleString('en-GB');
+  const sprint = document.getElementById('sprintName').value;
+  const overall = Math.round(AGENTS.reduce((s,a)=>s+a.progress,0)/AGENTS.length);
+  const blocked = AGENTS.filter(a=>a.status==='blocked');
+  const health = blocked.length>0 ? '🔴 BLOCKED' : overall>=80 ? '🟢 ON TRACK' : '🟡 AT RISK';
+
+  const rows = AGENTS.map(a=>{
+    const n = a.name.padEnd(10);
+    const t = a.task.substring(0,30).padEnd(32);
+    const p = (a.progress+'%').padEnd(10);
+    const s = STATUS_LABELS[a.status].padEnd(18);
+    return `│ ${n}│ ${t}│ ${p}│ ${s}│`;
+  }).join('\n');
+
+  const blockerLines = blocked.length>0
+    ? '\nBLOCKERS:\n' + blocked.map(a=>`  → ${a.name}: ${a.blocker || 'No description provided'}`).join('\n')
+    : '\nBLOCKERS:\n  None';
+
+  document.getElementById('reportContent').textContent =
+`[ARJUN → TARUN] SPRINT STATUS REPORT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Sprint     : Sprint-${sprint}
+Generated  : ${now}
+Overall    : ${overall}%
+
+AGENT STATUS:
+┌──────────┬────────────────────────────────┬──────────┬──────────────────┐
+│ Agent    │ Task                           │ Progress │ Status           │
+├──────────┼────────────────────────────────┼──────────┼──────────────────┤
+${rows}
+└──────────┴────────────────────────────────┴──────────┴──────────────────┘
+${blockerLines}
+
+SPRINT HEALTH : ${health}
+ETA TO SHIP   : ${blocked.length>0 ? 'Blocked — needs Tarun' : overall>=80 ? 'Less than 1 hour' : overall>=40 ? '~3 hours' : '~6 hours'}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[ARJUN] Orchestration hub — Team Panchayat`;
+
+  document.getElementById('reportTime').textContent = `Generated: ${now}`;
+  document.getElementById('reportModal').classList.add('open');
+}
+
+function closeReport() { document.getElementById('reportModal').classList.remove('open'); }
+
+function copyReport() {
+  navigator.clipboard.writeText(document.getElementById('reportContent').textContent);
+  const btn = document.querySelector('.btn-copy');
+  btn.textContent = '✅ Copied!';
+  setTimeout(()=>btn.textContent='Copy Report', 2000);
+}
+
+document.getElementById('reportModal').addEventListener('click', function(e){
+  if(e.target === this) closeReport();
+});
+
+// Init
+renderAgents();
+updateStats();
+
+// Live clock
+setInterval(()=>{
+  const now = new Date();
+  document.querySelector('.header-badge').textContent =
+    `Team Panchayat · ADLC · ${now.toLocaleTimeString('en-GB')}`;
+}, 1000);
+</script>
+</body>
+</html>

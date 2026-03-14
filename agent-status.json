@@ -1,0 +1,48 @@
+{
+  "sprint": "01",
+  "lastSync": "",
+  "agents": {
+    "vikram": {
+      "status": "queue",
+      "progress": 0,
+      "task": "AWS S3 + CloudWatch Terraform modules with IAM roles",
+      "blocker": "",
+      "updated": ""
+    },
+    "rohan": {
+      "status": "queue",
+      "progress": 0,
+      "task": "Cost anomaly dashboard — React + Recharts components",
+      "blocker": "",
+      "updated": ""
+    },
+    "kiran": {
+      "status": "queue",
+      "progress": 0,
+      "task": "GET /api/v1/costs/anomalies endpoint with Pydantic schemas",
+      "blocker": "",
+      "updated": ""
+    },
+    "rasool": {
+      "status": "queue",
+      "progress": 0,
+      "task": "cost_events table schema + migration + indexes",
+      "blocker": "",
+      "updated": ""
+    },
+    "kavya": {
+      "status": "queue",
+      "progress": 0,
+      "task": "Design tokens + component spec for cost dashboard",
+      "blocker": "",
+      "updated": ""
+    },
+    "keerthi": {
+      "status": "queue",
+      "progress": 0,
+      "task": "Awaiting all agents DONE — then full QA sign-off",
+      "blocker": "",
+      "updated": ""
+    }
+  }
+}
