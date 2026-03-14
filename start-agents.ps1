@@ -135,3 +135,66 @@ Write-Host "  3. Watch your dashboard update live!" -ForegroundColor White
 Write-Host "============================================================" -ForegroundColor Green
 Write-Host ""
 Read-Host "Press Enter to close this window"
+
+
+# ── Show memory status before launching ────────────────────────
+Write-Host ""
+Write-Host "============================================================" -ForegroundColor Yellow
+Write-Host "  AGENT MEMORY STATUS (from last session)" -ForegroundColor Yellow
+Write-Host "============================================================" -ForegroundColor Yellow
+if (Test-Path "$ROOT\memory-manager.js") {
+    Push-Location $ROOT
+    node memory-manager.js
+    Pop-Location
+} else {
+    Write-Host "  No memory manager found — first run" -ForegroundColor Gray
+}
+Write-Host ""
+Write-Host "Launching agent windows in 3 seconds..." -ForegroundColor Cyan
+Start-Sleep -Seconds 3
+
+# ── Group Chat Viewer Window ────────────────────────────────────
+Write-Host "[+] Starting Group Chat Viewer..." -ForegroundColor Green
+$chatCmd = @"
+`$Host.UI.RawUI.WindowTitle = 'TEAM PANCHAYAT - Group Chat'
+`$Host.UI.RawUI.BackgroundColor = 'Black'
+Clear-Host
+Write-Host '=== Team Panchayat Group Chat ===' -ForegroundColor Cyan
+Set-Location '$ROOT'
+node group-chat-viewer.js --watch
+"@
+Start-Process powershell -ArgumentList "-NoExit", "-Command", $chatCmd
+Start-Sleep -Seconds 1
+Write-Host "  Group Chat window launched!" -ForegroundColor Green
+Write-Host ""
+Write-Host "  TO POST A NEW PROJECT REQUIREMENT:" -ForegroundColor Yellow
+Write-Host "  cd $ROOT && node new-project.js" -ForegroundColor Gray
+Write-Host ""
+
+
+# ── Live Dashboard Server ──────────────────────────────────────
+Write-Host "============================================================" -ForegroundColor Cyan
+Write-Host "  Starting Live Dashboard Server..." -ForegroundColor Cyan
+$dashCmd = @"
+`$Host.UI.RawUI.WindowTitle = 'ADLC - Live Dashboard Server :3000'
+`$Host.UI.RawUI.BackgroundColor = 'DarkGreen'
+Clear-Host
+Write-Host '=== ADLC Live Dashboard Server ===' -ForegroundColor Green
+Write-Host ''
+Set-Location '$ROOT'
+node dashboard-server.js
+"@
+Start-Process powershell -ArgumentList "-NoExit", "-Command", $dashCmd
+Start-Sleep -Seconds 2
+
+Write-Host ""
+Write-Host "============================================================" -ForegroundColor Green
+Write-Host "  LIVE DASHBOARD:" -ForegroundColor White
+Write-Host "  http://localhost:3000   <-- open in browser!" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "  TOOL CONNECTIONS:" -ForegroundColor White
+Write-Host "  node connect-tools.js          (setup wizard)" -ForegroundColor Gray
+Write-Host "  node connect-tools.js --status (view connections)" -ForegroundColor Gray
+Write-Host "  node connect-tools.js --test github" -ForegroundColor Gray
+Write-Host "============================================================" -ForegroundColor Green
+Write-Host ""

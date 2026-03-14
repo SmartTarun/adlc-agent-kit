@@ -1,0 +1,26 @@
+{
+  "requirementId": "",
+  "postedBy": "Tarun Vangari",
+  "postedAt": "",
+  "sprint": "",
+  "type": "new_project | new_feature | bug_fix | enhancement",
+  "title": "",
+  "description": "",
+  "businessGoal": "",
+  "targetUsers": "",
+  "techConstraints": [],
+  "deadline": "",
+  "priority": "low | medium | high | critical",
+  "status": "pending_analysis | analysed | in_sprint | done",
+  "agentInputs": {
+    "arjun":   { "received": false, "summary": "", "questions": [], "estimate": "" },
+    "vikram":  { "received": false, "summary": "", "questions": [], "estimate": "" },
+    "rasool":  { "received": false, "summary": "", "questions": [], "estimate": "" },
+    "kavya":   { "received": false, "summary": "", "questions": [], "estimate": "" },
+    "kiran":   { "received": false, "summary": "", "questions": [], "estimate": "" },
+    "rohan":   { "received": false, "summary": "", "questions": [], "estimate": "" },
+    "keerthi": { "received": false, "summary": "", "questions": [], "estimate": "" }
+  },
+  "sprintPlan": "",
+  "approvedByTarun": false
+}

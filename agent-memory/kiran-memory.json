@@ -1,0 +1,24 @@
+{
+  "agent": "kiran",
+  "sprint": "01",
+  "lastActive": "",
+  "sessionCount": 0,
+  "currentTask": {
+    "title": "",
+    "status": "not_started",
+    "progressPercent": 0,
+    "startedAt": "",
+    "lastStepCompleted": ""
+  },
+  "completedTasks": [],
+  "filesCreated": [],
+  "filesModified": [],
+  "keyDecisions": [],
+  "pendingNextSteps": [],
+  "dependenciesStatus": {
+    "waitingFor": "",
+    "readyToUnblock": ""
+  },
+  "blockers": [],
+  "notes": ""
+}

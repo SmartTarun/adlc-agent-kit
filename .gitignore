@@ -44,3 +44,7 @@ dist/
 build/
 *.zip
 *.rar
+
+# Tool connections — NEVER commit credentials
+connections.json
+.connections.backup.json

@@ -79,3 +79,47 @@ After completing each major step, update `/agent-status.json`:
 - No TODO comments left in final code
 - No console.log or print debug statements
 - All files must have a top comment: `# Agent: {name} | Sprint: 01 | Date: {date}`
+
+---
+
+## Agent Memory Standards (ALL agents)
+
+Every agent MUST read their memory file at the start of EVERY session:
+```
+agent-memory/{agentname}-memory.json
+```
+
+### Memory Schema
+```json
+{
+  "agent": "name",
+  "sprint": "01",
+  "lastActive": "ISO timestamp",
+  "sessionCount": 0,
+  "currentTask": {
+    "title": "task description",
+    "status": "not_started | in_progress | blocked | done",
+    "progressPercent": 0,
+    "startedAt": "ISO timestamp",
+    "lastStepCompleted": "description of last step"
+  },
+  "completedTasks": ["task1", "task2"],
+  "filesCreated": ["path/to/file.tf"],
+  "filesModified": ["path/to/file.py"],
+  "keyDecisions": ["Used KMS for S3 encryption"],
+  "pendingNextSteps": ["Next thing to do"],
+  "dependenciesStatus": {
+    "waitingFor": "agent or condition",
+    "readyToUnblock": "agent that can now proceed"
+  },
+  "blockers": ["description of blocker"],
+  "notes": "free text"
+}
+```
+
+### Memory Rules
+- Read memory FIRST — before reading CLAUDE.md or doing any work
+- Update memory AFTER every major step — not just at the end
+- Never redo work listed in filesCreated or completedTasks
+- Set dependenciesStatus.readyToUnblock when your output enables another agent
+- When restarting, increment sessionCount and set lastActive to now
