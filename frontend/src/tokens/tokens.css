@@ -1,0 +1,202 @@
+/* Agent: Kavya | Sprint: 01 | Date: 2026-03-16 */
+/* Infraviz — Design Token System */
+/* Target: Cloud Architects | Mode: Dark-first */
+
+:root {
+  /* ─── COLOUR PALETTE ─────────────────────────────────────────── */
+
+  /* Neutrals */
+  --color-bg-base:        #0b0e14;
+  --color-bg-surface:     #131720;
+  --color-bg-elevated:    #1c2333;
+  --color-bg-overlay:     #242d40;
+  --color-border-subtle:  #2a3450;
+  --color-border-default: #3d4f6e;
+  --color-border-strong:  #5a6e94;
+
+  /* Text */
+  --color-text-primary:   #e8ecf4;
+  --color-text-secondary: #9aabc7;
+  --color-text-tertiary:  #5d7099;
+  --color-text-inverse:   #0b0e14;
+
+  /* Brand / Primary — Electric Blue (infra/cloud feel) */
+  --color-primary-50:  #e6f0ff;
+  --color-primary-100: #b3d1ff;
+  --color-primary-200: #80b2ff;
+  --color-primary-300: #4d93ff;
+  --color-primary-400: #1a74ff;
+  --color-primary-500: #0060e6;
+  --color-primary-600: #004db3;
+  --color-primary-700: #003a80;
+  --color-primary-800: #00274d;
+  --color-primary-900: #001433;
+
+  /* Accent — Teal (agent/AI activity) */
+  --color-accent-50:  #e0faf7;
+  --color-accent-100: #99ede6;
+  --color-accent-200: #52e0d4;
+  --color-accent-300: #1fd4c5;
+  --color-accent-400: #00c4b4;
+  --color-accent-500: #00a89a;
+  --color-accent-600: #00857a;
+  --color-accent-700: #006259;
+  --color-accent-800: #003f38;
+  --color-accent-900: #001c18;
+
+  /* Semantic — Status */
+  --color-success-light: #1a3d2b;
+  --color-success:       #22c55e;
+  --color-success-text:  #86efac;
+
+  --color-warning-light: #3d2e0a;
+  --color-warning:       #f59e0b;
+  --color-warning-text:  #fcd34d;
+
+  --color-danger-light:  #3d0f0f;
+  --color-danger:        #ef4444;
+  --color-danger-text:   #fca5a5;
+
+  --color-info-light:    #0f1f3d;
+  --color-info:          #3b82f6;
+  --color-info-text:     #93c5fd;
+
+  /* Cost anomaly specific */
+  --color-anomaly-critical: #ff3b3b;
+  --color-anomaly-high:     #ff8c00;
+  --color-anomaly-medium:   #f5c518;
+  --color-anomaly-low:      #4ade80;
+  --color-anomaly-none:     #5d7099;
+
+  /* Agent status colours */
+  --color-agent-wip:      #f59e0b;
+  --color-agent-done:     #22c55e;
+  --color-agent-blocked:  #ef4444;
+  --color-agent-queue:    #5d7099;
+  --color-agent-active:   #1a74ff;
+
+  /* ─── TYPOGRAPHY ─────────────────────────────────────────────── */
+
+  --font-family-mono:  "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
+  --font-family-sans:  "Inter", "Segoe UI", system-ui, sans-serif;
+  --font-family-body:  var(--font-family-sans);
+  --font-family-code:  var(--font-family-mono);
+
+  --font-size-xs:   0.625rem;   /* 10px */
+  --font-size-sm:   0.75rem;    /* 12px */
+  --font-size-md:   0.875rem;   /* 14px */
+  --font-size-base: 1rem;       /* 16px */
+  --font-size-lg:   1.125rem;   /* 18px */
+  --font-size-xl:   1.25rem;    /* 20px */
+  --font-size-2xl:  1.5rem;     /* 24px */
+  --font-size-3xl:  1.875rem;   /* 30px */
+  --font-size-4xl:  2.25rem;    /* 36px */
+
+  --font-weight-regular: 400;
+  --font-weight-medium:  500;
+  --font-weight-semibold: 600;
+  --font-weight-bold:    700;
+
+  --line-height-tight:  1.2;
+  --line-height-snug:   1.375;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.75;
+
+  --letter-spacing-tight:  -0.025em;
+  --letter-spacing-normal: 0;
+  --letter-spacing-wide:   0.05em;
+  --letter-spacing-wider:  0.1em;
+  --letter-spacing-caps:   0.12em;
+
+  /* ─── SPACING ────────────────────────────────────────────────── */
+
+  --space-0:   0;
+  --space-1:   0.25rem;   /* 4px */
+  --space-2:   0.5rem;    /* 8px */
+  --space-3:   0.75rem;   /* 12px */
+  --space-4:   1rem;      /* 16px */
+  --space-5:   1.25rem;   /* 20px */
+  --space-6:   1.5rem;    /* 24px */
+  --space-8:   2rem;      /* 32px */
+  --space-10:  2.5rem;    /* 40px */
+  --space-12:  3rem;      /* 48px */
+  --space-16:  4rem;      /* 64px */
+  --space-20:  5rem;      /* 80px */
+  --space-24:  6rem;      /* 96px */
+
+  /* ─── BORDER RADIUS ──────────────────────────────────────────── */
+
+  --radius-none: 0;
+  --radius-sm:   0.25rem;   /* 4px */
+  --radius-md:   0.5rem;    /* 8px */
+  --radius-lg:   0.75rem;   /* 12px */
+  --radius-xl:   1rem;      /* 16px */
+  --radius-2xl:  1.5rem;    /* 24px */
+  --radius-full: 9999px;
+
+  /* ─── SHADOWS ────────────────────────────────────────────────── */
+
+  --shadow-sm:   0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md:   0 4px 12px rgba(0, 0, 0, 0.5);
+  --shadow-lg:   0 8px 24px rgba(0, 0, 0, 0.6);
+  --shadow-xl:   0 16px 48px rgba(0, 0, 0, 0.7);
+  --shadow-glow-primary: 0 0 16px rgba(26, 116, 255, 0.3);
+  --shadow-glow-accent:  0 0 16px rgba(0, 196, 180, 0.3);
+  --shadow-glow-danger:  0 0 16px rgba(239, 68, 68, 0.3);
+
+  /* ─── Z-INDEX ────────────────────────────────────────────────── */
+
+  --z-base:    0;
+  --z-raised:  10;
+  --z-overlay: 100;
+  --z-modal:   200;
+  --z-toast:   300;
+  --z-tooltip: 400;
+
+  /* ─── TRANSITIONS ────────────────────────────────────────────── */
+
+  --transition-fast:   100ms ease;
+  --transition-normal: 200ms ease;
+  --transition-slow:   350ms ease;
+
+  /* ─── LAYOUT ─────────────────────────────────────────────────── */
+
+  --sidebar-width:       240px;
+  --sidebar-collapsed:   56px;
+  --topbar-height:       56px;
+  --panel-min-width:     280px;
+  --content-max-width:   1440px;
+
+  /* ─── CHART PALETTE (Recharts) ───────────────────────────────── */
+
+  --chart-color-1: #1a74ff;
+  --chart-color-2: #00c4b4;
+  --chart-color-3: #f59e0b;
+  --chart-color-4: #ef4444;
+  --chart-color-5: #a855f7;
+  --chart-color-6: #22c55e;
+  --chart-color-7: #ec4899;
+  --chart-color-8: #14b8a6;
+
+  --chart-grid-color:    rgba(90, 110, 148, 0.2);
+  --chart-axis-color:    var(--color-text-tertiary);
+  --chart-tooltip-bg:    var(--color-bg-overlay);
+  --chart-tooltip-border: var(--color-border-default);
+}
+
+/* ─── LIGHT MODE OVERRIDE ──────────────────────────────────────── */
+/* Light mode is secondary — activate via .light-mode class on <html> */
+html.light-mode {
+  --color-bg-base:        #f4f6fa;
+  --color-bg-surface:     #ffffff;
+  --color-bg-elevated:    #eef1f8;
+  --color-bg-overlay:     #e2e7f2;
+  --color-border-subtle:  #d0d8eb;
+  --color-border-default: #b4c0d9;
+  --color-border-strong:  #8595b8;
+
+  --color-text-primary:   #111827;
+  --color-text-secondary: #374151;
+  --color-text-tertiary:  #6b7280;
+  --color-text-inverse:   #f9fafb;
+}

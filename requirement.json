@@ -1,38 +1,79 @@
 {
-  "requirementId": "",
+  "requirementId": "REQ-1773649680589",
   "postedBy": "Tarun Vangari",
-  "postedAt": "",
-  "sprint": "",
-  "type": "new_project | new_feature | bug_fix | enhancement",
-  "title": "",
-  "description": "",
-  "businessGoal": "",
-  "targetUsers": "",
+  "postedAt": "2026-03-16T08:28:00.589Z",
+  "sprint": "01",
+  "type": "new_project",
+  "title": "INFRAVIZ",
+  "description": "we need to create AI enabled IAC code to generate the IAC and manage the state file. For reference of how to build you can use https://github.com/SmartTarun/Infra_viz_by_google.git for reference",
+  "businessGoal": "We need this to showcase the power of Claude Anthropic",
+  "targetUsers": "cloud architect",
   "techConstraints": [],
-  "deadline": "",
-  "priority": "low | medium | high | critical",
-  "status": "pending_analysis | analysed | in_sprint | done",
+  "deadline": "2026-04-01",
+  "priority": "critical",
+  "status": "in_sprint",
   "discoveryComplete": false,
   "discoveryPhase": {
-    "currentRound": 0,
-    "roundStatus": "not_started",
+    "currentRound": 1,
+    "roundStatus": "in_progress",
     "fastTrack": false,
-    "startedAt": ""
+    "startedAt": "2026-03-16T09:20:30.000Z"
   },
   "discoveryAnswers": {
-    "round1": {},
+    "round1": {
+      "auth": "dummy username/password for Sprint-01, OAuth deferred — CONFIRMED by Tarun 2026-03-16T08:30:02Z",
+      "githubLink": "https://github.com/SmartTarun/Infra_viz_by_google.git — CONFIRMED by Tarun 2026-03-16T12:00:00Z. Clone this repo and analyse the source to extract the full product spec.",
+      "iacExecution": "PENDING Tarun answer — generate+validate only vs apply/destroy",
+      "uiScreens": "PENDING Tarun confirmation"
+    },
     "round2": {},
     "round3": {}
   },
   "productBrief": {},
+  "arjunDecisions": {},
   "agentInputs": {
-    "arjun":   { "received": false, "summary": "", "questions": [], "estimate": "" },
-    "vikram":  { "received": false, "summary": "", "questions": [], "estimate": "" },
-    "rasool":  { "received": false, "summary": "", "questions": [], "estimate": "" },
-    "kavya":   { "received": false, "summary": "", "questions": [], "estimate": "" },
-    "kiran":   { "received": false, "summary": "", "questions": [], "estimate": "" },
-    "rohan":   { "received": false, "summary": "", "questions": [], "estimate": "" },
-    "keerthi": { "received": false, "summary": "", "questions": [], "estimate": "" }
+    "arjun": {
+      "received": false,
+      "summary": "",
+      "questions": [],
+      "estimate": ""
+    },
+    "vikram": {
+      "received": false,
+      "summary": "",
+      "questions": [],
+      "estimate": ""
+    },
+    "rasool": {
+      "received": false,
+      "summary": "",
+      "questions": [],
+      "estimate": ""
+    },
+    "kavya": {
+      "received": false,
+      "summary": "",
+      "questions": [],
+      "estimate": ""
+    },
+    "kiran": {
+      "received": false,
+      "summary": "",
+      "questions": [],
+      "estimate": ""
+    },
+    "rohan": {
+      "received": false,
+      "summary": "",
+      "questions": [],
+      "estimate": ""
+    },
+    "keerthi": {
+      "received": false,
+      "summary": "",
+      "questions": [],
+      "estimate": ""
+    }
   },
   "sprintPlan": "",
   "approvedByTarun": false

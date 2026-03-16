@@ -142,7 +142,13 @@ node connect-tools.js
 # ---- Every sprint ---------------------------------------------------
 
 # 5. Launch all agent windows + live dashboard
-.\start-agents.ps1
+#    AUTO-RUN mode: agents read their prompts and start immediately (recommended)
+.\start-agents.ps1 -AutoRun
+#    -- OR --
+start-agents.bat autorun
+#
+#    INTERACTIVE mode: windows open but you paste prompts manually
+#    start-agents.bat        (double-click, no arguments)
 
 # 6. Open the live dashboard
 # -> http://localhost:3000   (opens automatically after agents start)

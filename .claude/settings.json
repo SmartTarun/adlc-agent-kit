@@ -1,5 +1,4 @@
-{
-  "_comment": "Team Panchayat ADLC-Agent-Kit -- pre-authorized tool permissions for all agents.",
+﻿{
   "permissions": {
     "allow": [
       "Bash(*)",

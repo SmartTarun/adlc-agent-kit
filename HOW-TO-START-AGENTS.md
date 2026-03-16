@@ -64,12 +64,38 @@ npm install -g @anthropic-ai/claude-code
 
 ## STEP 3 -- Launch All Agent Windows
 
-Double-click `start-agents.bat` OR run from PowerShell:
+There are TWO launch modes. Choose one:
+
+### Option A -- AUTO-RUN (recommended: agents start immediately)
+
+```cmd
+start-agents.bat autorun
+```
+Or from PowerShell:
 ```powershell
-.\start-agents.ps1
+.\start-agents.ps1 -AutoRun
 ```
 
-This opens **8 windows** at once:
+Each agent window opens, reads its prompt file automatically, and begins working.
+**No manual pasting required.** This is the mode to use when you have a requirement ready.
+
+To auto-run a single agent only:
+```cmd
+start-agents.bat autorun vikram
+```
+
+### Option B -- INTERACTIVE (manual prompt paste)
+
+```cmd
+start-agents.bat
+```
+(double-click, or run with no arguments)
+
+Windows open with an empty `claude` session. **You must paste the prompt manually into each window** from the `prompts\` folder. Use this when you want to control exactly when each agent starts.
+
+---
+
+Either mode opens **8 windows**:
 
 | Window Title | Color | Role |
 |---|---|---|

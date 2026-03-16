@@ -16,10 +16,11 @@
  *
  * API endpoints:
  *   GET  /api/state                  -- current full state (JSON)
- *   POST /api/chat                   -- post a message to group chat
+ *   POST /api/chat                   -- post a message to group chat (supports file attachments)
  *   POST /api/requirement            -- post a new requirement (from wizard)
  *   POST /api/requirement/approve    -- Tarun approves the sprint plan
  *   GET  /events                     -- SSE stream
+ *   GET  /uploads/<filename>         -- serve uploaded chat attachment files
  */
 
 const http  = require('http');
@@ -27,9 +28,13 @@ const fs    = require('fs');
 const path  = require('path');
 const url   = require('url');
 
-const ROOT   = __dirname;
-const PORT   = (() => { const i = process.argv.indexOf('--port'); return i >= 0 ? parseInt(process.argv[i+1]) : 3000; })();
-const AGENTS = ['arjun','vikram','rasool','kavya','kiran','rohan','keerthi'];
+const ROOT        = __dirname;
+const PORT        = (() => { const i = process.argv.indexOf('--port'); return i >= 0 ? parseInt(process.argv[i+1]) : 3000; })();
+const AGENTS      = ['arjun','vikram','rasool','kavya','kiran','rohan','keerthi'];
+const UPLOADS_DIR = path.join(ROOT, 'chat-uploads');
+
+// Ensure chat-uploads directory exists on startup
+if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 
 // Files to watch for live updates
 const WATCHED_FILES = [
@@ -59,9 +64,12 @@ function broadcast(event, data) {
   });
 }
 
+// Enterprise: only send last N messages to dashboard (avoids huge SSE payloads)
+const CHAT_DASHBOARD_WINDOW = 50;
+
 function getFullState() {
   const status  = readJSON(path.join(ROOT, 'agent-status.json'))  || {};
-  const chat    = readJSON(path.join(ROOT, 'group-chat.json'))     || { channel: 'team-panchayat-general', messages: [] };
+  const rawChat = readJSON(path.join(ROOT, 'group-chat.json'))     || { channel: 'team-panchayat-general', messages: [] };
   const req     = readJSON(path.join(ROOT, 'requirement.json'))    || {};
   const memory  = {};
   try {
@@ -70,6 +78,15 @@ function getFullState() {
       memory[agent] = readJSON(path.join(ROOT, 'agent-memory', f));
     });
   } catch {}
+
+  // Windowed chat: send last CHAT_DASHBOARD_WINDOW messages + totalCount for UI
+  const allMessages = rawChat.messages || [];
+  const chat = {
+    channel:    rawChat.channel || 'team-panchayat-general',
+    totalCount: allMessages.length,
+    messages:   allMessages.slice(-CHAT_DASHBOARD_WINDOW),
+  };
+
   return { status, chat, req, memory, timestamp: new Date().toISOString() };
 }
 
@@ -168,6 +185,30 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  // -- Static file server: /uploads/<filename> -------------------
+  if (pathname.startsWith('/uploads/')) {
+    const filename  = path.basename(decodeURIComponent(pathname.slice('/uploads/'.length)));
+    const filePath  = path.join(UPLOADS_DIR, filename);
+    if (!filePath.startsWith(UPLOADS_DIR)) { res.writeHead(403); res.end('Forbidden'); return; }
+    if (!fs.existsSync(filePath)) { res.writeHead(404); res.end('Not found'); return; }
+    const ext = filename.split('.').pop().toLowerCase();
+    const mimeTypes = {
+      png:'image/png', jpg:'image/jpeg', jpeg:'image/jpeg', gif:'image/gif',
+      webp:'image/webp', svg:'image/svg+xml', pdf:'application/pdf',
+      json:'application/json', txt:'text/plain', md:'text/markdown',
+      js:'text/javascript', py:'text/plain', tf:'text/plain', hcl:'text/plain',
+      yml:'text/plain', yaml:'text/plain', sh:'text/plain', ps1:'text/plain',
+      zip:'application/zip', gz:'application/gzip',
+    };
+    res.writeHead(200, {
+      'Content-Type':        mimeTypes[ext] || 'application/octet-stream',
+      'Content-Disposition': `inline; filename="${filename}"`,
+      'Cache-Control':       'public, max-age=86400',
+    });
+    fs.createReadStream(filePath).pipe(res);
+    return;
+  }
+
   // -- API: post to group chat ------------------------------------
   if (pathname === '/api/chat' && req.method === 'POST') {
     cors(res);
@@ -180,11 +221,87 @@ const server = http.createServer(async (req, res) => {
       if (!msg.type)      msg.type      = 'message';
       msg.id        = `msg-${Date.now()}-web`;
       msg.timestamp = new Date().toISOString();
+
+      // Save file attachments to chat-uploads/ and replace base64 data with URLs
+      if (Array.isArray(msg.attachments) && msg.attachments.length) {
+        msg.attachments = msg.attachments.map((att, idx) => {
+          if (!att.data) return att;  // already a URL reference
+          try {
+            // Parse dataURL: "data:<mime>;base64,<data>"
+            const match = att.data.match(/^data:([^;]+);base64,(.+)$/);
+            if (!match) return att;
+            const mimeType = match[1];
+            const b64Data  = match[2];
+            const buf      = Buffer.from(b64Data, 'base64');
+
+            // Build safe filename: timestamp-index-originalname
+            const safeName = `${msg.id}-${idx}-${att.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+            const savePath = path.join(UPLOADS_DIR, safeName);
+            fs.writeFileSync(savePath, buf);
+
+            // Return attachment without raw base64 -- just the URL
+            return { name: att.name, mimeType: mimeType || att.mimeType, size: att.size, url: `/uploads/${safeName}` };
+          } catch (e) {
+            console.error('[upload] Failed to save attachment:', att.name, e.message);
+            return { name: att.name, mimeType: att.mimeType, size: att.size, error: 'save failed' };
+          }
+        });
+        console.log(`[${new Date().toLocaleTimeString()}] Saved ${msg.attachments.length} attachment(s) for message ${msg.id}`);
+      }
+
       const chatFile = path.join(ROOT, 'group-chat.json');
       const chat = readJSON(chatFile) || { channel: 'team-panchayat-general', messages: [] };
       if (!chat.messages) chat.messages = [];
       chat.messages.push(msg);
       writeJSON(chatFile, chat);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true }));
+    } catch (e) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: e.message }));
+    }
+    return;
+  }
+
+  // -- API: get permissions (tool-permissions.json + .claude/settings.json) --
+  if (pathname === '/api/permissions' && req.method === 'GET') {
+    cors(res);
+    const toolPerms    = readJSON(path.join(ROOT, 'tool-permissions.json')) || {};
+    const claudeSettings = readJSON(path.join(ROOT, '.claude', 'settings.json')) || { permissions: { allow: [], deny: [] } };
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ toolPerms, claudeSettings }));
+    return;
+  }
+
+  // -- API: save permissions -----------------------------------------------
+  if (pathname === '/api/permissions' && req.method === 'POST') {
+    cors(res);
+    try {
+      const body = await readBody(req);
+      const data = JSON.parse(body);
+
+      // Save tool-permissions.json if provided
+      if (data.toolPerms) {
+        data.toolPerms._author    = 'Tarun Vangari (tarun.vangari@gmail.com)';
+        data.toolPerms.global     = data.toolPerms.global || {};
+        data.toolPerms.global.lastUpdated = new Date().toISOString();
+        writeJSON(path.join(ROOT, 'tool-permissions.json'), data.toolPerms);
+        console.log(`[${new Date().toLocaleTimeString()}] tool-permissions.json updated`);
+      }
+
+      // Save .claude/settings.json if provided
+      if (data.claudeSettings) {
+        const claudeDir = path.join(ROOT, '.claude');
+        if (!fs.existsSync(claudeDir)) fs.mkdirSync(claudeDir);
+        writeJSON(path.join(claudeDir, 'settings.json'), data.claudeSettings);
+        console.log(`[${new Date().toLocaleTimeString()}] .claude/settings.json updated`);
+      }
+
+      // Notify agents of permission change via group chat
+      postToChat('TARUN', 'Product Owner', 'broadcast',
+        'Agent permissions updated by Tarun. Re-read .claude/settings.json if you are in an active session.',
+        ['permissions', 'all-agents']);
+
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ ok: true }));
     } catch (e) {
@@ -216,6 +333,10 @@ const server = http.createServer(async (req, res) => {
         deadline:        data.deadline     || '',
         priority:        data.priority     || 'medium',
         status:          'pending_analysis',
+        discoveryComplete: false,
+        discoveryPhase:  { currentRound: 0, roundStatus: 'not_started', fastTrack: false, startedAt: '' },
+        discoveryAnswers: { round1: {}, round2: {}, round3: {} },
+        productBrief:    {},
         agentInputs:     Object.fromEntries(
           AGENTS.map(a => [a, { received: false, summary: '', questions: [], estimate: '' }])
         ),
