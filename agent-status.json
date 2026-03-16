@@ -38,11 +38,11 @@
       "updated": "2026-03-16T08:28:00.000Z"
     },
     "kavya": {
-      "status": "queue",
-      "progress": 0,
-      "task": "Waiting for Arjun Sprint GO brief",
-      "blocker": "Waiting on Arjun brief",
-      "updated": "2026-03-16T08:28:00.000Z"
+      "status": "done",
+      "progress": 100,
+      "task": "Design tokens + component specification delivered",
+      "blocker": "",
+      "updated": "2026-03-16T09:15:30.000Z"
     },
     "keerthi": {
       "status": "queue",

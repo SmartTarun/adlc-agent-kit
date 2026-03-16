@@ -51,10 +51,12 @@
       "estimate": ""
     },
     "kavya": {
-      "received": false,
-      "summary": "",
-      "questions": [],
-      "estimate": ""
+      "received": true,
+      "summary": "Dark-first design system: Electric Blue primary + Teal accent. Full token set (colors, typography, spacing, shadows, chart palette, z-index). 10-component spec (AppShell, TopBar, Sidebar, MetricCard, AnomalyTable, InfraTopologyGraph, AgentStatusPanel, AgentChatFeed, MemoryExplorer, CostTimeseriesChart, LLMActivityLog). Recharts for charts. React Flow approved for TopologyCanvas. Rohan unblocked.",
+      "questions": [
+        "React Flow (@xyflow/react) for TopologyCanvas — confirmed APPROVED Sprint-01 by Arjun"
+      ],
+      "estimate": "DONE — tokens.css + component-spec.md delivered 09:15"
     },
     "kiran": {
       "received": false,
