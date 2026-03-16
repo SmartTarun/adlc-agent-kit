@@ -2,18 +2,18 @@
  * new-project.js
  * Author: Tarun Vangari (tarun.vangari@gmail.com)
  * Role: DevOps & Cloud Architect
- * Project: ADLC-Agent-Kit — Team Panchayat
+ * Project: ADLC-Agent-Kit  -- Team Panchayat
  * Date: 2026-03-14
  *
  * NEW PROJECT / FEATURE BROADCASTER
- * Tarun posts a requirement → all agents are notified → each provides input
+ * Tarun posts a requirement -> all agents are notified -> each provides input
  * Arjun collects all inputs and generates the sprint plan.
  *
  * Usage:
- *   node new-project.js                         → interactive wizard
- *   node new-project.js --status                → show current requirement status
- *   node new-project.js --inputs                → show all agent inputs received so far
- *   node new-project.js --approve               → Tarun approves the sprint plan
+ *   node new-project.js                         -> interactive wizard
+ *   node new-project.js --status                -> show current requirement status
+ *   node new-project.js --inputs                -> show all agent inputs received so far
+ *   node new-project.js --approve               -> Tarun approves the sprint plan
  */
 
 const fs       = require('fs');
@@ -81,6 +81,10 @@ function resetRequirement() {
     priority:  'medium',
     status:    'pending_analysis',
     agentInputs: Object.fromEntries(AGENTS.map(a => [a, { received: false, summary: '', questions: [], estimate: '' }])),
+    discoveryComplete: false,
+    discoveryPhase: { currentRound: 0, roundStatus: 'not_started', startedAt: '' },
+    discoveryAnswers: { round1: {}, round2: {}, round3: {} },
+    productBrief: {},
     sprintPlan: '',
     approvedByTarun: false,
   };
@@ -93,10 +97,10 @@ function ask(rl, question) {
 async function wizard() {
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 
-  console.log(`\n${BOLD}${CYAN}╔══════════════════════════════════════════════════════════════╗`);
-  console.log(`║       📋  ADLC New Project / Feature Wizard                 ║`);
-  console.log(`║       Tarun Vangari — Team Panchayat                        ║`);
-  console.log(`╚══════════════════════════════════════════════════════════════╝${RESET}\n`);
+  console.log(`\n${BOLD}${CYAN}+==============================================================+`);
+  console.log(`|       [REQ]  ADLC New Project / Feature Wizard                 |`);
+  console.log(`|       Tarun Vangari  -- Team Panchayat                        |`);
+  console.log(`+==============================================================+${RESET}\n`);
 
   const req = resetRequirement();
 
@@ -129,7 +133,7 @@ async function wizard() {
 
   // Post to group chat
   postToChat('TARUN', 'Product Owner', 'requirement',
-    `📋 NEW REQUIREMENT POSTED — [${req.requirementId}] "${req.title}" | Sprint-${req.sprint} | Priority: ${req.priority.toUpperCase()}`,
+    `[REQ] NEW REQUIREMENT POSTED  -- [${req.requirementId}] "${req.title}" | Sprint-${req.sprint} | Priority: ${req.priority.toUpperCase()}`,
     ['requirement', `sprint-${req.sprint}`]);
 
   postToChat('TARUN', 'Product Owner', 'broadcast',
@@ -137,10 +141,10 @@ async function wizard() {
     ['requirement-detail']);
 
   postToChat('ARJUN', 'Orchestrator', 'broadcast',
-    `All agents — new requirement received: "${req.title}". Please read requirement.json and post your analysis to group-chat.json within your session. I will collect all inputs and generate the sprint plan.`,
+    `All agents  -- new requirement received: "${req.title}". Please read requirement.json and post your analysis to group-chat.json within your session. I will collect all inputs and generate the sprint plan.`,
     ['action-required', 'all-agents']);
 
-  console.log(`\n${GREEN}${BOLD}✅ Requirement posted successfully!${RESET}`);
+  console.log(`\n${GREEN}${BOLD}[OK] Requirement posted successfully!${RESET}`);
   console.log(`   ID: ${req.requirementId}`);
   console.log(`   Title: ${req.title}`);
   console.log(`   Sprint: ${req.sprint}\n`);
@@ -154,11 +158,11 @@ async function wizard() {
   console.log(`  6. Approve the plan:   node new-project.js --approve\n`);
 
   // Print ready-to-paste instruction for agents
-  console.log(`${CYAN}${BOLD}─── PASTE THIS TO ALL AGENT WINDOWS ────────────────────────────${RESET}`);
+  console.log(`${CYAN}${BOLD}--- PASTE THIS TO ALL AGENT WINDOWS ----------------------------${RESET}`);
   console.log(`New requirement posted by Tarun. Read requirement.json immediately.`);
   console.log(`Analyse it from your role's perspective and post your input to group-chat.json.`);
   console.log(`See your updated prompt for the exact format to follow.`);
-  console.log(`${CYAN}${BOLD}────────────────────────────────────────────────────────────────${RESET}\n`);
+  console.log(`${CYAN}${BOLD}----------------------------------------------------------------${RESET}\n`);
 }
 
 function showStatus() {
@@ -168,22 +172,22 @@ function showStatus() {
     return;
   }
 
-  console.log(`\n${BOLD}╔══════════════════════════════════════════════════════════════╗`);
-  console.log(`║  📋  Active Requirement                                      ║`);
-  console.log(`╚══════════════════════════════════════════════════════════════╝${RESET}`);
+  console.log(`\n${BOLD}+==============================================================+`);
+  console.log(`|  [REQ]  Active Requirement                                      |`);
+  console.log(`+==============================================================+${RESET}`);
   console.log(`\n  ${BOLD}ID:${RESET}       ${req.requirementId}`);
   console.log(`  ${BOLD}Title:${RESET}    ${req.title}`);
   console.log(`  ${BOLD}Sprint:${RESET}   ${req.sprint}`);
   console.log(`  ${BOLD}Type:${RESET}     ${req.type}`);
   console.log(`  ${BOLD}Priority:${RESET} ${req.priority.toUpperCase()}`);
   console.log(`  ${BOLD}Status:${RESET}   ${req.status}`);
-  console.log(`  ${BOLD}Approved:${RESET} ${req.approvedByTarun ? GREEN + '✅ Yes' : RED + '❌ Pending'}${RESET}`);
+  console.log(`  ${BOLD}Approved:${RESET} ${req.approvedByTarun ? GREEN + '[OK] Yes' : RED + '[NO] Pending'}${RESET}`);
 
   const received = AGENTS.filter(a => req.agentInputs?.[a]?.received).length;
   console.log(`\n  ${BOLD}Agent Inputs: ${received}/${AGENTS.length} received${RESET}`);
   AGENTS.forEach(a => {
     const inp = req.agentInputs?.[a];
-    const icon = inp?.received ? `${GREEN}✅${RESET}` : `${AMBER}⏳${RESET}`;
+    const icon = inp?.received ? `${GREEN}[OK]${RESET}` : `${AMBER}[..]${RESET}`;
     console.log(`    ${icon}  ${a.padEnd(10)} ${inp?.received ? DIM + (inp.summary || '').substring(0, 50) + RESET : DIM + 'Waiting...' + RESET}`);
   });
   console.log('');
@@ -201,15 +205,15 @@ function showInputs() {
     const inp = req.agentInputs?.[a];
     const role = AGENT_ROLES[a];
     if (!inp?.received) {
-      console.log(`  ${AMBER}⏳ ${a.toUpperCase().padEnd(10)}${RESET} ${DIM}(${role}) — not yet submitted${RESET}\n`);
+      console.log(`  ${AMBER}[..] ${a.toUpperCase().padEnd(10)}${RESET} ${DIM}(${role})  -- not yet submitted${RESET}\n`);
       return;
     }
-    console.log(`  ${GREEN}✅ ${a.toUpperCase()}${RESET} — ${role}`);
+    console.log(`  ${GREEN}[OK] ${a.toUpperCase()}${RESET}  -- ${role}`);
     console.log(`     Summary:  ${inp.summary}`);
     console.log(`     Estimate: ${inp.estimate}`);
     if (inp.questions?.length) {
       console.log(`     Questions:`);
-      inp.questions.forEach(q => console.log(`       ❓ ${q}`));
+      inp.questions.forEach(q => console.log(`       [?] ${q}`));
     }
     console.log('');
   });
@@ -230,7 +234,7 @@ function approve() {
   writeJSON(REQ_FILE, req);
 
   postToChat('TARUN', 'Product Owner', 'broadcast',
-    `✅ SPRINT PLAN APPROVED by Tarun. All agents — sprint is GO. Begin execution now. Arjun will assign tasks via the task list.`,
+    `[OK] SPRINT PLAN APPROVED by Tarun. All agents  -- sprint is GO. Begin execution now. Arjun will assign tasks via the task list.`,
     ['approved', `sprint-${req.sprint}`]);
 
   // Update agent statuses to wip
@@ -240,11 +244,11 @@ function approve() {
   });
   writeJSON(STATUS_FILE, status);
 
-  console.log(`\n${GREEN}${BOLD}✅ Sprint plan approved! Agents have been notified.${RESET}`);
+  console.log(`\n${GREEN}${BOLD}[OK] Sprint plan approved! Agents have been notified.${RESET}`);
   console.log(`   Check group chat: node group-chat-viewer.js --watch\n`);
 }
 
-// ── CLI ──────────────────────────────────────────────────────────────────
+// -- CLI ------------------------------------------------------------------
 const args = process.argv.slice(2);
 if      (args.includes('--status'))  showStatus();
 else if (args.includes('--inputs'))  showInputs();

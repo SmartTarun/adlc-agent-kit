@@ -2,19 +2,19 @@
  * connect-tools.js
  * Author: Tarun Vangari (tarun.vangari@gmail.com)
  * Role: DevOps & Cloud Architect
- * Project: ADLC-Agent-Kit — Team Panchayat
+ * Project: ADLC-Agent-Kit  --  Team Panchayat
  * Date: 2026-03-14
  *
  * Interactive wizard to configure tool connections and agent permissions.
  * Supports: GitHub (token or MCP), PostgreSQL (direct or MCP), Docker, AWS
  *
  * Usage:
- *   node connect-tools.js                  → full setup wizard
- *   node connect-tools.js --status         → show current connection status
- *   node connect-tools.js --test github    → test a specific connection
+ *   node connect-tools.js                  -> full setup wizard
+ *   node connect-tools.js --status         -> show current connection status
+ *   node connect-tools.js --test github    -> test a specific connection
  *   node connect-tools.js --test db
  *   node connect-tools.js --test docker
- *   node connect-tools.js --permissions    → view/edit agent permissions
+ *   node connect-tools.js --permissions    -> view/edit agent permissions
  *   node connect-tools.js --grant vikram github push
  *   node connect-tools.js --revoke keerthi aws
  */
@@ -60,19 +60,19 @@ function tryExec(cmd) {
   catch (e) { return { ok: false, out: e.message.split('\n')[0] }; }
 }
 
-// ── STATUS ────────────────────────────────────────────────────────────────
+// -- STATUS ----------------------------------------------------------------
 function showStatus() {
   const conn = readJSON(CONN_FILE) || {};
   const perm = readJSON(PERM_FILE) || {};
 
-  console.log(`\n${BOLD}${CYAN}╔══════════════════════════════════════════════════════════════╗`);
-  console.log(`║  🔌  Tool Connections & Permissions — Team Panchayat         ║`);
-  console.log(`╚══════════════════════════════════════════════════════════════╝${RESET}\n`);
+  console.log(`\n${BOLD}${CYAN}+==============================================================+`);
+  console.log(`|  [*]  Tool Connections & Permissions  --  Team Panchayat         |`);
+  console.log(`+==============================================================+${RESET}\n`);
 
   console.log(`${BOLD}  CONNECTIONS:${RESET}`);
   TOOLS.forEach(tool => {
     const c    = conn[tool] || {};
-    const icon = c.enabled ? `${GREEN}✅${RESET}` : `${RED}❌${RESET}`;
+    const icon = c.enabled ? `${GREEN}[OK]${RESET}` : `${RED}[NO]${RESET}`;
     const type = c.type || 'not configured';
     const detail = tool === 'github'   ? (c.username   ? `@${c.username}` : 'no user set') :
                    tool === 'database' ? (c.host        ? `${c.host}:${c.port}/${c.database}` : 'not set') :
@@ -84,7 +84,7 @@ function showStatus() {
     // Check MCP
     const mcp = conn.mcp?.[tool];
     if (mcp) {
-      const mcpIcon = mcp.enabled ? `${GREEN}✅ MCP${RESET}` : `${DIM}○  MCP${RESET}`;
+      const mcpIcon = mcp.enabled ? `${GREEN}[OK] MCP${RESET}` : `${DIM}[?]  MCP${RESET}`;
       console.log(`        ${mcpIcon}  ${mcp.enabled ? mcp.serverUrl || '(configured)' : 'not connected'}`);
     }
   });
@@ -100,7 +100,7 @@ function showStatus() {
   console.log('');
 }
 
-// ── TEST CONNECTIONS ──────────────────────────────────────────────────────
+// -- TEST CONNECTIONS ------------------------------------------------------
 function testConnection(tool) {
   const conn = readJSON(CONN_FILE) || {};
   console.log(`\n${BOLD}Testing: ${tool}${RESET}\n`);
@@ -108,63 +108,63 @@ function testConnection(tool) {
   if (tool === 'github') {
     // Test GitHub CLI
     const ghVer = tryExec('gh --version');
-    console.log(`  GitHub CLI: ${ghVer.ok ? GREEN + '✅ ' + ghVer.out.split('\n')[0] : RED + '❌ Not installed — run: winget install GitHub.cli'}${RESET}`);
+    console.log(`  GitHub CLI: ${ghVer.ok ? GREEN + '[OK] ' + ghVer.out.split('\n')[0] : RED + '[NO] Not installed  --  run: winget install GitHub.cli'}${RESET}`);
 
     if (ghVer.ok) {
       const authStatus = tryExec('gh auth status');
-      console.log(`  Auth:       ${authStatus.ok ? GREEN + '✅ Authenticated' : RED + '❌ Not authenticated — run: gh auth login'}${RESET}`);
+      console.log(`  Auth:       ${authStatus.ok ? GREEN + '[OK] Authenticated' : RED + '[NO] Not authenticated  --  run: gh auth login'}${RESET}`);
 
       if (authStatus.ok && conn.github?.defaultRepo) {
         const repo = tryExec(`gh repo view ${conn.github.username || ''}/${conn.github.defaultRepo} --json name`);
-        console.log(`  Repo:       ${repo.ok ? GREEN + '✅ Accessible' : AMBER + '⚠️  Cannot access repo — check permissions'}${RESET}`);
+        console.log(`  Repo:       ${repo.ok ? GREEN + '[OK] Accessible' : AMBER + '[!][?]  Cannot access repo  --  check permissions'}${RESET}`);
       }
     }
   }
 
   if (tool === 'db' || tool === 'database') {
     const psql = tryExec('psql --version');
-    console.log(`  psql CLI:   ${psql.ok ? GREEN + '✅ ' + psql.out : AMBER + '⚠️  psql not found — install PostgreSQL client'}${RESET}`);
+    console.log(`  psql CLI:   ${psql.ok ? GREEN + '[OK] ' + psql.out : AMBER + '[!][?]  psql not found  --  install PostgreSQL client'}${RESET}`);
 
     const c = conn.database;
     if (c?.host && c?.database && c?.username && c?.password) {
       const connStr = `postgresql://${c.username}:${c.password}@${c.host}:${c.port}/${c.database}`;
       const test = tryExec(`psql "${connStr}" -c "SELECT version();" -t 2>&1`);
-      console.log(`  Connection: ${test.ok ? GREEN + '✅ Connected to ' + c.host : RED + '❌ Failed — ' + test.out.substring(0, 60)}${RESET}`);
+      console.log(`  Connection: ${test.ok ? GREEN + '[OK] Connected to ' + c.host : RED + '[NO] Failed  --  ' + test.out.substring(0, 60)}${RESET}`);
     } else {
-      console.log(`  ${AMBER}⚠️  No DB credentials configured. Run: node connect-tools.js${RESET}`);
+      console.log(`  ${AMBER}[!][?]  No DB credentials configured. Run: node connect-tools.js${RESET}`);
     }
   }
 
   if (tool === 'docker') {
     const docker = tryExec('docker --version');
-    console.log(`  Docker CLI: ${docker.ok ? GREEN + '✅ ' + docker.out : RED + '❌ Not installed — install Docker Desktop'}${RESET}`);
+    console.log(`  Docker CLI: ${docker.ok ? GREEN + '[OK] ' + docker.out : RED + '[NO] Not installed  --  install Docker Desktop'}${RESET}`);
 
     if (docker.ok) {
       const daemon = tryExec('docker info --format "Server Version: {{.ServerVersion}}"');
-      console.log(`  Daemon:     ${daemon.ok ? GREEN + '✅ ' + daemon.out : RED + '❌ Not running — start Docker Desktop'}${RESET}`);
+      console.log(`  Daemon:     ${daemon.ok ? GREEN + '[OK] ' + daemon.out : RED + '[NO] Not running  --  start Docker Desktop'}${RESET}`);
     }
   }
 
   if (tool === 'aws') {
     const aws = tryExec('aws --version');
-    console.log(`  AWS CLI:    ${aws.ok ? GREEN + '✅ ' + aws.out : RED + '❌ Not installed — run: winget install Amazon.AWSCLI'}${RESET}`);
+    console.log(`  AWS CLI:    ${aws.ok ? GREEN + '[OK] ' + aws.out : RED + '[NO] Not installed  --  run: winget install Amazon.AWSCLI'}${RESET}`);
 
     if (aws.ok) {
       const ident = tryExec('aws sts get-caller-identity --output json');
       if (ident.ok) {
         try {
           const id = JSON.parse(ident.out);
-          console.log(`  Identity:   ${GREEN}✅ ${id.Arn}${RESET}`);
-        } catch { console.log(`  Identity:   ${GREEN}✅ Authenticated${RESET}`); }
+          console.log(`  Identity:   ${GREEN}[OK] ${id.Arn}${RESET}`);
+        } catch { console.log(`  Identity:   ${GREEN}[OK] Authenticated${RESET}`); }
       } else {
-        console.log(`  Identity:   ${RED}❌ Not authenticated — run: aws configure${RESET}`);
+        console.log(`  Identity:   ${RED}[NO] Not authenticated  --  run: aws configure${RESET}`);
       }
     }
   }
   console.log('');
 }
 
-// ── GRANT/REVOKE PERMISSIONS ──────────────────────────────────────────────
+// -- GRANT/REVOKE PERMISSIONS ----------------------------------------------
 function grantPermission(agent, tool, permission) {
   const perm = readJSON(PERM_FILE);
   if (!perm?.agents?.[agent]) { console.log(`${RED}Unknown agent: ${agent}${RESET}`); return; }
@@ -175,7 +175,7 @@ function grantPermission(agent, tool, permission) {
   }
   perm.global.lastUpdated = new Date().toISOString();
   writeJSON(PERM_FILE, perm);
-  console.log(`${GREEN}✅ Granted ${agent} → ${tool}${permission ? ' → ' + permission : ''}${RESET}`);
+  console.log(`${GREEN}[OK] Granted ${agent} -> ${tool}${permission ? ' -> ' + permission : ''}${RESET}`);
 }
 
 function revokePermission(agent, tool) {
@@ -187,23 +187,23 @@ function revokePermission(agent, tool) {
   }
   perm.global.lastUpdated = new Date().toISOString();
   writeJSON(PERM_FILE, perm);
-  console.log(`${AMBER}⚠️  Revoked ${agent} → ${tool} access${RESET}`);
+  console.log(`${AMBER}[!][?]  Revoked ${agent} -> ${tool} access${RESET}`);
 }
 
-// ── SETUP WIZARD ──────────────────────────────────────────────────────────
+// -- SETUP WIZARD ----------------------------------------------------------
 async function wizard() {
   const rl   = readline.createInterface({ input: process.stdin, output: process.stdout });
   const conn = readJSON(CONN_FILE) || {};
 
-  console.log(`\n${BOLD}${CYAN}╔══════════════════════════════════════════════════════════════╗`);
-  console.log(`║  🔌  ADLC Tool Connection Setup Wizard                       ║`);
-  console.log(`║  Tarun Vangari — Team Panchayat                               ║`);
-  console.log(`╚══════════════════════════════════════════════════════════════╝${RESET}\n`);
+  console.log(`\n${BOLD}${CYAN}+==============================================================+`);
+  console.log(`|  [*]  ADLC Tool Connection Setup Wizard                       |`);
+  console.log(`|  Tarun Vangari  --  Team Panchayat                               |`);
+  console.log(`+==============================================================+${RESET}\n`);
 
   console.log(`${DIM}Configure connections for GitHub, PostgreSQL, Docker, and AWS.`);
   console.log(`Credentials are saved to connections.json (excluded from Git).${RESET}\n`);
 
-  // ── GitHub ──────────────────────────────────────────────────────
+  // -- GitHub ------------------------------------------------------
   const doGH = await askYN(rl, `${BOLD}[1/4] Configure GitHub?${RESET}`);
   if (doGH) {
     console.log(`\n  ${DIM}Get a token at: https://github.com/settings/tokens${RESET}`);
@@ -231,11 +231,11 @@ async function wizard() {
       conn.github.type    = 'gh-cli';
       conn.github.enabled = true;
       const test = tryExec('gh auth status');
-      if (!test.ok) console.log(`\n  ${AMBER}⚠️  Run 'gh auth login' to authenticate.${RESET}`);
+      if (!test.ok) console.log(`\n  ${AMBER}[!][?]  Run 'gh auth login' to authenticate.${RESET}`);
     }
   }
 
-  // ── PostgreSQL ──────────────────────────────────────────────────
+  // -- PostgreSQL --------------------------------------------------
   const doDB = await askYN(rl, `\n${BOLD}[2/4] Configure PostgreSQL database?${RESET}`);
   if (doDB) {
     const method = await ask(rl, `  Connection method [direct / mcp]:`, 'direct');
@@ -258,7 +258,7 @@ async function wizard() {
     }
   }
 
-  // ── Docker ──────────────────────────────────────────────────────
+  // -- Docker ------------------------------------------------------
   const doDocker = await askYN(rl, `\n${BOLD}[3/4] Configure Docker?${RESET}`);
   if (doDocker) {
     conn.docker.registryUrl      = await ask(rl, `  Registry URL (e.g. ghcr.io/username or Docker Hub):`, conn.docker.registryUrl || '');
@@ -267,10 +267,10 @@ async function wizard() {
     conn.docker.type             = 'local';
     conn.docker.enabled          = true;
     const test = tryExec('docker info');
-    if (!test.ok) console.log(`  ${AMBER}⚠️  Docker daemon not running — start Docker Desktop.${RESET}`);
+    if (!test.ok) console.log(`  ${AMBER}[!][?]  Docker daemon not running  --  start Docker Desktop.${RESET}`);
   }
 
-  // ── AWS ──────────────────────────────────────────────────────────
+  // -- AWS ----------------------------------------------------------
   const doAWS = await askYN(rl, `\n${BOLD}[4/4] Configure AWS?${RESET}`);
   if (doAWS) {
     const method = await ask(rl, `  Auth method [profile / keys]:`, 'profile');
@@ -282,7 +282,7 @@ async function wizard() {
       conn.aws.accessKeyId     = await ask(rl, `  Access Key ID:`, '');
       conn.aws.secretAccessKey = await ask(rl, `  Secret Access Key:`, '');
       conn.aws.type = 'keys';
-      console.log(`\n  ${RED}⚠️  Avoid storing keys here — prefer AWS profiles${RESET}`);
+      console.log(`\n  ${RED}[!][?]  Avoid storing keys here  --  prefer AWS profiles${RESET}`);
     }
     conn.aws.enabled = true;
   }
@@ -291,7 +291,7 @@ async function wizard() {
 
   // Save
   writeJSON(CONN_FILE, conn);
-  console.log(`\n${GREEN}${BOLD}✅ Connections saved to connections.json${RESET}`);
+  console.log(`\n${GREEN}${BOLD}[OK] Connections saved to connections.json${RESET}`);
   console.log(`${DIM}(This file is in .gitignore and will NOT be pushed to GitHub)${RESET}\n`);
 
   // Run status
@@ -314,7 +314,7 @@ function showPermissions() {
     console.log(`  ${BOLD}${agent.toUpperCase()}${RESET}  ${DIM}${a.notes || ''}${RESET}`);
     TOOLS.forEach(tool => {
       const t    = a[tool] || {};
-      const icon = t.enabled ? `${GREEN}✅${RESET}` : `${DIM}○ ${RESET}`;
+      const icon = t.enabled ? `${GREEN}[OK]${RESET}` : `${DIM}[?] ${RESET}`;
       const perms = t.permissions?.length ? `[${t.permissions.join(', ')}]` : '';
       console.log(`    ${icon} ${tool.padEnd(12)} ${DIM}${perms}${RESET}`);
     });
@@ -322,7 +322,7 @@ function showPermissions() {
   });
 }
 
-// ── CLI ──────────────────────────────────────────────────────────────────
+// -- CLI ------------------------------------------------------------------
 const args = process.argv.slice(2);
 
 if (args.includes('--status'))      showStatus();

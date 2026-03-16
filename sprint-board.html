@@ -1,0 +1,1470 @@
+<!DOCTYPE html>
+<!-- Agent: Arjun | Sprint: 01 | Date: 2026-03-14 -->
+<!-- Team Panchayat — Docker Sprint Board (Kanban + Live Logs) -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Team Panchayat — Sprint Cluster</title>
+<style>
+/* ── Reset & Base ──────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:         #0d1117;
+  --surface:    #161b22;
+  --surface2:   #21262d;
+  --surface3:   #30363d;
+  --border:     #30363d;
+  --text:       #c9d1d9;
+  --text-dim:   #8b949e;
+  --text-bright:#f0f6fc;
+  --green:      #3fb950;
+  --green-dim:  #1f6b2a;
+  --yellow:     #d29922;
+  --yellow-dim: #6b4c00;
+  --blue:       #388bfd;
+  --blue-dim:   #0d419d;
+  --red:        #f85149;
+  --red-dim:    #6b1414;
+  --purple:     #bc8cff;
+  --cyan:       #39c5cf;
+  --orange:     #db6d28;
+  --font:       'Segoe UI', system-ui, -apple-system, sans-serif;
+  --mono:       'Cascadia Code', 'Consolas', monospace;
+}
+html, body { height: 100%; overflow: hidden; }
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Top Bar ─────────────────────────────────────────────────────────── */
+#topbar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 16px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+  z-index: 10;
+}
+#topbar .logo {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-bright);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+#topbar .logo span.whale { font-size: 20px; }
+.divider { width: 1px; height: 24px; background: var(--border); }
+.cluster-badge {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 2px 10px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+.cluster-badge b { color: var(--text-bright); }
+#container-count {
+  background: var(--green-dim);
+  border: 1px solid var(--green);
+  border-radius: 20px;
+  padding: 2px 10px;
+  font-size: 12px;
+  color: var(--green);
+}
+.spacer { flex: 1; }
+#sse-status {
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+}
+#sse-status.connected    { color: var(--green); border-color: var(--green); background: var(--green-dim); }
+#sse-status.disconnected { color: var(--red); border-color: var(--red); background: var(--red-dim); }
+#sse-status { color: var(--text-dim); }
+
+.topbtn {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 5px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: var(--font);
+  transition: all .15s;
+}
+.topbtn:hover { background: var(--surface3); color: var(--text-bright); }
+.topbtn.danger { border-color: var(--red); color: var(--red); }
+.topbtn.danger:hover { background: var(--red-dim); }
+.topbtn.primary { border-color: var(--blue); color: var(--blue); }
+.topbtn.primary:hover { background: var(--blue-dim); }
+.topbtn.success { border-color: var(--green); color: var(--green); }
+.topbtn.success:hover { background: var(--green-dim); }
+#uptime { font-family: var(--mono); font-size: 12px; color: var(--text-dim); }
+
+/* ── Main Layout ─────────────────────────────────────────────────────── */
+#main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+#board-area {
+  flex: 1;
+  display: flex;
+  gap: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* ── Kanban Board ────────────────────────────────────────────────────── */
+#kanban {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  padding: 12px;
+  min-height: 0;
+  overflow-y: auto;
+  min-width: 0;
+}
+.kanban-col {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.kanban-col-header {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.kanban-col-header .col-title {
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-dim);
+}
+.kanban-col-header .col-count {
+  background: var(--surface3);
+  border-radius: 20px;
+  padding: 1px 8px;
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-left: auto;
+}
+.kanban-col-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.col-queue    .kanban-col-header { border-top: 3px solid var(--blue); }
+.col-wip      .kanban-col-header { border-top: 3px solid var(--yellow); }
+.col-done     .kanban-col-header { border-top: 3px solid var(--green); }
+
+/* ── Agent Card ──────────────────────────────────────────────────────── */
+.agent-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  cursor: default;
+  transition: border-color .15s, transform .1s;
+  position: relative;
+}
+.agent-card:hover { border-color: var(--surface3); transform: translateY(-1px); }
+.agent-card.status-blocked  { border-left: 3px solid var(--red); }
+.agent-card.status-done     { border-left: 3px solid var(--green); opacity: .85; }
+.agent-card.status-starting { border-left: 3px solid var(--blue); }
+.agent-card.status-wip      { border-left: 3px solid var(--yellow); }
+.agent-card.status-queue    { border-left: 3px solid var(--surface3); }
+.agent-card.status-standby  { border-left: 3px solid var(--purple); opacity: .7; }
+.agent-card.unhealthy       { border-top: 2px solid var(--red); }
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.status-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.dot-running  { background: var(--green); box-shadow: 0 0 6px var(--green); animation: pulse 2s infinite; }
+.dot-wip      { background: var(--yellow); box-shadow: 0 0 6px var(--yellow); animation: pulse 2s infinite; }
+.dot-queue    { background: var(--blue); }
+.dot-done     { background: var(--green); }
+.dot-blocked  { background: var(--red); box-shadow: 0 0 6px var(--red); }
+.dot-standby  { background: var(--purple); }
+.dot-starting { background: var(--blue); animation: pulse .8s infinite; }
+.dot-exited   { background: var(--surface3); }
+.dot-unknown  { background: var(--text-dim); }
+
+@keyframes pulse {
+  0%,100% { opacity: 1; }
+  50%      { opacity: .4; }
+}
+
+.card-name {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-bright);
+  text-transform: capitalize;
+}
+.card-cpu {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.card-cpu.hot { color: var(--orange); }
+.card-role {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+}
+.card-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 6px 0;
+}
+.card-task {
+  font-size: 12px;
+  color: var(--text);
+  line-height: 1.4;
+  margin-bottom: 8px;
+  min-height: 30px;
+  word-break: break-word;
+}
+.card-task.blocked {
+  color: var(--red);
+  font-weight: 500;
+}
+.progress-bar {
+  height: 4px;
+  background: var(--surface3);
+  border-radius: 2px;
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width .5s ease;
+}
+.progress-fill.running { background: var(--yellow); }
+.progress-fill.done    { background: var(--green); }
+.progress-fill.blocked { background: var(--red); }
+.progress-fill.queue   { background: var(--blue); width: 0 !important; }
+
+.card-footer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.card-stat {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-dim);
+}
+.card-health {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 10px;
+}
+.health-healthy   { background: var(--green-dim); color: var(--green); }
+.health-unhealthy { background: var(--red-dim); color: var(--red); }
+.health-starting  { background: var(--blue-dim); color: var(--blue); }
+.health-unknown   { background: var(--surface3); color: var(--text-dim); }
+
+.card-actions {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+}
+.card-btn {
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  padding: 2px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  font-family: var(--font);
+  transition: all .1s;
+}
+.card-btn:hover { background: var(--surface); color: var(--text-bright); border-color: var(--text-dim); }
+.card-btn.logs-btn:hover { border-color: var(--cyan); color: var(--cyan); }
+.card-btn.scale-btn:hover { border-color: var(--purple); color: var(--purple); }
+.card-btn.restart-btn:hover { border-color: var(--orange); color: var(--orange); }
+
+/* ── Log Panel (slide-in from right) ────────────────────────────────── */
+#log-panel {
+  width: 0;
+  min-width: 0;
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: width .25s ease, min-width .25s ease;
+  flex-shrink: 0;
+}
+#log-panel.open {
+  width: 420px;
+  min-width: 420px;
+}
+#log-panel-header {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+#log-panel-title {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-bright);
+  flex: 1;
+  font-family: var(--mono);
+}
+#log-panel-close {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 16px;
+  padding: 0 4px;
+  line-height: 1;
+}
+#log-panel-close:hover { color: var(--text-bright); }
+#log-controls {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+#log-search {
+  flex: 1;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: var(--mono);
+  outline: none;
+}
+#log-search:focus { border-color: var(--blue); }
+#log-wrap-btn {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  padding: 3px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  font-family: var(--font);
+}
+#log-wrap-btn.active { border-color: var(--blue); color: var(--blue); }
+#log-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 10px;
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text);
+  white-space: pre;
+  background: #0d1117;
+}
+#log-content.wrap { white-space: pre-wrap; word-break: break-all; }
+#log-content .log-line { display: block; }
+#log-content .log-error  { color: var(--red); }
+#log-content .log-warn   { color: var(--yellow); }
+#log-content .log-info   { color: var(--cyan); }
+#log-content .log-done   { color: var(--green); }
+#log-tail-btn {
+  padding: 6px 10px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-dim);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+#log-tail-btn:hover { color: var(--blue); }
+
+/* ── Chat Panel ──────────────────────────────────────────────────────── */
+#chat-panel {
+  height: 180px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+#chat-header {
+  padding: 6px 14px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+#chat-header span { font-weight: 600; font-size: 12px; color: var(--text-bright); }
+#chat-header small { color: var(--text-dim); font-size: 11px; }
+#chat-toggle { margin-left: auto; cursor: pointer; font-size: 11px; color: var(--text-dim); }
+#chat-toggle:hover { color: var(--text-bright); }
+#chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.chat-msg {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  font-size: 12px;
+  padding: 1px 0;
+}
+.chat-sender {
+  font-weight: 600;
+  flex-shrink: 0;
+  font-size: 11px;
+}
+.sender-tarun   { color: #f0f6fc; }
+.sender-arjun   { color: #bc8cff; }
+.sender-vikram  { color: #f85149; }
+.sender-rasool  { color: #d29922; }
+.sender-kavya   { color: #ff7be5; }
+.sender-kiran   { color: #39c5cf; }
+.sender-rohan   { color: #388bfd; }
+.sender-keerthi { color: #3fb950; }
+.chat-text { color: var(--text); flex: 1; word-break: break-word; }
+.chat-time { color: var(--text-dim); font-size: 10px; flex-shrink: 0; font-family: var(--mono); }
+.chat-type-blocker  .chat-text { color: var(--red); }
+.chat-type-done     .chat-text { color: var(--green); }
+.chat-type-handoff  .chat-text { color: var(--cyan); }
+.chat-type-plan     .chat-text { color: var(--purple); }
+.chat-type-broadcast .chat-sender::before { content: '📢 '; }
+
+#chat-input-row {
+  padding: 6px 10px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+#chat-input {
+  flex: 1;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text-bright);
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-family: var(--font);
+  outline: none;
+}
+#chat-input:focus { border-color: var(--blue); }
+#chat-send {
+  background: var(--blue-dim);
+  border: 1px solid var(--blue);
+  color: var(--blue);
+  padding: 5px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: var(--font);
+}
+#chat-send:hover { background: var(--blue); color: #fff; }
+
+/* ── Scale Modal ─────────────────────────────────────────────────────── */
+#scale-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.7);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+}
+#scale-modal.open { display: flex; }
+#scale-modal-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+  min-width: 320px;
+  max-width: 400px;
+}
+#scale-modal-box h3 { color: var(--text-bright); margin-bottom: 12px; }
+#scale-modal-box label { font-size: 12px; color: var(--text-dim); display: block; margin-bottom: 4px; }
+#scale-replicas {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text-bright);
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 14px;
+  text-align: center;
+  font-family: var(--mono);
+  outline: none;
+  margin-bottom: 12px;
+}
+#scale-replicas:focus { border-color: var(--purple); }
+.modal-btns { display: flex; gap: 8px; justify-content: flex-end; }
+.modal-btns button {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 6px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: var(--font);
+}
+.modal-btns .confirm { border-color: var(--purple); color: var(--purple); }
+.modal-btns .confirm:hover { background: #3b1f6b; }
+.modal-btns .cancel:hover  { background: var(--surface3); }
+
+/* ── Empty column placeholder ────────────────────────────────────────── */
+.col-empty {
+  text-align: center;
+  padding: 24px 12px;
+  color: var(--text-dim);
+  font-size: 12px;
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+}
+
+/* ── Scrollbar ────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+
+/* ── Tooltip ─────────────────────────────────────────────────────────── */
+[title] { cursor: help; }
+
+/* ── PM Discovery Panel ────────────────────────────────────────────────── */
+#discovery-panel {
+  display: none;
+  background: #0d1f38;
+  border-bottom: 2px solid var(--blue);
+  padding: 12px 18px;
+  flex-shrink: 0;
+  z-index: 5;
+}
+#discovery-panel.visible { display: block; }
+#disc-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+#disc-badge {
+  background: var(--blue); color: #fff;
+  font-size: 10px; font-weight: 700;
+  padding: 2px 8px; border-radius: 10px; text-transform: uppercase;
+}
+#disc-round-label { font-size: 12px; color: var(--blue); font-weight: 600; }
+#disc-status { font-size: 11px; color: var(--text-dim); margin-left: auto; }
+#disc-question-box {
+  background: var(--surface2); border: 1px solid var(--blue-dim);
+  border-radius: 6px; padding: 10px 14px;
+  font-size: 12px; color: var(--text); line-height: 1.6;
+  white-space: pre-wrap; word-break: break-word;
+  max-height: 160px; overflow-y: auto;
+  margin-bottom: 10px; font-family: var(--mono);
+}
+#disc-answer-row { display: flex; gap: 8px; align-items: flex-end; }
+#disc-answer {
+  flex: 1; background: var(--surface2); border: 1px solid var(--blue);
+  color: var(--text); padding: 7px 10px; border-radius: 6px;
+  font-size: 12px; font-family: var(--font); outline: none;
+  resize: vertical; min-height: 48px; max-height: 120px;
+}
+#disc-answer:focus { border-color: var(--blue); box-shadow: 0 0 0 2px rgba(56,139,253,0.15); }
+#disc-send-btn {
+  background: var(--blue); border: none; color: #fff;
+  padding: 7px 18px; border-radius: 6px; cursor: pointer;
+  font-size: 12px; font-family: var(--font); font-weight: 600;
+  align-self: flex-end;
+}
+#disc-send-btn:hover { background: #1f6feb; }
+#disc-hint { font-size: 10px; color: var(--text-dim); margin-top: 6px; }
+
+/* ── Requirement Banner ────────────────────────────────────────────────── */
+#req-banner {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 6px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  flex-shrink: 0;
+  min-height: 34px;
+}
+#req-banner.has-req { border-bottom-color: var(--blue-dim); }
+#req-id    { font-family: var(--mono); font-size: 11px; color: var(--text-dim); }
+#req-title { font-weight: 600; color: var(--text-bright); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#req-title.empty { color: var(--text-dim); font-style: italic; font-weight: normal; }
+#req-status-pill {
+  font-size: 10px; padding: 1px 8px; border-radius: 10px;
+  background: var(--surface3); color: var(--text-dim);
+}
+#req-status-pill.in_sprint    { background: var(--blue-dim); color: var(--blue); }
+#req-status-pill.pending_analysis { background: var(--yellow-dim); color: var(--yellow); }
+#req-status-pill.done         { background: var(--green-dim); color: var(--green); }
+#req-inputs-count { font-size: 11px; color: var(--text-dim); }
+#req-approve-btn {
+  background: var(--surface2); border: 1px solid var(--green);
+  color: var(--green); padding: 3px 10px; border-radius: 5px;
+  cursor: pointer; font-size: 11px; font-family: var(--font);
+  display: none;
+}
+#req-approve-btn:hover { background: var(--green-dim); }
+#req-approve-btn.show { display: inline-block; }
+#req-priority {
+  font-size: 10px; padding: 1px 7px; border-radius: 10px;
+  border: 1px solid var(--border); color: var(--text-dim);
+}
+#req-priority.critical { border-color: var(--red);    color: var(--red);    }
+#req-priority.high     { border-color: var(--orange);  color: var(--orange); }
+#req-priority.medium   { border-color: var(--yellow);  color: var(--yellow); }
+#req-priority.low      { border-color: var(--blue);    color: var(--blue);   }
+
+/* ── Requirement Wizard Modal ─────────────────────────────────────────── */
+#req-wizard {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.7); z-index: 200;
+  align-items: center; justify-content: center;
+}
+#req-wizard.open { display: flex; }
+#wiz-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  width: 560px; max-width: 96vw;
+  max-height: 90vh; overflow-y: auto;
+  padding: 0;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+}
+#wiz-header {
+  padding: 18px 22px 14px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 10px;
+}
+#wiz-header h2 { font-size: 15px; color: var(--text-bright); flex: 1; }
+#wiz-header small { color: var(--text-dim); font-size: 11px; }
+#wiz-close {
+  background: none; border: none; color: var(--text-dim);
+  cursor: pointer; font-size: 18px; line-height: 1; padding: 0 4px;
+}
+#wiz-close:hover { color: var(--text-bright); }
+#wiz-body { padding: 18px 22px; display: flex; flex-direction: column; gap: 14px; }
+.wiz-row { display: flex; gap: 12px; }
+.wiz-field { display: flex; flex-direction: column; gap: 5px; flex: 1; }
+.wiz-field label { font-size: 11px; color: var(--text-dim); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+.wiz-field input,
+.wiz-field select,
+.wiz-field textarea {
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text); padding: 7px 10px; border-radius: 6px;
+  font-size: 12px; font-family: var(--font); outline: none;
+}
+.wiz-field input:focus,
+.wiz-field select:focus,
+.wiz-field textarea:focus { border-color: var(--blue); }
+.wiz-field textarea { resize: vertical; min-height: 64px; line-height: 1.5; }
+.wiz-field select option { background: var(--surface2); }
+#wiz-footer {
+  padding: 14px 22px 18px;
+  border-top: 1px solid var(--border);
+  display: flex; gap: 8px; justify-content: flex-end; align-items: center;
+}
+#wiz-footer small { flex: 1; color: var(--text-dim); font-size: 11px; }
+.wiz-btn {
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text); padding: 6px 18px; border-radius: 6px;
+  cursor: pointer; font-size: 12px; font-family: var(--font);
+}
+.wiz-btn.cancel:hover { background: var(--surface3); }
+.wiz-btn.post { border-color: var(--blue); color: var(--blue); }
+.wiz-btn.post:hover { background: var(--blue-dim); }
+#wiz-msg { font-size: 11px; color: var(--green); margin-top: 2px; display: none; }
+
+/* ── Chat sender colours ──────────────────────────────────────────────── */
+.sender-tarun   { color: #f0f6fc; }
+.sender-arjun   { color: #bc8cff; }
+.sender-vikram  { color: #f85149; }
+.sender-rasool  { color: #d29922; }
+.sender-kavya   { color: #ff7be5; }
+.sender-kiran   { color: #39c5cf; }
+.sender-rohan   { color: #388bfd; }
+.sender-keerthi { color: #3fb950; }
+.sender-system  { color: #8b949e; }
+.chat-msg.chat-type-question { background: rgba(56,139,253,0.07); border-radius: 4px; }
+.chat-msg.chat-type-blocker  .chat-text { color: var(--red);    }
+.chat-msg.chat-type-done     .chat-text { color: var(--green);  }
+.chat-msg.chat-type-handoff  .chat-text { color: var(--cyan);   }
+.chat-msg.chat-type-plan     .chat-text { color: var(--purple); }
+.chat-msg.chat-type-requirement .chat-sender::before { content: 'REQ '; font-size: 9px; }
+.chat-msg.chat-type-broadcast   .chat-sender::before { content: 'ALL '; font-size: 9px; opacity:.6; }
+.chat-msg.chat-type-question    .chat-sender::before { content: '? '; }
+</style>
+</head>
+<body>
+
+<!-- ── Top Bar ──────────────────────────────────────────────────────────── -->
+<div id="topbar">
+  <div class="logo">
+    <span class="whale">🐳</span>
+    <span>Team Panchayat</span>
+  </div>
+  <div class="divider"></div>
+  <div class="cluster-badge">Sprint <b id="sprint-id">01</b></div>
+  <div id="container-count">0 containers</div>
+  <div class="divider"></div>
+  <div id="uptime">⏱ 00:00:00</div>
+  <div class="spacer"></div>
+  <div id="sse-status">● Connecting...</div>
+  <button class="topbtn primary" onclick="openReqWizard()">+ New Requirement</button>
+  <button class="topbtn success" onclick="activateKeerthi()">🟢 Activate QA</button>
+  <button class="topbtn danger"  onclick="stopAll()">⏹ Stop All</button>
+</div>
+
+<!-- ── PM Discovery Panel (shown when Arjun is in discovery mode) ──────── -->
+<div id="discovery-panel">
+  <div id="disc-header">
+    <span id="disc-badge">Arjun is asking</span>
+    <span id="disc-round-label">Discovery Round 1 of 3</span>
+    <span id="disc-status">Waiting for your answers...</span>
+  </div>
+  <div id="disc-question-box">Loading questions from Arjun...</div>
+  <div id="disc-answer-row">
+    <textarea id="disc-answer" placeholder="Type your answers here (number each answer: 1. ... 2. ... etc.) then press Send..."></textarea>
+    <button id="disc-send-btn" onclick="sendDiscoveryAnswer()">Send to Arjun</button>
+  </div>
+  <div id="disc-hint">
+    Tip: Number each answer (1. answer ... 2. answer ...). Arjun saves your answers and
+    moves to the next round automatically. All answers are stored in requirement.json.
+  </div>
+</div>
+
+<!-- ── Requirement Status Banner ───────────────────────────────────────── -->
+<div id="req-banner">
+  <span id="req-id" style="display:none"></span>
+  <span id="req-title" class="empty">No active requirement -- click "+ New Requirement" to post one</span>
+  <span id="req-priority" style="display:none"></span>
+  <span id="req-status-pill" style="display:none"></span>
+  <span id="req-inputs-count" style="display:none"></span>
+  <button id="req-approve-btn" onclick="approveSprint()" title="Approve sprint plan and start execution">
+    Approve Sprint Plan
+  </button>
+</div>
+
+<!-- ── Main ─────────────────────────────────────────────────────────────── -->
+<div id="main">
+  <div id="board-area">
+
+    <!-- ── Kanban Board ─────────────────────────────────────────────────── -->
+    <div id="kanban">
+
+      <!-- Queue -->
+      <div class="kanban-col col-queue">
+        <div class="kanban-col-header">
+          <span style="color:var(--blue)">●</span>
+          <span class="col-title">Queue</span>
+          <span class="col-count" id="count-queue">0</span>
+        </div>
+        <div class="kanban-col-body" id="col-queue-body">
+          <div class="col-empty">No agents queued</div>
+        </div>
+      </div>
+
+      <!-- In Progress -->
+      <div class="kanban-col col-wip">
+        <div class="kanban-col-header">
+          <span style="color:var(--yellow)">●</span>
+          <span class="col-title">In Progress</span>
+          <span class="col-count" id="count-wip">0</span>
+        </div>
+        <div class="kanban-col-body" id="col-wip-body">
+          <div class="col-empty">No active agents</div>
+        </div>
+      </div>
+
+      <!-- Done -->
+      <div class="kanban-col col-done">
+        <div class="kanban-col-header">
+          <span style="color:var(--green)">●</span>
+          <span class="col-title">Done</span>
+          <span class="col-count" id="count-done">0</span>
+        </div>
+        <div class="kanban-col-body" id="col-done-body">
+          <div class="col-empty">No completed agents</div>
+        </div>
+      </div>
+
+    </div><!-- /#kanban -->
+
+    <!-- ── Log Panel ────────────────────────────────────────────────────── -->
+    <div id="log-panel">
+      <div id="log-panel-header">
+        <span id="log-panel-title">agent.log</span>
+        <div id="log-live-badge" style="font-size:10px;padding:1px 6px;border-radius:10px;background:var(--green-dim);color:var(--green)">● Live</div>
+        <button id="log-panel-close" onclick="closeLogPanel()" title="Close">✕</button>
+      </div>
+      <div id="log-controls">
+        <input id="log-search" placeholder="Filter logs..." oninput="filterLogs()">
+        <button id="log-wrap-btn" onclick="toggleWrap()">Wrap</button>
+      </div>
+      <div id="log-content"></div>
+      <div id="log-tail-btn" onclick="scrollToBottom()" title="Scroll to bottom">▼ Tail</div>
+    </div>
+
+  </div><!-- /#board-area -->
+
+  <!-- ── Chat Panel ───────────────────────────────────────────────────── -->
+  <div id="chat-panel">
+    <div id="chat-header">
+      <span>💬 Group Chat</span>
+      <small id="chat-msg-count">0 messages</small>
+      <span id="chat-toggle" onclick="toggleChat()" title="Toggle chat">▼</span>
+    </div>
+    <div id="chat-messages"></div>
+    <div id="chat-input-row">
+      <input id="chat-input" placeholder="Post a message to the team..." onkeydown="chatKey(event)">
+      <button id="chat-send" onclick="sendChat()">Send</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Scale Modal ───────────────────────────────────────────────────────── -->
+<div id="scale-modal">
+  <div id="scale-modal-box">
+    <h3>⚡ Scale Agent</h3>
+    <p style="color:var(--text-dim);font-size:12px;margin-bottom:12px" id="scale-desc">
+      Spin up additional containers for this agent to work in parallel.
+    </p>
+    <label for="scale-replicas">Number of replicas</label>
+    <input type="number" id="scale-replicas" value="2" min="1" max="5">
+    <div class="modal-btns">
+      <button class="cancel" onclick="closeScaleModal()">Cancel</button>
+      <button class="confirm" onclick="doScale()">Scale ⚡</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Requirement Wizard Modal ──────────────────────────────────────────── -->
+<div id="req-wizard">
+  <div id="wiz-box">
+    <div id="wiz-header">
+      <h2>New Requirement</h2>
+      <small>Broadcasts to all agents via group-chat.json</small>
+      <button id="wiz-close" onclick="closeReqWizard()" title="Close">x</button>
+    </div>
+    <div id="wiz-body">
+      <div class="wiz-field">
+        <label>Title *</label>
+        <input id="wiz-title" type="text" placeholder="e.g. Cost Anomaly Alert Dashboard">
+      </div>
+      <div class="wiz-row">
+        <div class="wiz-field">
+          <label>Sprint Number *</label>
+          <input id="wiz-sprint" type="text" placeholder="01" value="01">
+        </div>
+        <div class="wiz-field">
+          <label>Type</label>
+          <select id="wiz-type">
+            <option value="new_feature">New Feature</option>
+            <option value="new_project">New Project</option>
+            <option value="enhancement">Enhancement</option>
+            <option value="bug_fix">Bug Fix</option>
+          </select>
+        </div>
+        <div class="wiz-field">
+          <label>Priority</label>
+          <select id="wiz-priority">
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+            <option value="critical">Critical</option>
+            <option value="low">Low</option>
+          </select>
+        </div>
+      </div>
+      <div class="wiz-field">
+        <label>Description -- what do you want to build? *</label>
+        <textarea id="wiz-desc" placeholder="Describe the feature or project in detail..."></textarea>
+      </div>
+      <div class="wiz-field">
+        <label>Business Goal -- why are we building this?</label>
+        <textarea id="wiz-goal" style="min-height:48px" placeholder="e.g. Reduce cloud cost overruns by catching anomalies within 1 hour"></textarea>
+      </div>
+      <div class="wiz-row">
+        <div class="wiz-field">
+          <label>Target Users / Audience</label>
+          <input id="wiz-users" type="text" placeholder="e.g. DevOps engineers, Finance team">
+        </div>
+        <div class="wiz-field">
+          <label>Deadline</label>
+          <input id="wiz-deadline" type="date">
+        </div>
+      </div>
+      <div class="wiz-field">
+        <label>Tech Constraints (comma-separated)</label>
+        <input id="wiz-constraints" type="text" placeholder="e.g. AWS only, Python 3.11+, PostgreSQL">
+      </div>
+      <div id="wiz-msg">Requirement posted to all agents!</div>
+    </div>
+    <div id="wiz-footer">
+      <small>All fields except Title, Sprint, and Description are optional.</small>
+      <button class="wiz-btn cancel" onclick="closeReqWizard()">Cancel</button>
+      <button class="wiz-btn post" onclick="submitReqWizard()">Post to Team</button>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ── Agent metadata ───────────────────────────────────────────────────────────
+const AGENT_META = {
+  arjun  : { role: 'PM / Orchestrator', model: 'Opus',   color: '#bc8cff' },
+  vikram : { role: 'Cloud Architect',   model: 'Sonnet', color: '#f85149' },
+  rasool : { role: 'Database Agent',    model: 'Sonnet', color: '#d29922' },
+  kavya  : { role: 'UX Designer',       model: 'Sonnet', color: '#ff7be5' },
+  kiran  : { role: 'Backend Engineer',  model: 'Sonnet', color: '#39c5cf' },
+  rohan  : { role: 'Frontend Engineer', model: 'Sonnet', color: '#388bfd' },
+  keerthi: { role: 'QA Agent',          model: 'Sonnet', color: '#3fb950' },
+};
+
+// ── State ────────────────────────────────────────────────────────────────────
+let currentState   = {};
+let logEventSource = null;
+let logAgent       = null;
+let startTime      = Date.now();
+let logWrap        = false;
+let chatOpen       = true;
+let scaleTarget    = null;
+
+// ── Uptime counter ────────────────────────────────────────────────────────────
+setInterval(() => {
+  const s = Math.floor((Date.now() - startTime) / 1000);
+  const h = String(Math.floor(s / 3600)).padStart(2,'0');
+  const m = String(Math.floor((s % 3600) / 60)).padStart(2,'0');
+  const sec = String(s % 60).padStart(2,'0');
+  document.getElementById('uptime').textContent = `⏱ ${h}:${m}:${sec}`;
+}, 1000);
+
+// ── Receive state updates ─────────────────────────────────────────────────────
+window.addEventListener('panchayat-state', e => {
+  currentState = e.detail;
+  renderBoard(currentState);
+});
+
+// ── Render Kanban board ───────────────────────────────────────────────────────
+function renderBoard(state) {
+  const agents     = state.agents     || {};
+  const containers = state.containers || {};
+
+  const queueBody = document.getElementById('col-queue-body');
+  const wipBody   = document.getElementById('col-wip-body');
+  const doneBody  = document.getElementById('col-done-body');
+
+  queueBody.innerHTML = '';
+  wipBody.innerHTML   = '';
+  doneBody.innerHTML  = '';
+
+  let qCount = 0, wCount = 0, dCount = 0;
+
+  // Running container count
+  const running = Object.values(containers).filter(c => c.state === 'running').length;
+  document.getElementById('container-count').textContent = `${running} running`;
+
+  // Requirement info
+  const req = state.req || state.requirement || {};
+  if (req.sprint) document.getElementById('sprint-id').textContent = req.sprint;
+  renderReqBanner(req);
+
+  // Render each agent
+  Object.keys(AGENT_META).forEach(name => {
+    const agentStatus = agents[name] || {};
+    const containerInfo = containers[name] || {};
+    const card = buildCard(name, agentStatus, containerInfo);
+    const status = normaliseStatus(agentStatus.status, containerInfo);
+
+    if (status === 'done') {
+      doneBody.appendChild(card);
+      dCount++;
+    } else if (['wip','in_progress','starting','blocked'].includes(status)) {
+      wipBody.appendChild(card);
+      wCount++;
+    } else {
+      queueBody.appendChild(card);
+      qCount++;
+    }
+  });
+
+  // Empty state
+  if (!qCount) queueBody.innerHTML = '<div class="col-empty">No agents queued</div>';
+  if (!wCount) wipBody.innerHTML   = '<div class="col-empty">No active agents</div>';
+  if (!dCount) doneBody.innerHTML  = '<div class="col-empty">No completed agents</div>';
+
+  document.getElementById('count-queue').textContent = qCount;
+  document.getElementById('count-wip').textContent   = wCount;
+  document.getElementById('count-done').textContent  = dCount;
+
+  // Render chat -- state.chat is the full {channel, messages:[]} object
+  renderChat((state.chat && state.chat.messages) ? state.chat.messages : []);
+}
+
+function normaliseStatus(agentStatus, containerInfo) {
+  if (!agentStatus || agentStatus === 'queue' || agentStatus === 'standby') {
+    return containerInfo.state === 'running' ? 'queue' : 'standby';
+  }
+  if (agentStatus === 'done') return 'done';
+  if (agentStatus === 'blocked') return 'blocked';
+  if (agentStatus === 'starting') return 'starting';
+  if (agentStatus === 'wip' || agentStatus === 'in_progress') return 'wip';
+  return 'queue';
+}
+
+function dotClass(status, containerState) {
+  if (containerState === 'exited') return 'dot-exited';
+  const map = { running:'dot-running', wip:'dot-wip', in_progress:'dot-wip', done:'dot-done',
+                blocked:'dot-blocked', starting:'dot-starting', queue:'dot-queue', standby:'dot-standby' };
+  return map[status] || 'dot-unknown';
+}
+
+function buildCard(name, agentStatus, containerInfo) {
+  const meta    = AGENT_META[name];
+  const status  = normaliseStatus(agentStatus.status, containerInfo);
+  const progress= agentStatus.progress || 0;
+  const task    = agentStatus.task || (status === 'standby' ? 'Waiting for activation' : 'Waiting for instructions');
+  const blocker = agentStatus.blocker || '';
+  const cpu     = containerInfo.cpuPercent || 0;
+  const mem     = containerInfo.memMB || 0;
+  const uptime  = containerInfo.uptime || '--';
+  const health  = containerInfo.health || 'unknown';
+  const containerState = containerInfo.state || 'unknown';
+
+  const card = document.createElement('div');
+  card.className = `agent-card status-${status} ${health === 'unhealthy' ? 'unhealthy' : ''}`;
+  card.id = `card-${name}`;
+
+  const progressClass = status === 'done' ? 'done' : status === 'blocked' ? 'blocked' : 'running';
+  const cpuClass = cpu > 50 ? 'hot' : '';
+
+  const canScale = ['kiran','rohan','vikram'].includes(name);
+  const isKeerthi = name === 'keerthi';
+
+  card.innerHTML = `
+    <div class="card-header">
+      <div class="status-dot ${dotClass(status, containerState)}"></div>
+      <span class="card-name">${name}</span>
+      <small style="font-size:10px;color:${meta.color};margin-left:2px">${meta.model}</small>
+      <span class="card-cpu ${cpuClass}">${cpu > 0 ? cpu + '%' : ''}</span>
+    </div>
+    <div class="card-role">${meta.role}</div>
+    <div class="card-divider"></div>
+    <div class="card-task ${blocker ? 'blocked' : ''}">${blocker ? '🔴 BLOCKED: ' + blocker : escHtml(task)}</div>
+    <div class="progress-bar">
+      <div class="progress-fill ${progressClass}" style="width:${progress}%"></div>
+    </div>
+    <div class="card-footer">
+      <span class="card-stat">⏱ ${uptime}</span>
+      ${mem > 0 ? `<span class="card-stat">📦 ${mem}MB</span>` : ''}
+      <span class="card-health health-${health}" title="Container health">${health}</span>
+      <div class="card-actions">
+        ${isKeerthi && status === 'standby'
+          ? `<button class="card-btn" onclick="activateKeerthi()" title="Activate QA">🟢 Activate</button>`
+          : ''
+        }
+        ${canScale
+          ? `<button class="card-btn scale-btn" onclick="openScaleModal('${name}')" title="Scale agent">⚡ Scale</button>`
+          : ''
+        }
+        ${containerState === 'running'
+          ? `<button class="card-btn restart-btn" onclick="restartAgent('${name}')" title="Restart container">↺</button>`
+          : ''
+        }
+        <button class="card-btn logs-btn" onclick="openLogPanel('${name}')" title="View live logs">📋 Logs</button>
+      </div>
+    </div>`;
+
+  return card;
+}
+
+function escHtml(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+
+// ── Log Panel ─────────────────────────────────────────────────────────────────
+function openLogPanel(agentName) {
+  logAgent = agentName;
+  document.getElementById('log-panel-title').textContent = `${agentName}.log`;
+  document.getElementById('log-panel').classList.add('open');
+
+  // Close previous SSE if any
+  if (logEventSource) { logEventSource.close(); logEventSource = null; }
+
+  const content = document.getElementById('log-content');
+  content.innerHTML = '<span style="color:var(--text-dim)">Loading logs...</span>';
+
+  // Open SSE log stream
+  logEventSource = new EventSource(`/api/logs/${agentName}/stream`);
+  logEventSource.onmessage = e => {
+    try {
+      const msg = JSON.parse(e.data);
+      if (msg.type === 'init') {
+        content.innerHTML = formatLogLines(msg.content);
+        if (document.getElementById('log-tail-btn').dataset.tail !== 'off') scrollToBottom();
+      } else if (msg.type === 'append') {
+        const frag = document.createRange().createContextualFragment(formatLogLines(msg.content));
+        content.appendChild(frag);
+        if (document.getElementById('log-tail-btn').dataset.tail !== 'off') scrollToBottom();
+      }
+    } catch {}
+  };
+
+  logEventSource.onerror = () => {
+    document.getElementById('log-live-badge').textContent = '● Offline';
+    document.getElementById('log-live-badge').style.background = 'var(--red-dim)';
+    document.getElementById('log-live-badge').style.color = 'var(--red)';
+  };
+
+  filterLogs();
+}
+
+function formatLogLines(text) {
+  return text.split('\n').map(line => {
+    const cls = line.match(/error|Error|ERROR|fail|FAIL/)  ? 'log-error'
+              : line.match(/warn|WARN|warning/)            ? 'log-warn'
+              : line.match(/\[info\]|INFO|starting|Start/) ? 'log-info'
+              : line.match(/done|Done|DONE|complete|✅/)   ? 'log-done'
+              : '';
+    return `<span class="log-line ${cls}">${escHtml(line)}</span>`;
+  }).join('\n');
+}
+
+function closeLogPanel() {
+  document.getElementById('log-panel').classList.remove('open');
+  if (logEventSource) { logEventSource.close(); logEventSource = null; }
+  logAgent = null;
+}
+
+function filterLogs() {
+  const q = document.getElementById('log-search').value.toLowerCase();
+  const lines = document.getElementById('log-content').querySelectorAll('.log-line');
+  lines.forEach(l => {
+    l.style.display = (!q || l.textContent.toLowerCase().includes(q)) ? '' : 'none';
+  });
+}
+
+function toggleWrap() {
+  logWrap = !logWrap;
+  const content = document.getElementById('log-content');
+  content.classList.toggle('wrap', logWrap);
+  const btn = document.getElementById('log-wrap-btn');
+  btn.classList.toggle('active', logWrap);
+}
+
+function scrollToBottom() {
+  const el = document.getElementById('log-content');
+  el.scrollTop = el.scrollHeight;
+}
+
+document.getElementById('log-tail-btn').addEventListener('click', function() {
+  if (this.dataset.tail === 'off') {
+    delete this.dataset.tail;
+    this.textContent = '▼ Tail';
+  } else {
+    this.dataset.tail = 'off';
+    this.textContent = '⏸ Pause tail';
+  }
+});
+
+// ── Group Chat ────────────────────────────────────────────────────────────────
+let lastChatLen = 0;
+function renderChat(messages) {
+  if (messages.length === lastChatLen) return;
+  lastChatLen = messages.length;
+  document.getElementById('chat-msg-count').textContent = `${messages.length} messages`;
+
+  const box = document.getElementById('chat-messages');
+  const atBottom = box.scrollTop + box.clientHeight >= box.scrollHeight - 20;
+
+  box.innerHTML = '';
+  const recent = messages.slice(-80);
+  recent.forEach(msg => {
+    const el = document.createElement('div');
+    el.className = `chat-msg chat-type-${msg.type || 'message'}`;
+    const time   = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' }) : '';
+    // group-chat.json uses 'from' field; accept 'sender' as fallback
+    const sender = msg.from || msg.sender || '?';
+    el.innerHTML = `<span class="chat-sender sender-${sender.toLowerCase()}">${escHtml(sender)}:</span>
+      <span class="chat-text">${escHtml(msg.message||'')}</span>
+      <span class="chat-time">${time}</span>`;
+    box.appendChild(el);
+  });
+
+  if (atBottom) box.scrollTop = box.scrollHeight;
+}
+
+function toggleChat() {
+  chatOpen = !chatOpen;
+  const panel = document.getElementById('chat-panel');
+  panel.style.height = chatOpen ? '180px' : '36px';
+  document.getElementById('chat-toggle').textContent = chatOpen ? '▼' : '▲';
+}
+
+function chatKey(e) { if (e.key === 'Enter') sendChat(); }
+
+function sendChat() {
+  const input = document.getElementById('chat-input');
+  const message = input.value.trim();
+  if (!message) return;
+  input.value = '';
+  fetch('/api/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ from: 'TARUN', role: 'Product Owner', message, type: 'message' }),
+  }).catch(console.error);
+}
+
+// ── Scale ─────────────────────────────────────────────────────────────────────
+function openScaleModal(agentName) {
+  scaleTarget = agentName;
+  document.getElementById('scale-desc').textContent =
+    `Spin up additional "${agentName}" containers for parallel work.`;
+  document.getElementById('scale-replicas').value = 2;
+  document.getElementById('scale-modal').classList.add('open');
+}
+function closeScaleModal() {
+  document.getElementById('scale-modal').classList.remove('open');
+  scaleTarget = null;
+}
+function doScale() {
+  if (!scaleTarget) return;
+  const replicas = parseInt(document.getElementById('scale-replicas').value, 10);
+  fetch('/api/scale', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ service: scaleTarget, replicas }),
+  })
+  .then(r => r.json())
+  .then(d => {
+    if (d.ok) {
+      sendTeamMessage(`⚡ Scaling ${scaleTarget} to ${replicas} replicas`, 'broadcast');
+    } else {
+      alert('Scale error: ' + (d.error || 'unknown'));
+    }
+  })
+  .catch(e => alert('Scale failed: ' + e.message));
+  closeScaleModal();
+}
+
+// Close modal on backdrop click
+document.getElementById('scale-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeScaleModal();
+});
+
+// ── Agent Actions ─────────────────────────────────────────────────────────────
+function restartAgent(name) {
+  if (!confirm(`Restart ${name} container?`)) return;
+  fetch(`/api/agent/${name}/restart`, { method: 'POST' })
+    .then(r => r.json())
+    .then(d => {
+      if (!d.ok) alert('Restart error: ' + (d.error || 'unknown'));
+    })
+    .catch(e => alert('Error: ' + e.message));
+}
+
+function activateKeerthi() {
+  if (!confirm('Activate Keerthi QA agent? Make sure all 5 developers are done.')) return;
+  fetch('/api/agent/keerthi/activate', { method: 'POST' })
+    .then(r => r.json())
+    .then(d => {
+      if (d.ok) sendTeamMessage('🟢 Keerthi QA agent activated — starting quality gates', 'broadcast');
+      else alert('Error: ' + (d.error || 'unknown'));
+    });
+}
+
+function stopAll() {
+  if (!confirm('Stop all agent containers? The cluster will shut down.')) return;
+  sendTeamMessage('⏹ Cluster stop requested by Tarun', 'broadcast');
+  setTimeout(() => {
+    alert('Run: docker compose down\n(in the ADLC-Agent-Kit directory)');
+  }, 500);
+}
+
+// ── Requirement Wizard ────────────────────────────────────────────────────────
+function openReqWizard() {
+  document.getElementById('wiz-msg').style.display = 'none';
+  document.getElementById('req-wizard').classList.add('open');
+  document.getElementById('wiz-title').focus();
+}
+
+function closeReqWizard() {
+  document.getElementById('req-wizard').classList.remove('open');
+}
+
+function submitReqWizard() {
+  const title = document.getElementById('wiz-title').value.trim();
+  const desc  = document.getElementById('wiz-desc').value.trim();
+  const sprint= document.getElementById('wiz-sprint').value.trim() || '01';
+  if (!title) { alert('Please enter a requirement title.'); return; }
+  if (!desc)  { alert('Please describe the requirement.'); return; }
+
+  const payload = {
+    title,
+    sprint,
+    type:            document.getElementById('wiz-type').value,
+    priority:        document.getElementById('wiz-priority').value,
+    description:     desc,
+    businessGoal:    document.getElementById('wiz-goal').value.trim(),
+    targetUsers:     document.getElementById('wiz-users').value.trim(),
+    techConstraints: document.getElementById('wiz-constraints').value.trim(),
+    deadline:        document.getElementById('wiz-deadline').value,
+  };
+
+  fetch('/api/requirement', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  .then(r => r.json())
+  .then(d => {
+    if (d.ok) {
+      const msg = document.getElementById('wiz-msg');
+      msg.textContent = 'Posted! ID: ' + d.requirementId;
+      msg.style.display = 'block';
+      // Clear form fields
+      ['wiz-title','wiz-desc','wiz-goal','wiz-users','wiz-constraints','wiz-deadline'].forEach(id => {
+        document.getElementById(id).value = '';
+      });
+      setTimeout(closeReqWizard, 1800);
+    } else {
+      alert('Error posting requirement: ' + (d.error || 'unknown'));
+    }
+  })
+  .catch(e => alert('Network error: ' + e.message));
+}
+
+// Close wizard on backdrop click
+document.getElementById('req-wizard').addEventListener('click', function(e) {
+  if (e.target === this) closeReqWizard();
+});
+
+// ── Requirement Banner ────────────────────────────────────────────────────────
+function renderReqBanner(req) {
+  const banner   = document.getElementById('req-banner');
+  const titleEl  = document.getElementById('req-title');
+  const idEl     = document.getElementById('req-id');
+  const pillEl   = document.getElementById('req-status-pill');
+  const prioEl   = document.getElementById('req-priority');
+  const countEl  = document.getElementById('req-inputs-count');
+  const approveBtn = document.getElementById('req-approve-btn');
+
+  if (!req || !req.title) {
+    titleEl.textContent = 'No active requirement -- click "+ New Requirement" to post one';
+    titleEl.className = 'empty';
+    idEl.style.display = pillEl.style.display = prioEl.style.display =
+      countEl.style.display = 'none';
+    approveBtn.classList.remove('show');
+    banner.classList.remove('has-req');
+    return;
+  }
+
+  banner.classList.add('has-req');
+  titleEl.textContent = req.title;
+  titleEl.className   = '';
+
+  idEl.textContent    = req.requirementId || '';
+  idEl.style.display  = req.requirementId ? 'inline' : 'none';
+
+  prioEl.textContent  = req.priority || 'medium';
+  prioEl.className    = 'req-priority ' + (req.priority || 'medium');
+  prioEl.style.display = 'inline';
+
+  pillEl.textContent  = (req.status || '').replace(/_/g, ' ');
+  pillEl.className    = 'req-status-pill ' + (req.status || '');
+  pillEl.style.display = 'inline';
+
+  // Count agent inputs received
+  const inputs  = req.agentInputs || {};
+  const total   = Object.keys(inputs).length;
+  const received= Object.values(inputs).filter(v => v && v.received).length;
+  if (total > 0) {
+    countEl.textContent  = received + '/' + total + ' agent inputs';
+    countEl.style.display = 'inline';
+  } else {
+    countEl.style.display = 'none';
+  }
+
+  // Show approve button if not yet approved and in pending_analysis
+  const canApprove = !req.approvedByTarun && req.status !== 'in_sprint';
+  if (canApprove) {
+    approveBtn.classList.add('show');
+  } else {
+    approveBtn.classList.remove('show');
+  }
+}
+
+function approveSprint() {
+  if (!confirm('Approve the sprint plan? This will set all agents to In Progress.')) return;
+  fetch('/api/requirement/approve', { method: 'POST' })
+    .then(r => r.json())
+    .then(d => {
+      if (!d.ok) alert('Error: ' + (d.error || 'unknown'));
+    })
+    .catch(e => alert('Network error: ' + e.message));
+}
+
+function sendTeamMessage(message, type = 'broadcast') {
+  fetch('/api/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ from: 'TARUN', role: 'Product Owner', message, type }),
+  }).catch(console.error);
+}
+
+// ── Initial load ──────────────────────────────────────────────────────────────
+fetch('/api/state')
+  .then(r => r.json())
+  .then(state => { currentState = state; renderBoard(state); })
+  .catch(console.error);
+</script>
+</body>
+</html>

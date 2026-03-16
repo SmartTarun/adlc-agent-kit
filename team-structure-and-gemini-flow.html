@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Team Panchayat — Structure & Gemini Image Generation Flow</title>
+<style>
+  :root {
+    --bg:      #0d1117;
+    --surface: #161b22;
+    --s2:      #21262d;
+    --s3:      #30363d;
+    --border:  #30363d;
+    --text:    #c9d1d9;
+    --bright:  #f0f6fc;
+    --dim:     #8b949e;
+    --green:   #3fb950;
+    --yellow:  #d29922;
+    --blue:    #388bfd;
+    --purple:  #bc8cff;
+    --red:     #f85149;
+    --cyan:    #39c5cf;
+    --orange:  #db6d28;
+    --pink:    #ff7be5;
+    --gemini:  #4285f4;
+    --gemini2: #ea4335;
+    --font:    'Segoe UI', system-ui, sans-serif;
+    --mono:    'Cascadia Code', 'Consolas', monospace;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: var(--font); font-size: 13px;
+    min-height: 100vh; padding: 0 0 60px;
+  }
+
+  /* ── Header ── */
+  .page-header {
+    background: linear-gradient(135deg, #161b22 0%, #0d1f38 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 32px 48px 24px;
+    display: flex; align-items: flex-end; gap: 24px;
+  }
+  .page-header h1 {
+    font-size: 26px; color: var(--bright); font-weight: 700; line-height: 1.2;
+  }
+  .page-header p { color: var(--dim); font-size: 13px; margin-top: 4px; }
+  .header-badge {
+    background: var(--gemini); color: #fff;
+    font-size: 11px; font-weight: 700;
+    padding: 3px 12px; border-radius: 20px;
+    letter-spacing: .04em; margin-left: auto; white-space: nowrap;
+  }
+
+  /* ── Section titles ── */
+  .section {
+    max-width: 1280px; margin: 0 auto;
+    padding: 40px 48px 0;
+  }
+  .section-title {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 24px;
+  }
+  .section-title h2 {
+    font-size: 18px; color: var(--bright); font-weight: 600;
+  }
+  .section-title .num {
+    width: 28px; height: 28px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700; flex-shrink: 0;
+  }
+  .section-title p { color: var(--dim); font-size: 12px; margin-top: 2px; }
+  hr.sep { border: none; border-top: 1px solid var(--border); margin: 40px 48px; max-width: 1280px; }
+
+  /* ── ORG CHART ── */
+  .org-wrap { display: flex; flex-direction: column; align-items: center; gap: 0; }
+
+  /* Tarun (Product Owner) */
+  .po-card {
+    background: linear-gradient(135deg, #0d1f38, #1a2744);
+    border: 2px solid var(--blue);
+    border-radius: 12px; padding: 16px 32px;
+    text-align: center; min-width: 220px;
+    box-shadow: 0 0 24px rgba(56,139,253,0.18);
+  }
+  .po-card .avatar { font-size: 32px; margin-bottom: 6px; }
+  .po-card .name { font-size: 16px; font-weight: 700; color: var(--bright); }
+  .po-card .role { font-size: 11px; color: var(--blue); margin-top: 2px; letter-spacing: .04em; text-transform: uppercase; }
+  .po-card .tag  { font-size: 10px; color: var(--dim); margin-top: 4px; font-family: var(--mono); }
+
+  /* Arjun (PM) */
+  .pm-layer { display: flex; flex-direction: column; align-items: center; gap: 0; position: relative; }
+  .vert-line { width: 2px; height: 32px; background: var(--border); }
+  .pm-card {
+    background: linear-gradient(135deg, #1e0e3e, #2d1a5e);
+    border: 2px solid var(--purple);
+    border-radius: 12px; padding: 14px 28px;
+    text-align: center; min-width: 240px;
+    box-shadow: 0 0 20px rgba(188,140,255,0.15);
+  }
+  .pm-card .name { font-size: 15px; font-weight: 700; color: var(--bright); }
+  .pm-card .role { font-size: 11px; color: var(--purple); margin-top: 2px; letter-spacing: .04em; text-transform: uppercase; }
+  .pm-card .tag  { font-size: 10px; color: var(--dim); margin-top: 4px; font-family: var(--mono); }
+
+  /* Agents row */
+  .agents-row {
+    display: flex; gap: 0; align-items: flex-start;
+    position: relative; width: 100%;
+    justify-content: center;
+  }
+  .horiz-line {
+    position: absolute; top: 0; left: 50%;
+    transform: translateX(-50%);
+    height: 2px; background: var(--border);
+    width: 84%;
+  }
+  .agent-col {
+    display: flex; flex-direction: column; align-items: center; gap: 0;
+    flex: 1; max-width: 170px;
+  }
+  .agent-vert { width: 2px; height: 24px; }
+
+  .agent-box {
+    border-radius: 10px; padding: 12px 10px;
+    text-align: center; width: 154px;
+    border: 1px solid transparent;
+    transition: transform .15s;
+  }
+  .agent-box:hover { transform: translateY(-2px); }
+  .agent-box .emoji { font-size: 22px; margin-bottom: 6px; display: block; }
+  .agent-box .aname { font-size: 13px; font-weight: 700; color: var(--bright); }
+  .agent-box .arole { font-size: 10px; margin-top: 2px; text-transform: uppercase; letter-spacing: .04em; }
+  .agent-box .amodel{ font-size: 10px; color: var(--dim); margin-top: 3px; font-family: var(--mono); }
+  .agent-box .owns  { font-size: 10px; margin-top: 8px; padding-top: 8px;
+                      border-top: 1px solid rgba(255,255,255,0.06);
+                      color: var(--dim); line-height: 1.5; text-align: left; }
+  .agent-box .owns b { color: inherit; opacity: .8; }
+
+  .box-vikram  { background: rgba(248,81,73,0.08);  border-color: rgba(248,81,73,0.4);  }
+  .box-vikram  .arole { color: var(--red); }
+  .box-vikram  .agent-vert { background: var(--red); }
+
+  .box-rasool  { background: rgba(210,153,34,0.08); border-color: rgba(210,153,34,0.4); }
+  .box-rasool  .arole { color: var(--yellow); }
+  .box-rasool  .agent-vert { background: var(--yellow); }
+
+  .box-kavya   { background: rgba(255,123,229,0.08);border-color: rgba(255,123,229,0.4);}
+  .box-kavya   .arole { color: var(--pink); }
+  .box-kavya   .agent-vert { background: var(--pink); }
+
+  .box-kiran   { background: rgba(57,197,207,0.08); border-color: rgba(57,197,207,0.4); }
+  .box-kiran   .arole { color: var(--cyan); }
+  .box-kiran   .agent-vert { background: var(--cyan); }
+
+  .box-rohan   { background: rgba(56,139,253,0.08); border-color: rgba(56,139,253,0.4); }
+  .box-rohan   .arole { color: var(--blue); }
+  .box-rohan   .agent-vert { background: var(--blue); }
+
+  .box-keerthi { background: rgba(63,185,80,0.08);  border-color: rgba(63,185,80,0.4);  }
+  .box-keerthi .arole { color: var(--green); }
+  .box-keerthi .agent-vert { background: var(--green); }
+
+  /* Phase badges */
+  .phase-badges { display: flex; gap: 8px; justify-content: center; margin-top: 16px; flex-wrap: wrap; }
+  .phase-pill {
+    font-size: 10px; padding: 3px 12px; border-radius: 20px;
+    font-weight: 600; letter-spacing: .03em;
+  }
+  .ph1 { background: rgba(248,81,73,0.15);  color: var(--red);    border: 1px solid rgba(248,81,73,0.3);  }
+  .ph2 { background: rgba(56,139,253,0.15); color: var(--blue);   border: 1px solid rgba(56,139,253,0.3); }
+  .ph3 { background: rgba(63,185,80,0.15);  color: var(--green);  border: 1px solid rgba(63,185,80,0.3);  }
+  .ph-label { font-size: 10px; color: var(--dim); align-self: center; }
+
+  /* ── DISCOVERY FLOW ── */
+  .flow-wrap { display: flex; flex-direction: column; gap: 0; align-items: center; }
+  .flow-row  { display: flex; gap: 12px; align-items: stretch; justify-content: center; flex-wrap: wrap; }
+  .flow-arrow-down {
+    width: 2px; height: 28px; background: var(--border);
+    margin: 0 auto; flex-shrink: 0;
+    position: relative;
+  }
+  .flow-arrow-down::after {
+    content: '';
+    position: absolute; bottom: -6px; left: 50%;
+    transform: translateX(-50%);
+    width: 0; height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 7px solid var(--border);
+  }
+
+  .flow-node {
+    border-radius: 10px; padding: 12px 18px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    min-width: 160px; max-width: 200px;
+    text-align: center;
+  }
+  .flow-node .fn-title { font-size: 12px; font-weight: 700; color: var(--bright); }
+  .flow-node .fn-sub   { font-size: 10px; color: var(--dim); margin-top: 3px; line-height: 1.4; }
+  .flow-node .fn-badge {
+    font-size: 9px; font-weight: 700; padding: 1px 7px;
+    border-radius: 10px; display: inline-block; margin-top: 5px;
+    letter-spacing: .03em;
+  }
+
+  .fn-blue   { border-color: rgba(56,139,253,0.5);  background: rgba(56,139,253,0.07);  }
+  .fn-blue   .fn-title { color: var(--blue); }
+  .fn-purple { border-color: rgba(188,140,255,0.5); background: rgba(188,140,255,0.07); }
+  .fn-purple .fn-title { color: var(--purple); }
+  .fn-yellow { border-color: rgba(210,153,34,0.5);  background: rgba(210,153,34,0.07);  }
+  .fn-yellow .fn-title { color: var(--yellow); }
+  .fn-green  { border-color: rgba(63,185,80,0.5);   background: rgba(63,185,80,0.07);   }
+  .fn-green  .fn-title { color: var(--green); }
+  .fn-red    { border-color: rgba(248,81,73,0.5);   background: rgba(248,81,73,0.07);   }
+  .fn-red    .fn-title { color: var(--red); }
+  .fn-cyan   { border-color: rgba(57,197,207,0.5);  background: rgba(57,197,207,0.07);  }
+  .fn-cyan   .fn-title { color: var(--cyan); }
+  .fn-gemini { border-color: rgba(66,133,244,0.6);  background: rgba(66,133,244,0.1);   }
+  .fn-gemini .fn-title { color: #4285f4; }
+  .fn-orange { border-color: rgba(219,109,40,0.5);  background: rgba(219,109,40,0.07);  }
+  .fn-orange .fn-title { color: var(--orange); }
+
+  .badge-blue   { background: rgba(56,139,253,0.2);  color: var(--blue);   }
+  .badge-purple { background: rgba(188,140,255,0.2); color: var(--purple); }
+  .badge-yellow { background: rgba(210,153,34,0.2);  color: var(--yellow); }
+  .badge-green  { background: rgba(63,185,80,0.2);   color: var(--green);  }
+  .badge-red    { background: rgba(248,81,73,0.2);   color: var(--red);    }
+  .badge-gemini { background: rgba(66,133,244,0.2);  color: #4285f4;       }
+  .badge-orange { background: rgba(219,109,40,0.2);  color: var(--orange); }
+
+  /* Flow horizontal connector */
+  .flow-horiz-group {
+    display: flex; align-items: center; gap: 0; justify-content: center; flex-wrap: nowrap;
+  }
+  .flow-horiz-arrow {
+    width: 32px; height: 2px; background: var(--border);
+    position: relative; flex-shrink: 0;
+  }
+  .flow-horiz-arrow::after {
+    content: '';
+    position: absolute; right: -6px; top: 50%;
+    transform: translateY(-50%);
+    width: 0; height: 0;
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+    border-left: 7px solid var(--border);
+  }
+
+  /* ── GEMINI FLOW ── */
+  .gemini-pipeline {
+    background: linear-gradient(135deg, #0a1628 0%, #0d1117 100%);
+    border: 1px solid rgba(66,133,244,0.3);
+    border-radius: 16px; padding: 32px;
+    position: relative; overflow: hidden;
+  }
+  .gemini-pipeline::before {
+    content: 'GOOGLE GEMINI';
+    position: absolute; top: 12px; right: 16px;
+    font-size: 9px; font-weight: 700; letter-spacing: .1em;
+    color: rgba(66,133,244,0.4);
+  }
+  .gflow-row { display: flex; align-items: center; gap: 0; flex-wrap: wrap; justify-content: center; }
+
+  .gnode {
+    border-radius: 10px; padding: 14px 16px;
+    text-align: center; min-width: 130px; max-width: 160px;
+    flex-shrink: 0;
+  }
+  .gnode .gn-icon  { font-size: 24px; margin-bottom: 6px; display: block; }
+  .gnode .gn-title { font-size: 12px; font-weight: 700; color: var(--bright); }
+  .gnode .gn-sub   { font-size: 10px; color: var(--dim); margin-top: 3px; line-height: 1.4; }
+  .gnode .gn-badge {
+    font-size: 9px; font-weight: 600; padding: 1px 7px;
+    border-radius: 10px; display: inline-block; margin-top: 5px;
+  }
+
+  .gn-user     { background: rgba(56,139,253,0.1);  border: 1px solid rgba(56,139,253,0.4); }
+  .gn-arjun    { background: rgba(188,140,255,0.1); border: 1px solid rgba(188,140,255,0.4); }
+  .gn-kavya    { background: rgba(255,123,229,0.1); border: 1px solid rgba(255,123,229,0.4); }
+  .gn-gemini   { background: rgba(66,133,244,0.15); border: 2px solid rgba(66,133,244,0.6);
+                 box-shadow: 0 0 20px rgba(66,133,244,0.2); }
+  .gn-s3       { background: rgba(219,109,40,0.1);  border: 1px solid rgba(219,109,40,0.4); }
+  .gn-rohan    { background: rgba(56,139,253,0.1);  border: 1px solid rgba(56,139,253,0.4); }
+  .gn-done     { background: rgba(63,185,80,0.1);   border: 1px solid rgba(63,185,80,0.4);  }
+
+  .garrow {
+    width: 36px; height: 2px;
+    position: relative; flex-shrink: 0;
+  }
+  .garrow::after {
+    content: '';
+    position: absolute; right: -6px; top: 50%;
+    transform: translateY(-50%);
+    width: 0; height: 0;
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+    border-left: 7px solid;
+  }
+  .garrow.blue   { background: rgba(56,139,253,0.6); }
+  .garrow.blue::after   { border-left-color: rgba(56,139,253,0.6); }
+  .garrow.purple { background: rgba(188,140,255,0.6); }
+  .garrow.purple::after { border-left-color: rgba(188,140,255,0.6); }
+  .garrow.gemini { background: rgba(66,133,244,0.6); }
+  .garrow.gemini::after { border-left-color: rgba(66,133,244,0.6); }
+  .garrow.orange { background: rgba(219,109,40,0.6); }
+  .garrow.orange::after { border-left-color: rgba(219,109,40,0.6); }
+  .garrow.green  { background: rgba(63,185,80,0.6); }
+  .garrow.green::after  { border-left-color: rgba(63,185,80,0.6); }
+
+  /* Gemini API detail box */
+  .gemini-api-detail {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 12px; margin-top: 28px;
+  }
+  .ga-card {
+    background: var(--s2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 12px 14px;
+  }
+  .ga-card h4 { font-size: 11px; font-weight: 700; margin-bottom: 6px; }
+  .ga-card p  { font-size: 11px; color: var(--dim); line-height: 1.6; }
+  .ga-card code {
+    display: block; background: var(--bg); padding: 6px 8px;
+    border-radius: 4px; font-family: var(--mono); font-size: 10px;
+    color: var(--cyan); margin-top: 6px; line-height: 1.5;
+  }
+
+  /* ── SPRINT FLOW TIMELINE ── */
+  .timeline { position: relative; padding-left: 32px; }
+  .timeline::before {
+    content: '';
+    position: absolute; left: 12px; top: 8px; bottom: 8px;
+    width: 2px; background: var(--border);
+  }
+  .tl-item {
+    position: relative; margin-bottom: 16px;
+    display: flex; gap: 16px; align-items: flex-start;
+  }
+  .tl-dot {
+    position: absolute; left: -26px; top: 8px;
+    width: 12px; height: 12px; border-radius: 50%;
+    border: 2px solid; flex-shrink: 0;
+    background: var(--bg);
+  }
+  .tl-card {
+    background: var(--s2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 12px 16px; flex: 1;
+  }
+  .tl-card h4  { font-size: 12px; font-weight: 700; color: var(--bright); margin-bottom: 4px; }
+  .tl-card p   { font-size: 11px; color: var(--dim); line-height: 1.6; }
+  .tl-phase    {
+    font-size: 9px; font-weight: 700; padding: 1px 7px;
+    border-radius: 10px; display: inline-block; margin-bottom: 6px;
+    text-transform: uppercase; letter-spacing: .04em;
+  }
+  .tl-agents   { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .tl-agent    {
+    font-size: 10px; padding: 2px 8px; border-radius: 10px;
+    border: 1px solid; font-weight: 600;
+  }
+
+  /* ── Legend ── */
+  .legend {
+    display: flex; gap: 20px; flex-wrap: wrap;
+    background: var(--s2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 14px 20px;
+    margin-top: 20px;
+  }
+  .legend-item { display: flex; align-items: center; gap: 7px; font-size: 11px; color: var(--dim); }
+  .legend-dot  { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+  /* File path note */
+  .file-note {
+    background: var(--s2); border: 1px solid var(--border);
+    border-radius: 6px; padding: 8px 16px;
+    font-family: var(--mono); font-size: 11px; color: var(--dim);
+    margin-top: 20px;
+  }
+  .file-note b { color: var(--text); }
+
+  /* Responsive wrap */
+  @media (max-width: 900px) {
+    .section { padding: 28px 20px 0; }
+    .page-header { padding: 20px; flex-wrap: wrap; }
+    .agents-row { flex-wrap: wrap; }
+    .agent-col { max-width: 50%; min-width: 140px; }
+    .gflow-row { flex-wrap: wrap; }
+    .gemini-api-detail { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="page-header">
+  <div>
+    <h1>Team Panchayat</h1>
+    <p>Agent team structure &amp; Google Gemini image generation integration flow</p>
+  </div>
+  <div style="margin-left:auto;text-align:right">
+    <div class="header-badge">ADLC-Agent-Kit v3 &nbsp;|&nbsp; Sprint-01</div>
+    <div style="font-size:10px;color:var(--dim);margin-top:6px">Tarun Vangari &nbsp;|&nbsp; tarun.vangari@gmail.com</div>
+  </div>
+</div>
+
+
+<!-- ===== SECTION 1: TEAM STRUCTURE ===== -->
+<div class="section">
+  <div class="section-title">
+    <div class="num" style="background:rgba(188,140,255,0.15);color:var(--purple);border:1px solid rgba(188,140,255,0.4)">1</div>
+    <div>
+      <h2>Team Structure</h2>
+      <p>7 autonomous AI agents organised in a 3-phase sprint model</p>
+    </div>
+  </div>
+
+  <div class="org-wrap">
+
+    <!-- Tarun (PO) -->
+    <div class="po-card">
+      <div class="avatar">&#128104;&#8205;&#128187;</div>
+      <div class="name">Tarun Vangari</div>
+      <div class="role">Product Owner</div>
+      <div class="tag">tarun.vangari@gmail.com</div>
+    </div>
+
+    <!-- Line to PM -->
+    <div class="vert-line"></div>
+
+    <!-- Arjun (PM) -->
+    <div class="pm-layer">
+      <div class="pm-card">
+        <div style="font-size:10px;color:var(--purple);font-weight:700;letter-spacing:.05em;margin-bottom:4px">PM / SCRUM MASTER</div>
+        <div class="name">Arjun</div>
+        <div class="role">Discovery Lead &nbsp;&bull;&nbsp; Orchestrator</div>
+        <div class="tag">Claude Opus &nbsp;|&nbsp; runs discovery interviews &amp; sprint planning</div>
+      </div>
+      <div class="vert-line"></div>
+      <div style="display:flex;align-items:center;gap:0;width:100%;position:relative;justify-content:center">
+        <div class="horiz-line"></div>
+      </div>
+    </div>
+
+    <!-- 6 agents row -->
+    <div class="agents-row" style="margin-top:0;gap:8px;position:relative;padding-top:0">
+
+      <!-- Vikram -->
+      <div class="agent-col">
+        <div class="agent-vert" style="background:var(--red)"></div>
+        <div class="agent-box box-vikram">
+          <span class="emoji">&#9729;</span>
+          <div class="aname">Vikram</div>
+          <div class="arole">Cloud Architect</div>
+          <div class="amodel">Claude Sonnet</div>
+          <div class="owns">
+            <b>Owns:</b><br>
+            /infra/modules/<br>
+            Terraform IaC<br>
+            AWS ECS / S3 / ALB
+          </div>
+        </div>
+        <div style="margin-top:8px"><span class="phase-pill ph1">Phase 1</span></div>
+      </div>
+
+      <!-- Rasool -->
+      <div class="agent-col">
+        <div class="agent-vert" style="background:var(--yellow)"></div>
+        <div class="agent-box box-rasool">
+          <span class="emoji">&#128451;</span>
+          <div class="aname">Rasool</div>
+          <div class="arole">Database Agent</div>
+          <div class="amodel">Claude Sonnet</div>
+          <div class="owns">
+            <b>Owns:</b><br>
+            /backend/migrations/<br>
+            /docs/db-schema.md<br>
+            PostgreSQL + Alembic
+          </div>
+        </div>
+        <div style="margin-top:8px"><span class="phase-pill ph1">Phase 1</span></div>
+      </div>
+
+      <!-- Kavya -->
+      <div class="agent-col">
+        <div class="agent-vert" style="background:var(--pink)"></div>
+        <div class="agent-box box-kavya">
+          <span class="emoji">&#127912;</span>
+          <div class="aname">Kavya</div>
+          <div class="arole">UX Designer</div>
+          <div class="amodel">Claude Sonnet</div>
+          <div class="owns">
+            <b>Owns:</b><br>
+            /frontend/src/tokens/<br>
+            /docs/component-spec<br>
+            Gemini image gen
+          </div>
+        </div>
+        <div style="margin-top:8px"><span class="phase-pill ph1">Phase 1</span></div>
+      </div>
+
+      <!-- Kiran -->
+      <div class="agent-col">
+        <div class="agent-vert" style="background:var(--cyan)"></div>
+        <div class="agent-box box-kiran">
+          <span class="emoji">&#9889;</span>
+          <div class="aname">Kiran</div>
+          <div class="arole">Backend Engineer</div>
+          <div class="amodel">Claude Sonnet</div>
+          <div class="owns">
+            <b>Owns:</b><br>
+            /backend/app/routers/<br>
+            /backend/app/schemas/<br>
+            FastAPI + Pydantic
+          </div>
+        </div>
+        <div style="margin-top:8px"><span class="phase-pill ph2">Phase 2</span></div>
+      </div>
+
+      <!-- Rohan -->
+      <div class="agent-col">
+        <div class="agent-vert" style="background:var(--blue)"></div>
+        <div class="agent-box box-rohan">
+          <span class="emoji">&#128421;</span>
+          <div class="aname">Rohan</div>
+          <div class="arole">Frontend Engineer</div>
+          <div class="amodel">Claude Sonnet</div>
+          <div class="owns">
+            <b>Owns:</b><br>
+            /frontend/src/components/<br>
+            React 18 + TypeScript<br>
+            Recharts + CSS vars
+          </div>
+        </div>
+        <div style="margin-top:8px"><span class="phase-pill ph2">Phase 2</span></div>
+      </div>
+
+      <!-- Keerthi -->
+      <div class="agent-col">
+        <div class="agent-vert" style="background:var(--green)"></div>
+        <div class="agent-box box-keerthi">
+          <span class="emoji">&#9989;</span>
+          <div class="aname">Keerthi</div>
+          <div class="arole">QA Agent</div>
+          <div class="amodel">Claude Sonnet</div>
+          <div class="owns">
+            <b>Owns:</b><br>
+            /docs/qa-report.md<br>
+            READ-ONLY everywhere<br>
+            Activated by Arjun
+          </div>
+        </div>
+        <div style="margin-top:8px"><span class="phase-pill ph3">Phase 3</span></div>
+      </div>
+
+    </div><!-- /.agents-row -->
+
+  </div><!-- /.org-wrap -->
+
+  <!-- Legend -->
+  <div class="legend" style="margin-top:32px">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div>Phase 1 — Infrastructure &amp; DB &amp; Design (parallel)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--blue)"></div>Phase 2 — Backend &amp; Frontend (after Phase 1)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>Phase 3 — QA Sign-off (after all agents done)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--purple)"></div>Arjun — PM, never writes code</div>
+  </div>
+
+  <div class="file-note">
+    Folder boundaries enforced via CLAUDE.md &nbsp;|&nbsp;
+    <b>Ownership map:</b> Vikram=/infra &nbsp; Rasool=/backend/migrations &nbsp;
+    Kiran=/backend/app &nbsp; Kavya=/frontend/src/tokens &nbsp; Rohan=/frontend/src/components &nbsp;
+    Keerthi=READ-ONLY
+  </div>
+</div>
+
+
+<hr class="sep">
+
+
+<!-- ===== SECTION 2: DISCOVERY FLOW ===== -->
+<div class="section">
+  <div class="section-title">
+    <div class="num" style="background:rgba(56,139,253,0.15);color:var(--blue);border:1px solid rgba(56,139,253,0.4)">2</div>
+    <div>
+      <h2>Arjun Discovery Flow</h2>
+      <p>3-round PM interview that runs BEFORE any agent touches code</p>
+    </div>
+  </div>
+
+  <div class="flow-wrap">
+
+    <!-- Tarun posts requirement -->
+    <div class="flow-row">
+      <div class="flow-node fn-blue">
+        <div class="fn-title">Tarun posts requirement</div>
+        <div class="fn-sub">Via dashboard "+ New Requirement" wizard or node new-project.js</div>
+        <span class="fn-badge badge-blue">requirement.json</span>
+      </div>
+    </div>
+    <div class="flow-arrow-down"></div>
+
+    <!-- Arjun reads -->
+    <div class="flow-row">
+      <div class="flow-node fn-purple">
+        <div class="fn-title">Arjun reads requirement</div>
+        <div class="fn-sub">Loads memory. Checks discoveryComplete flag.</div>
+        <span class="fn-badge badge-purple">ARJUN</span>
+      </div>
+    </div>
+    <div class="flow-arrow-down"></div>
+
+    <!-- Round 1 -->
+    <div class="flow-row">
+      <div class="flow-node fn-yellow" style="max-width:260px">
+        <div class="fn-title">Round 1 — Product Vision</div>
+        <div class="fn-sub">
+          1. Problem &amp; pain point<br>
+          2. User personas &amp; skill level<br>
+          3. Success KPIs (90-day)<br>
+          4. MVP scope<br>
+          5. Out of scope
+        </div>
+        <span class="fn-badge badge-yellow">group-chat.json type:question</span>
+      </div>
+    </div>
+    <div class="flow-arrow-down"></div>
+
+    <!-- Tarun answers R1 -->
+    <div class="flow-row">
+      <div class="flow-node fn-blue">
+        <div class="fn-title">Tarun answers (numbered)</div>
+        <div class="fn-sub">Types answers in dashboard chat panel</div>
+        <span class="fn-badge badge-blue">discoveryAnswers.round1</span>
+      </div>
+    </div>
+    <div class="flow-arrow-down"></div>
+
+    <!-- Round 2 -->
+    <div class="flow-row">
+      <div class="flow-node fn-yellow" style="max-width:260px">
+        <div class="fn-title">Round 2 — Technical Constraints</div>
+        <div class="fn-sub">
+          6. Cloud infra &amp; existing limits<br>
+          7. Performance SLA (load/latency)<br>
+          8. Integrations &amp; auth provider<br>
+          9. Security &amp; compliance (SOC2 etc.)<br>
+          10. Data model (in / stored / out)
+        </div>
+        <span class="fn-badge badge-yellow">group-chat.json type:question</span>
+      </div>
+    </div>
+    <div class="flow-arrow-down"></div>
+
+    <!-- Tarun answers R2 -->
+    <div class="flow-row">
+      <div class="flow-node fn-blue">
+        <div class="fn-title">Tarun answers</div>
+        <div class="fn-sub">Saved to discoveryAnswers.round2</div>
+        <span class="fn-badge badge-blue">discoveryAnswers.round2</span>
+      </div>
+    </div>
+    <div class="flow-arrow-down"></div>
+
+    <!-- Round 3 -->
+    <div class="flow-row">
+      <div class="flow-node fn-yellow" style="max-width:260px">
+        <div class="fn-title">Round 3 — Delivery &amp; Risk</div>
+        <div class="fn-sub">
+          11. Hard deadline &amp; business impact<br>
+          12. Team / budget / tooling constraints<br>
+          13. Top 3 risks<br>
+          14. Acceptance criteria (5 tests)
+        </div>
+        <span class="fn-badge badge-yellow">group-chat.json type:question</span>
+      </div>
+    </div>
+    <div class="flow-arrow-down"></div>
+
+    <!-- Compile brief -->
+    <div class="flow-row">
+      <div class="flow-node fn-purple" style="max-width:300px">
+        <div class="fn-title">Arjun compiles Product Brief</div>
+        <div class="fn-sub">
+          Merges all 14 answers into productBrief JSON.
+          Sets discoveryComplete=true. Broadcasts tailored
+          briefing to each of the 5 specialist agents.
+        </div>
+        <span class="fn-badge badge-purple">requirement.json.productBrief</span>
+      </div>
+    </div>
+    <div class="flow-arrow-down"></div>
+
+    <!-- Agents analyse -->
+    <div class="flow-row" style="gap:10px">
+      <div class="flow-node fn-red" style="min-width:120px;max-width:140px">
+        <div class="fn-title" style="font-size:11px">Vikram</div>
+        <div class="fn-sub">Infra analysis</div>
+      </div>
+      <div class="flow-node fn-yellow" style="min-width:120px;max-width:140px">
+        <div class="fn-title" style="font-size:11px;color:var(--yellow)">Rasool</div>
+        <div class="fn-sub">DB schema analysis</div>
+      </div>
+      <div class="flow-node" style="min-width:120px;max-width:140px;background:rgba(255,123,229,0.07);border-color:rgba(255,123,229,0.4)">
+        <div class="fn-title" style="font-size:11px;color:var(--pink)">Kavya</div>
+        <div class="fn-sub">UX + Gemini plan</div>
+      </div>
+      <div class="flow-node fn-cyan" style="min-width:120px;max-width:140px">
+        <div class="fn-title" style="font-size:11px">Kiran</div>
+        <div class="fn-sub">API analysis</div>
+      </div>
+      <div class="flow-node fn-blue" style="min-width:120px;max-width:140px">
+        <div class="fn-title" style="font-size:11px">Rohan</div>
+        <div class="fn-sub">UI component plan</div>
+      </div>
+    </div>
+    <div class="flow-arrow-down"></div>
+
+    <!-- Sprint plan -->
+    <div class="flow-row">
+      <div class="flow-node fn-green" style="max-width:280px">
+        <div class="fn-title">Arjun compiles Sprint Plan</div>
+        <div class="fn-sub">Phase 1 / 2 / 3 task breakdown. Posts plan to group chat. Waits for Tarun approval.</div>
+        <span class="fn-badge badge-green">Approve Sprint Plan button</span>
+      </div>
+    </div>
+    <div class="flow-arrow-down"></div>
+
+    <!-- SPRINT GO -->
+    <div class="flow-row">
+      <div class="flow-node fn-green" style="max-width:220px;border-width:2px">
+        <div class="fn-title" style="font-size:14px">SPRINT GO!</div>
+        <div class="fn-sub">All agents execute in 3 phases. Arjun monitors and alerts on blockers.</div>
+        <span class="fn-badge badge-green">approvedByTarun=true</span>
+      </div>
+    </div>
+
+  </div><!-- /.flow-wrap -->
+</div>
+
+
+<hr class="sep">
+
+
+<!-- ===== SECTION 3: GEMINI IMAGE GENERATION FLOW ===== -->
+<div class="section">
+  <div class="section-title">
+    <div class="num" style="background:rgba(66,133,244,0.15);color:#4285f4;border:1px solid rgba(66,133,244,0.4)">3</div>
+    <div>
+      <h2>Gemini Image Generation Flow</h2>
+      <p>How Kavya calls Google Gemini Imagen to generate UI assets, mockups, and design images</p>
+    </div>
+  </div>
+
+  <div class="gemini-pipeline">
+
+    <!-- Main pipeline row -->
+    <div class="gflow-row">
+
+      <!-- 1. Tarun/Arjun -->
+      <div class="gnode gn-user">
+        <span class="gn-icon">&#128104;&#8205;&#128187;</span>
+        <div class="gn-title">Tarun / Arjun</div>
+        <div class="gn-sub">Image requirement captured during discovery (Q2 - user personas, Q4 - MVP scope)</div>
+        <span class="gn-badge" style="background:rgba(56,139,253,0.2);color:var(--blue)">productBrief</span>
+      </div>
+      <div class="garrow blue"></div>
+
+      <!-- 2. Kavya reads brief -->
+      <div class="gnode gn-kavya">
+        <span class="gn-icon">&#127912;</span>
+        <div class="gn-title">Kavya reads brief</div>
+        <div class="gn-sub">Extracts: user persona, brand style, UI component list, image use-cases</div>
+        <span class="gn-badge" style="background:rgba(255,123,229,0.2);color:var(--pink)">UX Agent</span>
+      </div>
+      <div class="garrow purple"></div>
+
+      <!-- 3. Kavya builds prompt -->
+      <div class="gnode gn-kavya">
+        <span class="gn-icon">&#128221;</span>
+        <div class="gn-title">Builds image prompt</div>
+        <div class="gn-sub">Constructs a detailed Gemini Imagen prompt: style, palette, size, use-case</div>
+        <span class="gn-badge" style="background:rgba(255,123,229,0.2);color:var(--pink)">Prompt engineering</span>
+      </div>
+      <div class="garrow gemini"></div>
+
+      <!-- 4. Gemini Imagen API -->
+      <div class="gnode gn-gemini">
+        <span class="gn-icon">&#10024;</span>
+        <div class="gn-title">Gemini Imagen API</div>
+        <div class="gn-sub">Google Gemini 2.0 Flash Experimental or Imagen 3</div>
+        <span class="gn-badge" style="background:rgba(66,133,244,0.25);color:#4285f4">google/generative-ai</span>
+      </div>
+      <div class="garrow orange"></div>
+
+      <!-- 5. S3 storage -->
+      <div class="gnode gn-s3">
+        <span class="gn-icon">&#128190;</span>
+        <div class="gn-title">S3 Image Store</div>
+        <div class="gn-sub">Generated PNG/WebP uploaded to S3 bucket via Vikram's IaC. Returns CDN URL.</div>
+        <span class="gn-badge" style="background:rgba(219,109,40,0.2);color:var(--orange)">s3://adlc-assets/</span>
+      </div>
+      <div class="garrow blue"></div>
+
+      <!-- 6. Rohan uses it -->
+      <div class="gnode gn-rohan">
+        <span class="gn-icon">&#128421;</span>
+        <div class="gn-title">Rohan integrates</div>
+        <div class="gn-sub">Imports CDN URL into React components. Uses CSS vars from Kavya's tokens.</div>
+        <span class="gn-badge" style="background:rgba(56,139,253,0.2);color:var(--blue)">Frontend</span>
+      </div>
+      <div class="garrow green"></div>
+
+      <!-- 7. Done -->
+      <div class="gnode gn-done">
+        <span class="gn-icon">&#9989;</span>
+        <div class="gn-title">Image in product</div>
+        <div class="gn-sub">Keerthi validates image loads, accessibility labels, dark-mode rendering.</div>
+        <span class="gn-badge" style="background:rgba(63,185,80,0.2);color:var(--green)">QA approved</span>
+      </div>
+
+    </div><!-- /.gflow-row -->
+
+    <!-- Detail cards -->
+    <div class="gemini-api-detail">
+
+      <div class="ga-card" style="border-color:rgba(255,123,229,0.3)">
+        <h4 style="color:var(--pink)">Kavya's Gemini Prompt Template</h4>
+        <p>Kavya constructs the prompt from the product brief fields:</p>
+        <code>
+const prompt = [<br>
+&nbsp; `Style: ${productBrief.userPersonas} -- ${brandStyle}`,<br>
+&nbsp; `Use case: ${imageUseCase}`,<br>
+&nbsp; `Palette: dark, #0d1117 bg, accent ${accentColor}`,<br>
+&nbsp; `Format: ${width}x${height}px, ${format}`,<br>
+&nbsp; `No text overlays. No watermarks.`<br>
+].join('. ');
+        </code>
+      </div>
+
+      <div class="ga-card" style="border-color:rgba(66,133,244,0.4)">
+        <h4 style="color:#4285f4">Gemini API Call (Node.js)</h4>
+        <p>Kavya's script calls Gemini Imagen and saves the output:</p>
+        <code>
+const { GoogleGenerativeAI } = require('@google/generative-ai');<br>
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);<br>
+const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });<br>
+const result = await model.generateContent([prompt]);<br>
+// extract base64 image &rarr; upload to S3 &rarr; return CDN URL
+        </code>
+      </div>
+
+      <div class="ga-card" style="border-color:rgba(219,109,40,0.3)">
+        <h4 style="color:var(--orange)">Vikram's S3 bucket (IaC)</h4>
+        <p>Terraform creates the assets bucket. Kavya writes to it. Rohan reads CDN URLs from it.</p>
+        <code>
+resource "aws_s3_bucket" "assets" {<br>
+&nbsp; bucket = "adlc-generated-assets-${var.environment}"<br>
+&nbsp; tags   = local.common_tags<br>
+}<br>
+resource "aws_cloudfront_distribution" "assets" { ... }
+        </code>
+      </div>
+
+      <div class="ga-card" style="border-color:rgba(63,185,80,0.3)">
+        <h4 style="color:var(--green)">Keerthi's QA Checks</h4>
+        <p>After Rohan integrates, Keerthi validates:</p>
+        <code>
+-- Image renders at correct dimensions<br>
+-- Alt text / aria-label present on &lt;img&gt;<br>
+-- Loads in &lt; 2s on slow-3G (Lighthouse)<br>
+-- Dark mode: no white background bleed<br>
+-- No NSFW / brand-policy violations
+        </code>
+      </div>
+
+    </div><!-- /.gemini-api-detail -->
+
+  </div><!-- /.gemini-pipeline -->
+
+  <div class="file-note">
+    <b>Key files:</b> &nbsp;
+    kavya-gemini.js &nbsp;|&nbsp;
+    .env: GEMINI_API_KEY + AWS_ACCESS_KEY_ID &nbsp;|&nbsp;
+    /infra/modules/ecs/main.tf (S3 assets bucket) &nbsp;|&nbsp;
+    /frontend/src/tokens/tokens.css (CSS vars Kavya writes)
+  </div>
+</div>
+
+
+<hr class="sep">
+
+
+<!-- ===== SECTION 4: SPRINT EXECUTION TIMELINE ===== -->
+<div class="section">
+  <div class="section-title">
+    <div class="num" style="background:rgba(63,185,80,0.15);color:var(--green);border:1px solid rgba(63,185,80,0.4)">4</div>
+    <div>
+      <h2>Sprint Execution Timeline</h2>
+      <p>What each agent does, in order, after Tarun approves the sprint plan</p>
+    </div>
+  </div>
+
+  <div class="timeline">
+
+    <div class="tl-item">
+      <div class="tl-dot" style="border-color:var(--purple);background:var(--bg)"></div>
+      <div class="tl-card">
+        <span class="tl-phase" style="background:rgba(188,140,255,0.15);color:var(--purple)">Pre-Sprint</span>
+        <h4>Arjun: Discovery (3 rounds) + Product Brief + Sprint Plan</h4>
+        <p>14 questions answered, productBrief compiled, 5 agent briefings posted, sprint plan written and approved by Tarun.</p>
+        <div class="tl-agents">
+          <span class="tl-agent" style="border-color:var(--purple);color:var(--purple)">Arjun</span>
+          <span class="tl-agent" style="border-color:var(--dim);color:var(--dim)">Tarun answers questions</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="tl-item">
+      <div class="tl-dot" style="border-color:var(--red)"></div>
+      <div class="tl-card">
+        <span class="tl-phase" style="background:rgba(248,81,73,0.15);color:var(--red)">Phase 1 — Parallel</span>
+        <h4>Vikram + Rasool + Kavya run simultaneously</h4>
+        <p>
+          <b style="color:var(--red)">Vikram:</b> Terraform modules (ECS, S3 assets bucket, ALB, IAM, CloudWatch). Outputs: infra ARNs, CDN URL.<br>
+          <b style="color:var(--yellow)">Rasool:</b> PostgreSQL schema, Alembic migration, indexes, db-schema.md.<br>
+          <b style="color:var(--pink)">Kavya:</b> Design tokens (tokens.css), component-spec.md, Gemini image generation for all UI assets.
+        </p>
+        <div class="tl-agents">
+          <span class="tl-agent" style="border-color:var(--red);color:var(--red)">Vikram</span>
+          <span class="tl-agent" style="border-color:var(--yellow);color:var(--yellow)">Rasool</span>
+          <span class="tl-agent" style="border-color:var(--pink);color:var(--pink)">Kavya</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="tl-item">
+      <div class="tl-dot" style="border-color:var(--blue)"></div>
+      <div class="tl-card">
+        <span class="tl-phase" style="background:rgba(56,139,253,0.15);color:var(--blue)">Phase 2 — After Phase 1 done</span>
+        <h4>Kiran + Rohan run simultaneously</h4>
+        <p>
+          <b style="color:var(--cyan)">Kiran:</b> FastAPI routers, Pydantic v2 schemas, SQLAlchemy queries, pytest coverage &gt;80%.<br>
+          <b style="color:var(--blue)">Rohan:</b> React 18 components using Kavya's design tokens + Gemini-generated images + Kiran's API spec.
+        </p>
+        <div class="tl-agents">
+          <span class="tl-agent" style="border-color:var(--cyan);color:var(--cyan)">Kiran</span>
+          <span class="tl-agent" style="border-color:var(--blue);color:var(--blue)">Rohan</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="tl-item">
+      <div class="tl-dot" style="border-color:var(--green)"></div>
+      <div class="tl-card">
+        <span class="tl-phase" style="background:rgba(63,185,80,0.15);color:var(--green)">Phase 3 — QA</span>
+        <h4>Keerthi: Full quality gate pass</h4>
+        <p>Runs all acceptance criteria from productBrief. Tests API endpoints, frontend renders, Gemini image loads, dark mode, accessibility. Writes qa-report.md. Marks sprint DONE.</p>
+        <div class="tl-agents">
+          <span class="tl-agent" style="border-color:var(--green);color:var(--green)">Keerthi</span>
+          <span class="tl-agent" style="border-color:var(--dim);color:var(--dim)">READ-ONLY access</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div style="margin-top:32px;background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:20px 24px;display:flex;flex-wrap:wrap;gap:24px">
+    <div style="flex:1;min-width:200px">
+      <div style="font-size:11px;color:var(--dim);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Communication</div>
+      <div style="font-size:12px;line-height:2;color:var(--text)">
+        All agents write to <code style="font-family:var(--mono);color:var(--cyan);background:var(--bg);padding:1px 5px;border-radius:3px">group-chat.json</code><br>
+        Status to <code style="font-family:var(--mono);color:var(--cyan);background:var(--bg);padding:1px 5px;border-radius:3px">agent-status.json</code><br>
+        Memory to <code style="font-family:var(--mono);color:var(--cyan);background:var(--bg);padding:1px 5px;border-radius:3px">agent-memory/{name}-memory.json</code><br>
+        Dashboard: <code style="font-family:var(--mono);color:var(--blue);background:var(--bg);padding:1px 5px;border-radius:3px">http://localhost:3000</code>
+      </div>
+    </div>
+    <div style="flex:1;min-width:200px">
+      <div style="font-size:11px;color:var(--dim);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Quality Gates</div>
+      <div style="font-size:12px;line-height:2;color:var(--text)">
+        No TODO comments in final code<br>
+        No console.log / print debug<br>
+        Python test coverage &ge; 80%<br>
+        All AWS resources tagged (4 required tags)<br>
+        Gemini images pass Keerthi's 5 visual checks
+      </div>
+    </div>
+    <div style="flex:1;min-width:200px">
+      <div style="font-size:11px;color:var(--dim);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">AWS Tags (all resources)</div>
+      <div style="font-family:var(--mono);font-size:11px;color:var(--cyan);line-height:2;background:var(--bg);padding:8px 12px;border-radius:6px">
+        Environment = dev|staging|prod<br>
+        Owner       = TeamPanchayat<br>
+        CostCenter  = ADLC-Sprint01<br>
+        Project     = CostAnomalyPlatform
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div style="text-align:center;margin-top:48px;padding:16px;color:var(--dim);font-size:11px;border-top:1px solid var(--border)">
+  Team Panchayat &nbsp;&bull;&nbsp; ADLC-Agent-Kit v3 &nbsp;&bull;&nbsp; Tarun Vangari &nbsp;&bull;&nbsp; 2026-03-16
+</div>
+
+</body>
+</html>

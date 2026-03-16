@@ -1,12 +1,12 @@
 /**
  * Author: Tarun Vangari (tarun.vangari@gmail.com)
  * Role: DevOps & Cloud Architect
- * Project: ADLC-Agent-Kit — Team Panchayat
+ * Project: ADLC-Agent-Kit  --  Team Panchayat
  * Date: 2026-03-14
  */
 /**
  * sync-dashboard.js
- * Team Panchayat — ADLC Sprint Dashboard Auto-Sync
+ * Team Panchayat  --  ADLC Sprint Dashboard Auto-Sync
  *
  * Reads agent-status.json and patches sprint-dashboard.html
  * Run with: node sync-dashboard.js
@@ -20,10 +20,10 @@ const STATUS_FILE = path.join(__dirname, 'agent-status.json');
 const DASHBOARD_FILE = path.join(__dirname, 'sprint-dashboard.html');
 
 const STATUS_LABELS = {
-  done: '✅ DONE',
-  wip: '🟡 IN PROGRESS',
-  blocked: '🔴 BLOCKED',
-  queue: '⏳ QUEUE'
+  done: '[OK] DONE',
+  wip: '[*] IN PROGRESS',
+  blocked: '[*] BLOCKED',
+  queue: '[..] QUEUE'
 };
 
 function syncDashboard() {
@@ -32,7 +32,7 @@ function syncDashboard() {
   try {
     statusData = JSON.parse(fs.readFileSync(STATUS_FILE, 'utf8'));
   } catch (e) {
-    console.error('❌ Cannot read agent-status.json:', e.message);
+    console.error('[NO] Cannot read agent-status.json:', e.message);
     return;
   }
 
@@ -42,12 +42,12 @@ function syncDashboard() {
   // Build updated AGENTS array for injection into HTML
   const agentOrder = ['vikram', 'rohan', 'kiran', 'rasool', 'kavya', 'keerthi'];
   const agentMeta = {
-    vikram:  { cls: 'c-vikram',  initial: 'V',  name: 'Vikram',  role: 'Cloud Architect · Claude Sonnet',    tools: ['Terraform', 'AWS CLI', 'CMD Terminal', 'VS Code'] },
-    rohan:   { cls: 'c-rohan',   initial: 'R',  name: 'Rohan',   role: 'Frontend Engineer · Claude Sonnet',  tools: ['VS Code', 'Chrome Browser', 'CMD', 'GitHub'] },
-    kiran:   { cls: 'c-kiran',   initial: 'K',  name: 'Kiran',   role: 'Backend Engineer · Claude Sonnet',   tools: ['FastAPI', 'GitHub', 'VS Code', 'CMD'] },
-    rasool:  { cls: 'c-rasool',  initial: 'Ra', name: 'Rasool',  role: 'Database Agent · Claude Sonnet',     tools: ['PostgreSQL', 'Alembic', 'VS Code', 'CMD'] },
-    kavya:   { cls: 'c-kavya',   initial: 'Ka', name: 'Kavya',   role: 'UX Designer · Claude Sonnet',        tools: ['Chrome Browser', 'VS Code', 'CSS Tokens'] },
-    keerthi: { cls: 'c-keerthi', initial: 'Ke', name: 'Keerthi', role: 'QA Agent · Claude Sonnet',           tools: ['pytest', 'Chrome Browser', 'VS Code', 'CMD'] }
+    vikram:  { cls: 'c-vikram',  initial: 'V',  name: 'Vikram',  role: 'Cloud Architect * Claude Sonnet',    tools: ['Terraform', 'AWS CLI', 'CMD Terminal', 'VS Code'] },
+    rohan:   { cls: 'c-rohan',   initial: 'R',  name: 'Rohan',   role: 'Frontend Engineer * Claude Sonnet',  tools: ['VS Code', 'Chrome Browser', 'CMD', 'GitHub'] },
+    kiran:   { cls: 'c-kiran',   initial: 'K',  name: 'Kiran',   role: 'Backend Engineer * Claude Sonnet',   tools: ['FastAPI', 'GitHub', 'VS Code', 'CMD'] },
+    rasool:  { cls: 'c-rasool',  initial: 'Ra', name: 'Rasool',  role: 'Database Agent * Claude Sonnet',     tools: ['PostgreSQL', 'Alembic', 'VS Code', 'CMD'] },
+    kavya:   { cls: 'c-kavya',   initial: 'Ka', name: 'Kavya',   role: 'UX Designer * Claude Sonnet',        tools: ['Chrome Browser', 'VS Code', 'CSS Tokens'] },
+    keerthi: { cls: 'c-keerthi', initial: 'Ke', name: 'Keerthi', role: 'QA Agent * Claude Sonnet',           tools: ['pytest', 'Chrome Browser', 'VS Code', 'CMD'] }
   };
 
   const agentsArray = agentOrder.map(id => {
@@ -64,7 +64,7 @@ function syncDashboard() {
       status: state.status || 'queue',
       progress: state.progress || 0,
       blocker: state.blocker || '',
-      updated: state.updated ? new Date(state.updated).toLocaleTimeString('en-GB') : '—'
+      updated: state.updated ? new Date(state.updated).toLocaleTimeString('en-GB') : ' -- '
     };
   });
 
@@ -76,7 +76,7 @@ function syncDashboard() {
   try {
     html = fs.readFileSync(DASHBOARD_FILE, 'utf8');
   } catch (e) {
-    console.error('❌ Cannot read sprint-dashboard.html:', e.message);
+    console.error('[NO] Cannot read sprint-dashboard.html:', e.message);
     return;
   }
 
@@ -85,7 +85,7 @@ function syncDashboard() {
   const newAgentsBlock = `const AGENTS = ${agentsJson};`;
 
   if (!agentsBlockRegex.test(html)) {
-    console.error('❌ Could not find AGENTS array in dashboard HTML. Is the file intact?');
+    console.error('[NO] Could not find AGENTS array in dashboard HTML. Is the file intact?');
     return;
   }
 
@@ -95,7 +95,7 @@ function syncDashboard() {
   try {
     fs.writeFileSync(DASHBOARD_FILE, updated, 'utf8');
   } catch (e) {
-    console.error('❌ Cannot write sprint-dashboard.html:', e.message);
+    console.error('[NO] Cannot write sprint-dashboard.html:', e.message);
     return;
   }
 
@@ -105,11 +105,11 @@ function syncDashboard() {
   const blocked = agentsArray.filter(a => a.status === 'blocked').length;
   const overall = Math.round(agentsArray.reduce((s, a) => s + a.progress, 0) / agentsArray.length);
 
-  console.log(`\n[${now}] ✅ Dashboard synced — Sprint-${statusData.sprint}`);
+  console.log(`\n[${now}] [OK] Dashboard synced  --  Sprint-${statusData.sprint}`);
   console.log(`  Done: ${done} | Working: ${wip} | Blocked: ${blocked} | Overall: ${overall}%`);
   agentsArray.forEach(a => {
-    const icon = { done: '✅', wip: '🟡', blocked: '🔴', queue: '⏳' }[a.status] || '❓';
-    console.log(`  ${icon} ${a.name.padEnd(10)} ${String(a.progress + '%').padEnd(5)} — ${a.task.substring(0, 50)}`);
+    const icon = { done: '[OK]', wip: '[*]', blocked: '[*]', queue: '[..]' }[a.status] || '[?]';
+    console.log(`  ${icon} ${a.name.padEnd(10)} ${String(a.progress + '%').padEnd(5)}  --  ${a.task.substring(0, 50)}`);
   });
 
   // Update lastSync in status file
@@ -122,7 +122,7 @@ syncDashboard();
 
 // Watch mode
 if (process.argv.includes('--watch')) {
-  console.log('\n👁️  Watch mode ON — monitoring agent-status.json for changes...\n');
+  console.log('\n[*][?]  Watch mode ON  --  monitoring agent-status.json for changes...\n');
   fs.watch(STATUS_FILE, (eventType) => {
     if (eventType === 'change') {
       setTimeout(syncDashboard, 300); // small delay to let write complete

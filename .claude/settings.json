@@ -1,0 +1,23 @@
+{
+  "_comment": "Team Panchayat ADLC-Agent-Kit -- pre-authorized tool permissions for all agents.",
+  "permissions": {
+    "allow": [
+      "Bash(*)",
+      "Read(*)",
+      "Write(*)",
+      "Edit(*)",
+      "MultiEdit(*)",
+      "Glob(*)",
+      "Grep(*)",
+      "LS(*)",
+      "TodoWrite(*)",
+      "TodoRead(*)",
+      "WebFetch(*)",
+      "WebSearch(*)"
+    ],
+    "deny": []
+  },
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  }
+}

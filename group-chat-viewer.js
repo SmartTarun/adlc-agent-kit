@@ -2,16 +2,16 @@
  * group-chat-viewer.js
  * Author: Tarun Vangari (tarun.vangari@gmail.com)
  * Role: DevOps & Cloud Architect
- * Project: ADLC-Agent-Kit — Team Panchayat
+ * Project: ADLC-Agent-Kit  --  Team Panchayat
  * Date: 2026-03-14
  *
  * Live group chat viewer for all Team Panchayat agents.
  * Agents write to group-chat.json; this script renders it like a team channel.
  *
  * Usage:
- *   node group-chat-viewer.js           → show full chat history
- *   node group-chat-viewer.js --watch   → live feed (auto-refresh every 2s)
- *   node group-chat-viewer.js --last 20 → show last N messages
+ *   node group-chat-viewer.js           -> show full chat history
+ *   node group-chat-viewer.js --watch   -> live feed (auto-refresh every 2s)
+ *   node group-chat-viewer.js --last 20 -> show last N messages
  */
 
 const fs   = require('fs');
@@ -31,17 +31,17 @@ const COLORS = {
   system:  '\x1b[90m',   // dark gray
 };
 const TYPE_ICONS = {
-  message:       '💬',
-  status_update: '📊',
-  handoff:       '🤝',
-  blocker:       '🔴',
-  done:          '✅',
-  question:      '❓',
-  requirement:   '📋',
-  analysis:      '🔍',
-  plan:          '🗺️',
-  system:        '⚙️',
-  broadcast:     '📢',
+  message:       '[*]',
+  status_update: '[*]',
+  handoff:       '[*]',
+  blocker:       '[*]',
+  done:          '[OK]',
+  question:      '[?]',
+  requirement:   '[*]',
+  analysis:      '[*]',
+  plan:          '[*][?]',
+  system:        '[?][?]',
+  broadcast:     '[*]',
 };
 const RESET = '\x1b[0m';
 const BOLD  = '\x1b[1m';
@@ -66,7 +66,7 @@ function formatTime(iso) {
 
 function renderMessage(msg, showDate = false) {
   const color = COLORS[msg.from?.toLowerCase()] || COLORS.system;
-  const icon  = TYPE_ICONS[msg.type] || '💬';
+  const icon  = TYPE_ICONS[msg.type] || '[*]';
   const time  = formatTime(msg.timestamp);
   const from  = (msg.from || 'UNKNOWN').toUpperCase().padEnd(10);
 
@@ -94,10 +94,10 @@ function renderChat(limit = 0) {
   const msgs = limit > 0 ? data.messages.slice(-limit) : data.messages;
 
   console.clear();
-  console.log(`\n${BOLD}╔══════════════════════════════════════════════════════════════╗`);
-  console.log(`║  📡  Team Panchayat — #${(data.channel || 'general').padEnd(38)}║`);
-  console.log(`║  Sprint: ${(data.sprint || '—').padEnd(53)}║`);
-  console.log(`╚══════════════════════════════════════════════════════════════╝${RESET}\n`);
+  console.log(`\n${BOLD}+==============================================================+`);
+  console.log(`|  [*]  Team Panchayat  --  #${(data.channel || 'general').padEnd(38)}|`);
+  console.log(`|  Sprint: ${(data.sprint || ' -- ').padEnd(53)}|`);
+  console.log(`+==============================================================+${RESET}\n`);
 
   if (msgs.length === 0) {
     console.log(`  ${DIM}No messages yet. Agents will post here as they work.${RESET}\n`);
@@ -108,17 +108,17 @@ function renderChat(limit = 0) {
   for (const msg of msgs) {
     const date = msg.timestamp ? new Date(msg.timestamp).toLocaleDateString('en-GB') : '';
     if (date && date !== lastDate) {
-      console.log(`\n  ${DIM}─────────────────── ${date} ───────────────────${RESET}`);
+      console.log(`\n  ${DIM}------------------- ${date} -------------------${RESET}`);
       lastDate = date;
     }
     console.log(renderMessage(msg));
   }
 
-  console.log(`\n  ${DIM}${msgs.length} message(s)  ·  Last updated: ${new Date().toLocaleTimeString('en-GB')}${RESET}\n`);
+  console.log(`\n  ${DIM}${msgs.length} message(s)  *  Last updated: ${new Date().toLocaleTimeString('en-GB')}${RESET}\n`);
 }
 
 function watchChat(limit = 50) {
-  console.log(`\n👁️  Live mode — watching group-chat.json (Ctrl+C to stop)\n`);
+  console.log(`\n[*][?]  Live mode  --  watching group-chat.json (Ctrl+C to stop)\n`);
   renderChat(limit);
   lastCount = readChat().messages?.length || 0;
 
@@ -134,7 +134,7 @@ function watchChat(limit = 50) {
   });
 }
 
-// ── CLI ──────────────────────────────────────────────────────────────────
+// -- CLI ------------------------------------------------------------------
 const args  = process.argv.slice(2);
 const watch = args.includes('--watch');
 const lastI = args.indexOf('--last');

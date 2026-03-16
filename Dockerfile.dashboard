@@ -1,0 +1,26 @@
+# Agent: Arjun | Sprint: 01 | Date: 2026-03-14
+# Dashboard server — serves the sprint board UI + Docker API proxy
+
+FROM node:20-alpine
+
+# ── System dependencies (wget for health check) ──────────────────────────
+RUN apk add --no-cache wget docker-cli
+
+WORKDIR /app
+
+# ── Copy server and UI files ─────────────────────────────────────────────
+COPY docker-dashboard-server.js /app/server.js
+COPY sprint-board.html /app/sprint-board.html
+
+# ── Environment ──────────────────────────────────────────────────────────
+ENV PORT=3000 \
+    WORKSPACE=/workspace \
+    NODE_ENV=production
+
+EXPOSE 3000
+
+# ── Health check ─────────────────────────────────────────────────────────
+HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=3 \
+  CMD wget -qO- http://localhost:3000/health || exit 1
+
+CMD ["node", "/app/server.js"]

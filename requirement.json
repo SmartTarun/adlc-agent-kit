@@ -12,6 +12,19 @@
   "deadline": "",
   "priority": "low | medium | high | critical",
   "status": "pending_analysis | analysed | in_sprint | done",
+  "discoveryComplete": false,
+  "discoveryPhase": {
+    "currentRound": 0,
+    "roundStatus": "not_started",
+    "fastTrack": false,
+    "startedAt": ""
+  },
+  "discoveryAnswers": {
+    "round1": {},
+    "round2": {},
+    "round3": {}
+  },
+  "productBrief": {},
   "agentInputs": {
     "arjun":   { "received": false, "summary": "", "questions": [], "estimate": "" },
     "vikram":  { "received": false, "summary": "", "questions": [], "estimate": "" },

@@ -2,6 +2,13 @@
   "sprint": "01",
   "lastSync": "",
   "agents": {
+    "arjun": {
+      "status": "queue",
+      "progress": 0,
+      "task": "Waiting for instructions",
+      "blocker": "",
+      "updated": ""
+    },
     "vikram": {
       "status": "queue",
       "progress": 0,
@@ -12,7 +19,7 @@
     "rohan": {
       "status": "queue",
       "progress": 0,
-      "task": "Cost anomaly dashboard — React + Recharts components",
+      "task": "Cost anomaly dashboard -- React + Recharts components",
       "blocker": "",
       "updated": ""
     },
@@ -40,7 +47,7 @@
     "keerthi": {
       "status": "queue",
       "progress": 0,
-      "task": "Awaiting all agents DONE — then full QA sign-off",
+      "task": "Awaiting all agents DONE -- then full QA sign-off",
       "blocker": "",
       "updated": ""
     }

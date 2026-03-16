@@ -1,0 +1,39 @@
+# Agent: Vikram | Sprint: 01 | Date: 2026-03-14
+# Base image for all Team Panchayat Claude Code agents
+
+FROM node:20-alpine
+
+# ── System dependencies ──────────────────────────────────────────────────
+RUN apk add --no-cache git curl bash python3 make g++
+
+# ── Install Claude Code CLI globally ────────────────────────────────────
+RUN npm install -g @anthropic-ai/claude-code
+
+# ── App directory ────────────────────────────────────────────────────────
+WORKDIR /app
+
+# ── Entrypoint script ────────────────────────────────────────────────────
+COPY docker-entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
+# ── Environment ──────────────────────────────────────────────────────────
+ENV CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 \
+    WORKSPACE=/workspace \
+    NODE_ENV=production
+
+# ── Health check — verifies agent updated status in last 5 minutes ───────
+HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=3 \
+  CMD node -e " \
+    try { \
+      const fs = require('fs'); \
+      const path = '/workspace/agent-status.json'; \
+      const s = JSON.parse(fs.readFileSync(path, 'utf8')); \
+      const a = s[process.env.AGENT_NAME]; \
+      if (!a || !a.updated) process.exit(1); \
+      const age = (Date.now() - new Date(a.updated).getTime()) / 1000; \
+      if (age > 300) process.exit(1); \
+      process.exit(0); \
+    } catch(e) { process.exit(1); } \
+  "
+
+ENTRYPOINT ["/app/entrypoint.sh"]
