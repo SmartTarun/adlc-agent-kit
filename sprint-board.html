@@ -115,6 +115,35 @@ body {
 .topbtn.danger { border-color: #fca5a5; color: #fca5a5; }
 .topbtn.danger:hover { background: rgba(220,38,38,.25); }
 .topbtn.primary { background: rgba(255,255,255,.92); border-color: #fff; color: var(--primary); font-weight: 600; }
+.topbtn.success { border-color: #86efac; color: #86efac; }
+.topbtn.success:hover { background: rgba(22,163,74,.25); }
+.topbtn.approve { background: #16a34a; border-color: #16a34a; color: #fff; font-weight: 700; animation: pulse-green 2s infinite; }
+.topbtn.approve:hover { background: #15803d; }
+@keyframes pulse-green { 0%,100%{box-shadow:0 0 0 0 rgba(22,163,74,.6)} 50%{box-shadow:0 0 0 6px rgba(22,163,74,0)} }
+
+/* Project switcher */
+#project-switcher {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+#project-switcher label {
+  font-size: 11px;
+  color: rgba(255,255,255,.6);
+  white-space: nowrap;
+}
+#project-select {
+  background: rgba(255,255,255,.12);
+  border: 1px solid rgba(255,255,255,.25);
+  color: #fff;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-family: var(--font);
+  cursor: pointer;
+  max-width: 180px;
+}
+#project-select option { background: #2e2e50; color: #fff; }
 .topbtn.primary:hover { background: #fff; }
 .topbtn.success { border-color: #86efac; color: #86efac; }
 .topbtn.success:hover { background: rgba(22,163,74,.2); }
@@ -1139,7 +1168,15 @@ body {
   <div class="divider"></div>
   <div id="uptime">⏱ 00:00:00</div>
   <div class="spacer"></div>
+  <div id="project-switcher">
+    <label>Project:</label>
+    <select id="project-select" onchange="onProjectSelectChange(this.value)" title="Switch active project">
+      <option value="">Loading...</option>
+    </select>
+  </div>
+  <div class="divider"></div>
   <div id="sse-status">● Connecting...</div>
+  <button id="btn-approve-next" class="topbtn approve" onclick="approveAndStartNext()" style="display:none" title="Mark this project done and start the next requirement">✅ Approve &amp; Start Next</button>
   <button class="topbtn primary" onclick="openReqWizard()">+ New Requirement</button>
   <button class="topbtn" onclick="openPermModal()" title="Manage agent tool permissions">🔐 Permissions</button>
   <button class="topbtn success" onclick="activateKeerthi()">🟢 Activate QA</button>
@@ -1428,10 +1465,95 @@ setInterval(() => {
   document.getElementById('uptime').textContent = `⏱ ${h}:${m}:${sec}`;
 }, 1000);
 
+// ── Project switcher ──────────────────────────────────────────────────────────
+function renderProjectSwitcher(state) {
+  const projects     = state.projects      || [];
+  const activeProject = state.activeProject || {};
+  const sel = document.getElementById('project-select');
+  if (!sel) return;
+
+  const prev = sel.value;
+  sel.innerHTML = '';
+  projects.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p.path;
+    opt.textContent = `${p.name} (S${p.sprint || '?'}) ${p.isActive ? '*' : ''}`;
+    opt.selected = p.isActive;
+    sel.appendChild(opt);
+  });
+  if (projects.length === 0) {
+    const opt = document.createElement('option');
+    opt.value = '.'; opt.textContent = 'Default Project';
+    sel.appendChild(opt);
+  }
+
+  // Show "Approve & Start Next" button when ALL build agents are done in current project
+  const agents  = (state.status && state.status.agents) || {};
+  const buildAgents = ['arjun','vikram','rasool','kavya','kiran','rohan'];
+  const allDone = buildAgents.every(a => agents[a] && agents[a].status === 'done');
+  const hasNext = projects.some(p => !p.isActive && (p.status === 'pending_analysis' || p.status === 'queued'));
+  const btn = document.getElementById('btn-approve-next');
+  if (btn) btn.style.display = (allDone && projects.length > 1) ? '' : 'none';
+}
+
+function onProjectSelectChange(value) {
+  if (!value) return;
+  fetch('/api/switch-project', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path: value }),
+  })
+  .then(r => r.json())
+  .then(d => {
+    if (d.ok) {
+      console.log('Switched project to:', value);
+    } else {
+      alert('Could not switch project: ' + (d.error || 'unknown error'));
+      // Reset select to current active
+      renderProjectSwitcher(currentState);
+    }
+  })
+  .catch(err => alert('Switch failed: ' + err.message));
+}
+
+// Called when Tarun clicks "Approve & Start Next"
+function approveAndStartNext() {
+  const projects = (currentState && currentState.projects) || [];
+  const next = projects.find(p => !p.isActive && (p.status === 'pending_analysis' || p.status === 'queued' || p.status === 'pending'));
+  if (!next) {
+    alert('No queued project found. Use "+ New Requirement" to add the next project first, then come back here.');
+    return;
+  }
+  if (!confirm(`Mark current project DONE and switch to:\n\n"${next.name}" (Sprint ${next.sprint})\n\nProceed?`)) return;
+
+  fetch('/api/switch-project', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path: next.path }),
+  })
+  .then(r => r.json())
+  .then(d => {
+    if (d.ok) {
+      const btn = document.getElementById('btn-approve-next');
+      if (btn) btn.style.display = 'none';
+      // Show toast
+      const t = document.createElement('div');
+      t.style.cssText = 'position:fixed;top:72px;right:20px;background:#16a34a;color:#fff;padding:12px 20px;border-radius:8px;font-weight:700;z-index:9999;font-size:14px;box-shadow:0 4px 12px rgba(0,0,0,.3)';
+      t.textContent = 'Switched to: ' + next.name;
+      document.body.appendChild(t);
+      setTimeout(() => t.remove(), 3500);
+    } else {
+      alert('Switch failed: ' + (d.error || 'unknown error'));
+    }
+  })
+  .catch(err => alert('Error: ' + err.message));
+}
+
 // ── Receive state updates ─────────────────────────────────────────────────────
 window.addEventListener('panchayat-state', e => {
   currentState = e.detail;
   renderBoard(currentState);
+  renderProjectSwitcher(currentState);
 });
 
 // ── Render Kanban board ───────────────────────────────────────────────────────

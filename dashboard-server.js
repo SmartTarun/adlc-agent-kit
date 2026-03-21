@@ -36,17 +36,108 @@ const UPLOADS_DIR = path.join(ROOT, 'chat-uploads');
 // Ensure chat-uploads directory exists on startup
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 
-// Files to watch for live updates
-const WATCHED_FILES = [
-  'agent-status.json',
-  'group-chat.json',
-  'requirement.json',
-  ...fs.readdirSync(path.join(ROOT, 'agent-memory')).map(f => `agent-memory/${f}`),
-].map(f => path.join(ROOT, f));
+// -- Multi-project support -----------------------------------------------
+
+// Returns absolute path to the currently active project folder.
+// Reads active-project.json on every call so switching projects is instant.
+function getProjectRoot() {
+  try {
+    const ap = JSON.parse(fs.readFileSync(path.join(ROOT, 'active-project.json'), 'utf8'));
+    const rel = ap.current || '.';
+    return rel === '.' ? ROOT : path.resolve(ROOT, rel);
+  } catch {
+    return ROOT;
+  }
+}
+
+// Lists all projects: the root project (if requirement.json exists) + every
+// subfolder under projects/ that contains a requirement.json.
+function getProjects() {
+  const projects = [];
+  const activeRoot = getProjectRoot();
+
+  const rootReq = readJSON(path.join(ROOT, 'requirement.json'));
+  if (rootReq && rootReq.requirementId) {
+    projects.push({
+      id:       rootReq.requirementId,
+      name:     rootReq.title  || 'Unnamed',
+      sprint:   rootReq.sprint || '01',
+      status:   rootReq.status || 'pending',
+      path:     '.',
+      isActive: activeRoot === ROOT,
+    });
+  }
+
+  const projectsDir = path.join(ROOT, 'projects');
+  if (fs.existsSync(projectsDir)) {
+    fs.readdirSync(projectsDir).forEach(folder => {
+      const folderAbs = path.join(projectsDir, folder);
+      try { if (!fs.statSync(folderAbs).isDirectory()) return; } catch { return; }
+      const req = readJSON(path.join(folderAbs, 'requirement.json'));
+      if (!req || !req.requirementId) return;
+      projects.push({
+        id:       req.requirementId,
+        name:     req.title  || folder,
+        sprint:   req.sprint || '01',
+        status:   req.status || 'pending',
+        path:     'projects/' + folder,
+        isActive: activeRoot === folderAbs,
+      });
+    });
+  }
+  return projects;
+}
+
+// Switch the active project and broadcast the new state.
+function switchActiveProject(relPath, meta) {
+  const ap = { current: relPath, updatedAt: new Date().toISOString(), ...meta };
+  fs.writeFileSync(path.join(ROOT, 'active-project.json'), JSON.stringify(ap, null, 2), 'utf8');
+  // Re-init watchers for the new project root
+  startWatching();
+  broadcast('project-switch', { activeProject: ap, state: getFullState() });
+  console.log(`[${new Date().toLocaleTimeString()}] Project switched -> ${relPath}`);
+}
+
+// -- File watchers (dynamic, reset on project switch) --------------------
+let watchers = [];
+let fileCache = {};
+
+function startWatching() {
+  // Tear down existing watchers
+  watchers.forEach(w => { try { w.close(); } catch {} });
+  watchers = [];
+  fileCache = {};
+
+  const pr = getProjectRoot();
+  const targets = ['agent-status.json', 'group-chat.json', 'requirement.json'];
+  const memDir  = path.join(pr, 'agent-memory');
+  if (fs.existsSync(memDir)) {
+    try { fs.readdirSync(memDir).forEach(f => targets.push('agent-memory/' + f)); } catch {}
+  }
+
+  targets.forEach(rel => {
+    const abs = path.join(pr, rel);
+    if (!fs.existsSync(abs)) return;
+    try {
+      const w = fs.watch(abs, () => {
+        setTimeout(() => {
+          try {
+            const content = fs.readFileSync(abs, 'utf8');
+            if (content !== fileCache[abs]) {
+              fileCache[abs] = content;
+              broadcast('update', getFullState());
+              console.log(`[${new Date().toLocaleTimeString()}] Changed: ${rel} -> pushed to ${clients.length} client(s)`);
+            }
+          } catch {}
+        }, 300);
+      });
+      watchers.push(w);
+    } catch {}
+  });
+}
 
 // Connected SSE clients
 let clients = [];
-let fileCache = {};
 
 function readJSON(file) {
   try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return null; }
@@ -68,16 +159,19 @@ function broadcast(event, data) {
 const CHAT_DASHBOARD_WINDOW = 50;
 
 function getFullState() {
-  const status  = readJSON(path.join(ROOT, 'agent-status.json'))  || {};
-  const rawChat = readJSON(path.join(ROOT, 'group-chat.json'))     || { channel: 'team-panchayat-general', messages: [] };
-  const req     = readJSON(path.join(ROOT, 'requirement.json'))    || {};
+  const pr      = getProjectRoot();
+  const status  = readJSON(path.join(pr, 'agent-status.json'))  || {};
+  const rawChat = readJSON(path.join(pr, 'group-chat.json'))     || { channel: 'team-panchayat-general', messages: [] };
+  const req     = readJSON(path.join(pr, 'requirement.json'))    || {};
   const memory  = {};
   try {
-    fs.readdirSync(path.join(ROOT, 'agent-memory')).forEach(f => {
+    fs.readdirSync(path.join(pr, 'agent-memory')).forEach(f => {
       const agent = f.replace('-memory.json', '');
-      memory[agent] = readJSON(path.join(ROOT, 'agent-memory', f));
+      memory[agent] = readJSON(path.join(pr, 'agent-memory', f));
     });
   } catch {}
+  const activeProject = readJSON(path.join(ROOT, 'active-project.json')) || { current: '.', name: 'Default' };
+  const projects = getProjects();
 
   // Windowed chat: send last CHAT_DASHBOARD_WINDOW messages + totalCount for UI
   const allMessages = rawChat.messages || [];
@@ -87,11 +181,11 @@ function getFullState() {
     messages:   allMessages.slice(-CHAT_DASHBOARD_WINDOW),
   };
 
-  return { status, chat, req, memory, timestamp: new Date().toISOString() };
+  return { status, chat, req, memory, activeProject, projects, timestamp: new Date().toISOString() };
 }
 
 function postToChat(from, role, type, message, tags) {
-  const chatFile = path.join(ROOT, 'group-chat.json');
+  const chatFile = path.join(getProjectRoot(), 'group-chat.json');
   const chat = readJSON(chatFile) || { channel: 'team-panchayat-general', messages: [] };
   if (!chat.messages) chat.messages = [];
   chat.messages.push({
@@ -103,23 +197,8 @@ function postToChat(from, role, type, message, tags) {
   writeJSON(chatFile, chat);
 }
 
-// Watch files and broadcast on change
-WATCHED_FILES.forEach(file => {
-  if (!fs.existsSync(file)) return;
-  fs.watch(file, () => {
-    setTimeout(() => {
-      try {
-        const content = fs.readFileSync(file, 'utf8');
-        if (content !== fileCache[file]) {
-          fileCache[file] = content;
-          broadcast('update', getFullState());
-          const rel = path.relative(ROOT, file);
-          console.log(`[${new Date().toLocaleTimeString()}] Changed: ${rel} -> pushed to ${clients.length} client(s)`);
-        }
-      } catch {}
-    }, 300);
-  });
-});
+// Start watching files for the active project
+startWatching();
 
 // MIME types
 const MIME = {
@@ -249,7 +328,7 @@ const server = http.createServer(async (req, res) => {
         console.log(`[${new Date().toLocaleTimeString()}] Saved ${msg.attachments.length} attachment(s) for message ${msg.id}`);
       }
 
-      const chatFile = path.join(ROOT, 'group-chat.json');
+      const chatFile = path.join(getProjectRoot(), 'group-chat.json');
       const chat = readJSON(chatFile) || { channel: 'team-panchayat-general', messages: [] };
       if (!chat.messages) chat.messages = [];
       chat.messages.push(msg);
@@ -343,10 +422,11 @@ const server = http.createServer(async (req, res) => {
         sprintPlan:      '',
         approvedByTarun: false,
       };
-      writeJSON(path.join(ROOT, 'requirement.json'), reqObj);
+      const pr = getProjectRoot();
+      writeJSON(path.join(pr, 'requirement.json'), reqObj);
 
       // Reset agent statuses
-      const statusData = readJSON(path.join(ROOT, 'agent-status.json')) || { agents: {} };
+      const statusData = readJSON(path.join(pr, 'agent-status.json')) || { agents: {} };
       statusData.sprint = data.sprint || statusData.sprint || '01';
       AGENTS.forEach(a => {
         statusData.agents[a] = {
@@ -355,7 +435,7 @@ const server = http.createServer(async (req, res) => {
           blocker: '', updated: new Date().toISOString(),
         };
       });
-      writeJSON(path.join(ROOT, 'agent-status.json'), statusData);
+      writeJSON(path.join(pr, 'agent-status.json'), statusData);
 
       // Post to group chat
       postToChat('TARUN', 'Product Owner', 'requirement',
@@ -381,21 +461,22 @@ const server = http.createServer(async (req, res) => {
   if (pathname === '/api/requirement/approve' && req.method === 'POST') {
     cors(res);
     try {
-      const reqObj = readJSON(path.join(ROOT, 'requirement.json'));
+      const pr     = getProjectRoot();
+      const reqObj = readJSON(path.join(pr, 'requirement.json'));
       if (!reqObj || !reqObj.requirementId) {
         res.writeHead(404, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: 'No active requirement' })); return;
       }
       reqObj.approvedByTarun = true;
       reqObj.status = 'in_sprint';
-      writeJSON(path.join(ROOT, 'requirement.json'), reqObj);
+      writeJSON(path.join(pr, 'requirement.json'), reqObj);
 
       // Move non-keerthi agents to wip
-      const statusData = readJSON(path.join(ROOT, 'agent-status.json')) || { agents: {} };
+      const statusData = readJSON(path.join(pr, 'agent-status.json')) || { agents: {} };
       ['arjun','vikram','rasool','kavya','kiran','rohan'].forEach(a => {
         if (statusData.agents[a]) statusData.agents[a].status = 'wip';
       });
-      writeJSON(path.join(ROOT, 'agent-status.json'), statusData);
+      writeJSON(path.join(pr, 'agent-status.json'), statusData);
 
       postToChat('TARUN', 'Product Owner', 'broadcast',
         'SPRINT PLAN APPROVED by Tarun. All agents - sprint is GO. Begin execution now.',
@@ -406,6 +487,100 @@ const server = http.createServer(async (req, res) => {
     } catch (e) {
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: e.message }));
+    }
+    return;
+  }
+
+  // -- API: list all projects -------------------------------------
+  if (pathname === '/api/projects' && req.method === 'GET') {
+    cors(res);
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ projects: getProjects() }));
+    return;
+  }
+
+  // -- API: switch active project ---------------------------------
+  if (pathname === '/api/switch-project' && req.method === 'POST') {
+    cors(res);
+    try {
+      const body = await readBody(req);
+      const data = JSON.parse(body);
+      if (!data.path) { res.writeHead(400); res.end(JSON.stringify({ error: 'path required' })); return; }
+      const absTarget = data.path === '.' ? ROOT : path.resolve(ROOT, data.path);
+      if (!fs.existsSync(path.join(absTarget, 'requirement.json'))) {
+        res.writeHead(404); res.end(JSON.stringify({ error: 'No requirement.json at that path' })); return;
+      }
+      const req2 = readJSON(path.join(absTarget, 'requirement.json'));
+      switchActiveProject(data.path, {
+        id:          req2.requirementId || '',
+        name:        req2.title         || data.path,
+        sprint:      req2.sprint        || '01',
+        status:      req2.status        || 'pending',
+        description: req2.description   || '',
+      });
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, active: data.path }));
+    } catch (e) {
+      res.writeHead(500); res.end(JSON.stringify({ error: e.message }));
+    }
+    return;
+  }
+
+  // -- API: scaffold + switch to next project --------------------
+  // POST /api/next-project  { title, sprint, description, priority }
+  if (pathname === '/api/next-project' && req.method === 'POST') {
+    cors(res);
+    try {
+      const body = await readBody(req);
+      const data = JSON.parse(body);
+      const reqId  = 'REQ-' + Date.now();
+      const slug   = (data.title || 'new-project').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      const folder = reqId + '-' + slug;
+      const absDir = path.join(ROOT, 'projects', folder);
+
+      fs.mkdirSync(absDir, { recursive: true });
+      ['agent-logs', 'agent-memory', 'chat-uploads', 'infra', 'backend', 'frontend', 'docs'].forEach(d => {
+        fs.mkdirSync(path.join(absDir, d), { recursive: true });
+      });
+
+      const newReq = {
+        requirementId:   reqId,
+        postedBy:        'Tarun Vangari',
+        postedAt:        new Date().toISOString(),
+        sprint:          data.sprint      || '02',
+        type:            data.type        || 'new_feature',
+        title:           data.title       || 'New Project',
+        description:     data.description || '',
+        businessGoal:    data.businessGoal|| '',
+        targetUsers:     data.targetUsers || '',
+        techConstraints: data.techConstraints || [],
+        deadline:        data.deadline    || '',
+        priority:        data.priority    || 'medium',
+        status:          'pending_analysis',
+        discoveryComplete: false,
+        discoveryPhase:   { currentRound: 0, roundStatus: 'not_started', fastTrack: false, startedAt: '' },
+        discoveryAnswers: { round1: {}, round2: {}, round3: {} },
+        productBrief:    {},
+        agentInputs:     Object.fromEntries(AGENTS.map(a => [a, { received: false, summary: '', questions: [], estimate: '' }])),
+        sprintPlan:      '',
+        approvedByTarun: false,
+      };
+      writeJSON(path.join(absDir, 'requirement.json'), newReq);
+
+      const newStatus = {
+        sprint: newReq.sprint,
+        lastSync: new Date().toISOString(),
+        agents: Object.fromEntries(AGENTS.map(a => [a, { status: 'queue', progress: 0, task: 'Awaiting requirement', blocker: '', updated: new Date().toISOString() }])),
+      };
+      writeJSON(path.join(absDir, 'agent-status.json'), newStatus);
+      writeJSON(path.join(absDir, 'group-chat.json'), { channel: 'team-panchayat-general', messages: [] });
+
+      const relPath = 'projects/' + folder;
+      switchActiveProject(relPath, { id: reqId, name: newReq.title, sprint: newReq.sprint, status: 'pending_analysis', description: newReq.description });
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, projectPath: relPath, requirementId: reqId }));
+    } catch (e) {
+      res.writeHead(500); res.end(JSON.stringify({ error: e.message }));
     }
     return;
   }
@@ -478,7 +653,11 @@ server.listen(PORT, () => {
   console.log(`  Post Chat:     POST ${dashUrl}/api/chat`);
   console.log(`  New Req:       POST ${dashUrl}/api/requirement`);
   console.log(`  Approve Plan:  POST ${dashUrl}/api/requirement/approve`);
-  console.log(`\n  Watching ${WATCHED_FILES.length} files for live updates...`);
+  console.log(`  Projects:      GET  ${dashUrl}/api/projects`);
+  console.log(`  Switch Proj:   POST ${dashUrl}/api/switch-project`);
+  console.log(`  Next Project:  POST ${dashUrl}/api/next-project`);
+  console.log(`\n  Active project: ${getProjectRoot()}`);
+  console.log(`  Watching project files for live updates...`);
   console.log('  Press Ctrl+C to stop\n');
 
   if (process.env.SKIP_BROWSER !== '1') {

@@ -4,57 +4,193 @@
   "global": {
     "requireApproval": true,
     "approvedBy": "Tarun Vangari",
-    "lastUpdated": ""
+    "lastUpdated": "2026-03-16T13:15:47.734Z"
   },
   "agents": {
     "arjun": {
-      "github": { "enabled": true,  "permissions": ["read_repo", "create_issue", "create_pr", "read_branches"] },
-      "docker": { "enabled": false, "permissions": [] },
-      "database": { "enabled": false, "permissions": [] },
-      "aws":    { "enabled": false, "permissions": [] },
-      "notes":  "Orchestrator — read-only GitHub for monitoring PRs and issues"
+      "github": {
+        "enabled": true,
+        "permissions": [
+          "read_repo",
+          "create_issue",
+          "create_pr",
+          "read_branches"
+        ]
+      },
+      "docker": {
+        "enabled": false,
+        "permissions": []
+      },
+      "database": {
+        "enabled": false,
+        "permissions": []
+      },
+      "aws": {
+        "enabled": false,
+        "permissions": []
+      },
+      "notes": "Orchestrator — read-only GitHub for monitoring PRs and issues"
     },
     "vikram": {
-      "github": { "enabled": true,  "permissions": ["push", "create_branch", "create_pr", "read_repo"] },
-      "docker": { "enabled": true,  "permissions": ["build", "run", "push_image"] },
-      "database": { "enabled": false, "permissions": [] },
-      "aws":    { "enabled": true,  "permissions": ["terraform_plan", "terraform_apply"] },
-      "notes":  "Cloud Architect — needs GitHub push for Terraform, Docker for container builds, AWS for infra"
+      "github": {
+        "enabled": true,
+        "permissions": [
+          "push",
+          "create_branch",
+          "create_pr",
+          "read_repo"
+        ]
+      },
+      "docker": {
+        "enabled": true,
+        "permissions": [
+          "build",
+          "run",
+          "push_image"
+        ]
+      },
+      "database": {
+        "enabled": false,
+        "permissions": []
+      },
+      "aws": {
+        "enabled": true,
+        "permissions": [
+          "terraform_plan",
+          "terraform_apply"
+        ]
+      },
+      "notes": "Cloud Architect — needs GitHub push for Terraform, Docker for container builds, AWS for infra"
     },
     "rasool": {
-      "github": { "enabled": true,  "permissions": ["push", "create_branch", "create_pr"] },
-      "docker": { "enabled": false, "permissions": [] },
-      "database": { "enabled": true,  "permissions": ["connect", "read", "write", "migrate", "seed"] },
-      "aws":    { "enabled": false, "permissions": [] },
-      "notes":  "Database Agent — needs DB direct connect for migrations and seeding"
+      "github": {
+        "enabled": true,
+        "permissions": [
+          "push",
+          "create_branch",
+          "create_pr"
+        ]
+      },
+      "docker": {
+        "enabled": false,
+        "permissions": []
+      },
+      "database": {
+        "enabled": true,
+        "permissions": [
+          "connect",
+          "read",
+          "write",
+          "migrate",
+          "seed"
+        ]
+      },
+      "aws": {
+        "enabled": false,
+        "permissions": []
+      },
+      "notes": "Database Agent — needs DB direct connect for migrations and seeding"
     },
     "kavya": {
-      "github": { "enabled": true,  "permissions": ["push", "create_branch", "create_pr"] },
-      "docker": { "enabled": false, "permissions": [] },
-      "database": { "enabled": false, "permissions": [] },
-      "aws":    { "enabled": false, "permissions": [] },
-      "notes":  "UX Designer — GitHub push for design tokens only"
+      "github": {
+        "enabled": true,
+        "permissions": [
+          "push",
+          "create_branch",
+          "create_pr"
+        ]
+      },
+      "docker": {
+        "enabled": false,
+        "permissions": []
+      },
+      "database": {
+        "enabled": false,
+        "permissions": []
+      },
+      "aws": {
+        "enabled": false,
+        "permissions": []
+      },
+      "notes": "UX Designer — GitHub push for design tokens only"
     },
     "kiran": {
-      "github": { "enabled": true,  "permissions": ["push", "create_branch", "create_pr"] },
-      "docker": { "enabled": false, "permissions": [] },
-      "database": { "enabled": true,  "permissions": ["connect", "read"] },
-      "aws":    { "enabled": false, "permissions": [] },
-      "notes":  "Backend Engineer — DB read-only for query testing, GitHub push for API code"
+      "github": {
+        "enabled": true,
+        "permissions": [
+          "push",
+          "create_branch",
+          "create_pr"
+        ]
+      },
+      "docker": {
+        "enabled": false,
+        "permissions": []
+      },
+      "database": {
+        "enabled": true,
+        "permissions": [
+          "connect",
+          "read"
+        ]
+      },
+      "aws": {
+        "enabled": false,
+        "permissions": []
+      },
+      "notes": "Backend Engineer — DB read-only for query testing, GitHub push for API code"
     },
     "rohan": {
-      "github": { "enabled": true,  "permissions": ["push", "create_branch", "create_pr"] },
-      "docker": { "enabled": false, "permissions": [] },
-      "database": { "enabled": false, "permissions": [] },
-      "aws":    { "enabled": false, "permissions": [] },
-      "notes":  "Frontend Engineer — GitHub push for React components only"
+      "github": {
+        "enabled": true,
+        "permissions": [
+          "push",
+          "create_branch",
+          "create_pr"
+        ]
+      },
+      "docker": {
+        "enabled": false,
+        "permissions": []
+      },
+      "database": {
+        "enabled": false,
+        "permissions": []
+      },
+      "aws": {
+        "enabled": false,
+        "permissions": []
+      },
+      "notes": "Frontend Engineer — GitHub push for React components only"
     },
     "keerthi": {
-      "github": { "enabled": true,  "permissions": ["read_repo", "create_issue", "comment_pr"] },
-      "docker": { "enabled": true,  "permissions": ["run", "logs"] },
-      "database": { "enabled": true,  "permissions": ["connect", "read"] },
-      "aws":    { "enabled": false, "permissions": [] },
-      "notes":  "QA Agent — read GitHub for PR review, Docker run for smoke tests, DB read for data validation"
+      "github": {
+        "enabled": true,
+        "permissions": [
+          "read_repo",
+          "create_issue",
+          "comment_pr"
+        ]
+      },
+      "docker": {
+        "enabled": true,
+        "permissions": [
+          "run",
+          "logs"
+        ]
+      },
+      "database": {
+        "enabled": true,
+        "permissions": [
+          "connect",
+          "read"
+        ]
+      },
+      "aws": {
+        "enabled": false,
+        "permissions": []
+      },
+      "notes": "QA Agent — read GitHub for PR review, Docker run for smoke tests, DB read for data validation"
     }
   }
 }
