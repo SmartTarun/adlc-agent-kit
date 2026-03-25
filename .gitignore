@@ -48,3 +48,14 @@ build/
 # Tool connections — NEVER commit credentials
 connections.json
 .connections.backup.json
+
+# Agent-generated project code — lives in projects/ not in the kit repo
+projects/
+infra/modules/
+frontend/src/
+backend/app/
+backend/migrations/
+agent-memory/
+context/*.json
+group-chat.json
+chat-uploads/

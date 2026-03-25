@@ -2,17 +2,17 @@
  * memory-manager.js
  * Author: Tarun Vangari (tarun.vangari@gmail.com)
  * Role: DevOps & Cloud Architect
- * Project: ADLC-Agent-Kit — Team Panchayat
+ * Project: ADLC-Agent-Kit  --  Team Panchayat
  * Date: 2026-03-14
  *
- * Agent Memory Manager — reads, displays, and resets agent memory
+ * Agent Memory Manager  --  reads, displays, and resets agent memory
  *
  * Usage:
- *   node memory-manager.js              → show memory summary for all agents
- *   node memory-manager.js vikram       → show detailed memory for one agent
- *   node memory-manager.js --reset all  → reset all agent memories (new sprint)
- *   node memory-manager.js --reset vikram → reset one agent's memory
- *   node memory-manager.js --watch      → live watch mode (refreshes every 5s)
+ *   node memory-manager.js              -> show memory summary for all agents
+ *   node memory-manager.js vikram       -> show detailed memory for one agent
+ *   node memory-manager.js --reset all  -> reset all agent memories (new sprint)
+ *   node memory-manager.js --reset vikram -> reset one agent's memory
+ *   node memory-manager.js --watch      -> live watch mode (refreshes every 5s)
  */
 
 const fs   = require('fs');
@@ -23,7 +23,7 @@ const STATUS_FILE = path.join(__dirname, 'agent-status.json');
 
 const AGENTS = ['arjun', 'vikram', 'rasool', 'kavya', 'kiran', 'rohan', 'keerthi'];
 
-const STATUS_ICON = { not_started: '⏳', in_progress: '🟡', blocked: '🔴', done: '✅', queue: '⏳' };
+const STATUS_ICON = { not_started: '[..]', in_progress: '[*]', blocked: '[*]', done: '[OK]', queue: '[..]' };
 const AGENT_COLORS = {
   arjun:   '\x1b[35m',  // magenta
   vikram:  '\x1b[31m',  // red
@@ -87,19 +87,19 @@ function showSummary() {
   const status = readStatus();
   const now    = new Date().toLocaleString('en-GB');
 
-  console.log(`\n${BOLD}╔═══════════════════════════════════════════════════════════╗`);
-  console.log(`║        ADLC Agent Memory Summary — Team Panchayat         ║`);
-  console.log(`╚═══════════════════════════════════════════════════════════╝${RESET}`);
+  console.log(`\n${BOLD}+===========================================================+`);
+  console.log(`|        ADLC Agent Memory Summary  --  Team Panchayat         |`);
+  console.log(`+===========================================================+${RESET}`);
   console.log(`${DIM}  ${now}\n${RESET}`);
 
   for (const agent of AGENTS) {
     const mem   = readMemory(agent);
     const stat  = status.agents?.[agent] || {};
     const color = AGENT_COLORS[agent] || '';
-    const icon  = STATUS_ICON[stat.status || 'not_started'] || '⏳';
+    const icon  = STATUS_ICON[stat.status || 'not_started'] || '[..]';
 
     if (!mem) {
-      console.log(`  ${color}${BOLD}${agent.toUpperCase().padEnd(10)}${RESET}  ❌ No memory file found`);
+      console.log(`  ${color}${BOLD}${agent.toUpperCase().padEnd(10)}${RESET}  [NO] No memory file found`);
       continue;
     }
 
@@ -114,7 +114,7 @@ function showSummary() {
     // Progress bar
     const barLen  = 20;
     const filled  = Math.round((progress / 100) * barLen);
-    const bar     = '█'.repeat(filled) + '░'.repeat(barLen - filled);
+    const bar     = '#'.repeat(filled) + '-'.repeat(barLen - filled);
 
     console.log(`  ${color}${BOLD}${agent.toUpperCase().padEnd(10)}${RESET} ${icon}  Sessions: ${sessions}  |  Last active: ${lastActive}`);
     console.log(`             [${color}${bar}${RESET}] ${progress}%`);
@@ -127,14 +127,14 @@ function showSummary() {
 function showDetail(agent) {
   const mem = readMemory(agent);
   if (!mem) {
-    console.log(`\n❌ No memory file found for agent: ${agent}`);
+    console.log(`\n[NO] No memory file found for agent: ${agent}`);
     return;
   }
 
   const color = AGENT_COLORS[agent] || '';
-  console.log(`\n${BOLD}${color}╔═══════════════════════════════════════════════════════════╗`);
-  console.log(`║  AGENT MEMORY: ${agent.toUpperCase().padEnd(45)}║`);
-  console.log(`╚═══════════════════════════════════════════════════════════╝${RESET}`);
+  console.log(`\n${BOLD}${color}+===========================================================+`);
+  console.log(`|  AGENT MEMORY: ${agent.toUpperCase().padEnd(45)}|`);
+  console.log(`+===========================================================+${RESET}`);
 
   console.log(`\n${BOLD}  Sprint:${RESET}       ${mem.sprint}`);
   console.log(`${BOLD}  Sessions:${RESET}     ${mem.sessionCount}`);
@@ -148,7 +148,7 @@ function showDetail(agent) {
 
   if (mem.completedTasks?.length) {
     console.log(`\n${BOLD}  Completed Tasks (${mem.completedTasks.length}):${RESET}`);
-    mem.completedTasks.forEach(t => console.log(`    ✅ ${t}`));
+    mem.completedTasks.forEach(t => console.log(`    [OK] ${t}`));
   }
 
   if (mem.pendingNextSteps?.length) {
@@ -168,12 +168,12 @@ function showDetail(agent) {
 
   if (mem.keyDecisions?.length) {
     console.log(`\n${BOLD}  Key Decisions:${RESET}`);
-    mem.keyDecisions.forEach(d => console.log(`    💡 ${d}`));
+    mem.keyDecisions.forEach(d => console.log(`    [*] ${d}`));
   }
 
   if (mem.blockers?.length) {
-    console.log(`\n${BOLD}  🔴 Blockers:${RESET}`);
-    mem.blockers.forEach(b => console.log(`    ⚠️  ${b}`));
+    console.log(`\n${BOLD}  [*] Blockers:${RESET}`);
+    mem.blockers.forEach(b => console.log(`    [!][?]  ${b}`));
   }
 
   if (mem.dependenciesStatus?.waitingFor) {
@@ -197,23 +197,23 @@ function resetMemory(target) {
 
   for (const agent of targets) {
     if (!AGENTS.includes(agent)) {
-      console.log(`⚠️  Unknown agent: ${agent}`);
+      console.log(`[!][?]  Unknown agent: ${agent}`);
       continue;
     }
     writeMemory(agent, emptyMemory(agent, sprint));
-    console.log(`✅ Reset memory for: ${agent}`);
+    console.log(`[OK] Reset memory for: ${agent}`);
   }
   console.log('\nDone. All specified agent memories cleared for new sprint.');
 }
 
-// ── CLI entry ─────────────────────────────────────────────────────────────
+// -- CLI entry -------------------------------------------------------------
 const args = process.argv.slice(2);
 
 if (args.includes('--reset')) {
   const target = args[args.indexOf('--reset') + 1] || 'all';
   resetMemory(target);
 } else if (args.includes('--watch')) {
-  console.log('\n👁️  Watch mode — refreshing every 5 seconds (Ctrl+C to stop)\n');
+  console.log('\n[*][?]  Watch mode  --  refreshing every 5 seconds (Ctrl+C to stop)\n');
   showSummary();
   setInterval(() => {
     console.clear();

@@ -1,0 +1,197 @@
+# Agent: Arjun | Sprint: 01 | Date: 2026-03-14
+# Team Panchayat — Docker Compose Cluster
+# Usage: docker compose up --build
+
+version: '3.9'
+
+# ── Shared workspace volume ───────────────────────────────────────────────────
+volumes:
+  workspace_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${PWD}
+
+networks:
+  panchayat:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
+
+# ── Reusable agent config ─────────────────────────────────────────────────────
+x-agent-base: &agent-base
+  build:
+    context: .
+    dockerfile: Dockerfile.base
+  volumes:
+    - .:/workspace:rw
+  networks:
+    - panchayat
+  restart: on-failure
+  environment:
+    - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+    - CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
+    - WORKSPACE=/workspace
+  depends_on:
+    dashboard:
+      condition: service_healthy
+  healthcheck:
+    test: >
+      sh -c "node -e \"
+        const fs=require('fs');
+        const s=JSON.parse(fs.readFileSync('/workspace/agent-status.json','utf8'));
+        const a=s[process.env.AGENT_NAME||'arjun'];
+        if(!a||!a.updated) process.exit(1);
+        const age=(Date.now()-new Date(a.updated).getTime())/1000;
+        if(age>300) process.exit(1);
+        process.exit(0);
+      \""
+    interval: 30s
+    timeout: 10s
+    start-period: 120s
+    retries: 3
+
+services:
+
+  # ── Dashboard ────────────────────────────────────────────────────────────────
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile.dashboard
+    container_name: panchayat-dashboard
+    ports:
+      - "${DASHBOARD_PORT:-3000}:3000"
+    volumes:
+      - .:/workspace:rw
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - panchayat
+    restart: unless-stopped
+    environment:
+      - WORKSPACE=/workspace
+      - COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME:-panchayat}
+      - PORT=3000
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+      interval: 15s
+      timeout: 5s
+      start-period: 10s
+      retries: 3
+    labels:
+      - "com.panchayat.role=dashboard"
+      - "com.panchayat.sprint=dynamic"
+
+  # ── Arjun — Orchestrator (Claude Opus) ───────────────────────────────────────
+  arjun:
+    <<: *agent-base
+    container_name: panchayat-arjun
+    environment:
+      - AGENT_NAME=arjun
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - CLAUDE_MODEL=${ARJUN_MODEL:-claude-opus-4-5}
+      - CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
+      - WORKSPACE=/workspace
+    labels:
+      - "com.panchayat.agent=arjun"
+      - "com.panchayat.role=orchestrator"
+      - "com.panchayat.sprint=dynamic"
+
+  # ── Vikram — Cloud Architect ──────────────────────────────────────────────────
+  vikram:
+    <<: *agent-base
+    container_name: panchayat-vikram
+    environment:
+      - AGENT_NAME=vikram
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - CLAUDE_MODEL=${AGENT_MODEL:-claude-sonnet-4-5}
+      - CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
+      - WORKSPACE=/workspace
+    labels:
+      - "com.panchayat.agent=vikram"
+      - "com.panchayat.role=infra"
+      - "com.panchayat.sprint=dynamic"
+
+  # ── Rasool — Database Agent ───────────────────────────────────────────────────
+  rasool:
+    <<: *agent-base
+    container_name: panchayat-rasool
+    environment:
+      - AGENT_NAME=rasool
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - CLAUDE_MODEL=${AGENT_MODEL:-claude-sonnet-4-5}
+      - CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
+      - WORKSPACE=/workspace
+      - POSTGRES_HOST=${POSTGRES_HOST:-postgres}
+      - POSTGRES_PORT=${POSTGRES_PORT:-5432}
+      - POSTGRES_DB=${POSTGRES_DB:-adlc}
+      - POSTGRES_USER=${POSTGRES_USER:-adlc_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    labels:
+      - "com.panchayat.agent=rasool"
+      - "com.panchayat.role=database"
+      - "com.panchayat.sprint=dynamic"
+
+  # ── Kavya — UX Designer ───────────────────────────────────────────────────────
+  kavya:
+    <<: *agent-base
+    container_name: panchayat-kavya
+    environment:
+      - AGENT_NAME=kavya
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - CLAUDE_MODEL=${AGENT_MODEL:-claude-sonnet-4-5}
+      - CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
+      - WORKSPACE=/workspace
+    labels:
+      - "com.panchayat.agent=kavya"
+      - "com.panchayat.role=ux"
+      - "com.panchayat.sprint=dynamic"
+
+  # ── Kiran — Backend Engineer ──────────────────────────────────────────────────
+  kiran:
+    <<: *agent-base
+    container_name: panchayat-kiran
+    environment:
+      - AGENT_NAME=kiran
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - CLAUDE_MODEL=${AGENT_MODEL:-claude-sonnet-4-5}
+      - CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
+      - WORKSPACE=/workspace
+    labels:
+      - "com.panchayat.agent=kiran"
+      - "com.panchayat.role=backend"
+      - "com.panchayat.sprint=dynamic"
+
+  # ── Rohan — Frontend Engineer ─────────────────────────────────────────────────
+  rohan:
+    <<: *agent-base
+    container_name: panchayat-rohan
+    environment:
+      - AGENT_NAME=rohan
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - CLAUDE_MODEL=${AGENT_MODEL:-claude-sonnet-4-5}
+      - CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
+      - WORKSPACE=/workspace
+    labels:
+      - "com.panchayat.agent=rohan"
+      - "com.panchayat.role=frontend"
+      - "com.panchayat.sprint=dynamic"
+
+  # ── Keerthi — QA Agent (starts in standby, activated by Arjun) ───────────────
+  keerthi:
+    <<: *agent-base
+    container_name: panchayat-keerthi
+    environment:
+      - AGENT_NAME=keerthi
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - CLAUDE_MODEL=${AGENT_MODEL:-claude-sonnet-4-5}
+      - CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
+      - WORKSPACE=/workspace
+    restart: "no"
+    profiles:
+      - qa
+    labels:
+      - "com.panchayat.agent=keerthi"
+      - "com.panchayat.role=qa"
+      - "com.panchayat.sprint=dynamic"

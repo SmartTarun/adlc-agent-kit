@@ -1,81 +1,106 @@
 @echo off
-REM Author: Tarun Vangari (tarun.vangari@gmail.com) | ADLC-Agent-Kit | 2026-03-14
+REM ============================================================
+REM Author: Tarun Vangari (tarun.vangari@gmail.com)
+REM ADLC-Agent-Kit | Team Panchayat -- Launcher v3.2 (multi-project)
+REM
+REM Usage:
+REM   start-agents.bat                              -- interactive (manual paste)
+REM   start-agents.bat autorun                      -- AUTO-RUN (compile + parallel)
+REM   start-agents.bat autorun vikram               -- auto-run one agent only
+REM   start-agents.bat project "projects\REQ-xxx"   -- run against specific project
+REM   start-agents.bat new                          -- create new requirement (wizard)
+REM   start-agents.bat list                         -- list all projects
+REM   start-agents.bat switch "projects\REQ-xxx"    -- switch active project
+REM   start-agents.bat compile                      -- pre-compile contexts only
+REM   start-agents.bat tokens                       -- show token audit stats
+REM ============================================================
+
 echo ============================================================
-echo  Team Panchayat - ADLC Sprint-01 Agent Launcher
-echo  (Launching via PowerShell)
+echo  Team Panchayat -- ADLC Launcher v3.2 (multi-project)
 echo ============================================================
 echo.
 
-set ROOT=%USERPROFILE%\TeamPanchayat
-
-REM Check if project folder exists
-if not exist "%ROOT%" (
-    echo ERROR: Project folder not found at %ROOT%
-    echo Please run setup-workspace.bat first!
+if not exist "%~dp0start-agents.ps1" (
+    echo ERROR: start-agents.ps1 not found.
+    echo Make sure all files are in the ADLC-Agent-Kit folder.
     pause
     exit /b 1
 )
 
-REM Check if claude is available in PowerShell
-powershell -Command "claude --version" >nul 2>&1
+REM -- new requirement wizard (creates projects\REQ-xxx subfolder + switches) -
+if /i "%1"=="new" (
+    echo Creating new requirement...
+    node "%~dp0new-project.js"
+    goto :done
+)
+
+REM -- list all projects -------------------------------------------------------
+if /i "%1"=="list" (
+    node "%~dp0new-project.js" --list
+    pause
+    exit /b 0
+)
+
+REM -- switch active project ---------------------------------------------------
+if /i "%1"=="switch" (
+    if "%2"=="" (
+        echo Usage: start-agents.bat switch "projects\REQ-xxx-name"
+        pause
+        exit /b 1
+    )
+    node "%~dp0new-project.js" --switch "%2"
+    pause
+    exit /b 0
+)
+
+REM -- compile only (no agents) ------------------------------------------------
+if /i "%1"=="compile" (
+    echo Pre-compiling agent contexts...
+    node "%~dp0context-compiler.js"
+    echo Done. Context files written to context\
+    pause
+    exit /b 0
+)
+
+REM -- token stats -------------------------------------------------------------
+if /i "%1"=="tokens" (
+    node "%~dp0context-compiler.js" --stats
+    pause
+    exit /b 0
+)
+
+REM -- autorun against a specific project folder (auto-switches first) ---------
+if /i "%1"=="project" (
+    if "%2"=="" (
+        echo Usage: start-agents.bat project "projects\REQ-xxx-name" [autorun]
+        pause
+        exit /b 1
+    )
+    node "%~dp0new-project.js" --switch "%2"
+    if /i "%3"=="autorun" (
+        powershell -ExecutionPolicy Bypass -File "%~dp0start-agents.ps1" -AutoRun -Project "%2"
+    ) else (
+        powershell -ExecutionPolicy Bypass -File "%~dp0start-agents.ps1" -Project "%2"
+    )
+    goto :done
+)
+
+REM -- autorun (compile + parallel launch) -------------------------------------
+if /i "%1"=="autorun" (
+    if "%2"=="" (
+        powershell -ExecutionPolicy Bypass -File "%~dp0start-agents.ps1" -AutoRun
+    ) else (
+        powershell -ExecutionPolicy Bypass -File "%~dp0start-agents.ps1" -AutoRun -Agent "%2"
+    )
+    goto :done
+)
+
+REM -- interactive (default double-click) -------------------------------------
+powershell -ExecutionPolicy Bypass -File "%~dp0start-agents.ps1"
+
+:done
 if errorlevel 1 (
-    echo ERROR: 'claude' command not found.
-    echo Install it by running in PowerShell:
-    echo   npm install -g @anthropic-ai/claude-code
+    echo.
+    echo PowerShell script exited with an error.
     pause
-    exit /b 1
 )
-
-echo Project found at: %ROOT%
-echo Launching 7 PowerShell windows...
-echo.
-
-REM ── Dashboard Sync Watcher ──────────────────────────────────
-echo [0/6] Dashboard Sync watcher...
-powershell -Command "Start-Process powershell -ArgumentList '-NoExit', '-Command', 'cd \"%ROOT%\"; $Host.UI.RawUI.WindowTitle = \"ADLC-Dashboard-Sync\"; $Host.UI.RawUI.BackgroundColor = \"DarkGreen\"; Clear-Host; Write-Host \"=== ADLC Dashboard Sync ===\"; node sync-dashboard.js --watch'"
-timeout /t 2 /nobreak >nul
-
-REM ── Arjun — Orchestrator ────────────────────────────────────
-echo [1/6] Starting Arjun (Orchestrator - Opus)...
-powershell -Command "Start-Process powershell -ArgumentList '-NoExit', '-Command', 'cd \"%ROOT%\"; $Host.UI.RawUI.WindowTitle = \"ARJUN - Orchestrator\"; $Host.UI.RawUI.BackgroundColor = \"DarkMagenta\"; Clear-Host; Write-Host \"=== ARJUN | PM / Orchestrator | Claude Opus ===\"; claude'"
-timeout /t 3 /nobreak >nul
-
-REM ── Vikram — Cloud Architect ────────────────────────────────
-echo [2/6] Starting Vikram (Cloud Architect)...
-powershell -Command "Start-Process powershell -ArgumentList '-NoExit', '-Command', 'cd \"%ROOT%\"; $Host.UI.RawUI.WindowTitle = \"VIKRAM - Cloud Architect\"; $Host.UI.RawUI.BackgroundColor = \"DarkRed\"; Clear-Host; Write-Host \"=== VIKRAM | Cloud Architect | Claude Sonnet ===\"; claude'"
-timeout /t 2 /nobreak >nul
-
-REM ── Rasool — Database Agent ─────────────────────────────────
-echo [3/6] Starting Rasool (Database Agent)...
-powershell -Command "Start-Process powershell -ArgumentList '-NoExit', '-Command', 'cd \"%ROOT%\"; $Host.UI.RawUI.WindowTitle = \"RASOOL - Database Agent\"; $Host.UI.RawUI.BackgroundColor = \"DarkYellow\"; Clear-Host; Write-Host \"=== RASOOL | Database Agent | Claude Sonnet ===\"; claude'"
-timeout /t 2 /nobreak >nul
-
-REM ── Kiran — Backend Engineer ────────────────────────────────
-echo [4/6] Starting Kiran (Backend Engineer)...
-powershell -Command "Start-Process powershell -ArgumentList '-NoExit', '-Command', 'cd \"%ROOT%\"; $Host.UI.RawUI.WindowTitle = \"KIRAN - Backend Engineer\"; $Host.UI.RawUI.BackgroundColor = \"DarkCyan\"; Clear-Host; Write-Host \"=== KIRAN | Backend Engineer | Claude Sonnet ===\"; claude'"
-timeout /t 2 /nobreak >nul
-
-REM ── Kavya — UX Designer ─────────────────────────────────────
-echo [5/6] Starting Kavya (UX Designer)...
-powershell -Command "Start-Process powershell -ArgumentList '-NoExit', '-Command', 'cd \"%ROOT%\"; $Host.UI.RawUI.WindowTitle = \"KAVYA - UX Designer\"; $Host.UI.RawUI.BackgroundColor = \"DarkMagenta\"; Clear-Host; Write-Host \"=== KAVYA | UX Designer | Claude Sonnet ===\"; claude'"
-timeout /t 2 /nobreak >nul
-
-REM ── Rohan — Frontend Engineer ───────────────────────────────
-echo [6/6] Starting Rohan (Frontend Engineer)...
-powershell -Command "Start-Process powershell -ArgumentList '-NoExit', '-Command', 'cd \"%ROOT%\"; $Host.UI.RawUI.WindowTitle = \"ROHAN - Frontend Engineer\"; $Host.UI.RawUI.BackgroundColor = \"DarkBlue\"; Clear-Host; Write-Host \"=== ROHAN | Frontend Engineer | Claude Sonnet ===\"; claude'"
-timeout /t 2 /nobreak >nul
-
-echo.
-echo ============================================================
-echo  All 7 PowerShell windows launched!
-echo.
-echo  NEXT STEPS:
-echo  1. Open sprint-dashboard.html in your browser
-echo  2. Go to ARJUN window, paste prompts\arjun-prompt.txt
-echo  3. Go to each agent window, paste their prompt file
-echo  4. Watch the dashboard update live!
-echo.
-echo  TIP: Each window has a different background colour
-echo       Use Alt+Tab or taskbar to switch between them
-echo ============================================================
-pause

@@ -1,0 +1,3688 @@
+<!DOCTYPE html>
+<!-- Agent: Arjun | Sprint: 01 | Date: 2026-03-14 -->
+<!-- Team Panchayat — Docker Sprint Board (Kanban + Live Logs) -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Team Panchayat — Sprint Cluster</title>
+<style>
+/* ── Reset & Base ──────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:          #f0f2fa;
+  --surface:     #ffffff;
+  --surface2:    #f5f5ff;
+  --surface3:    #eaeaf8;
+  --border:      #d4d4ee;
+  --border-soft: #ebebf8;
+  --text:        #2e2e50;
+  --text-dim:    #7070a8;
+  --text-bright: #13133a;
+  --primary:     #5b5bd6;
+  --primary-dim: #ededfc;
+  --primary-hover:#4646c0;
+  --green:       #16a34a;
+  --green-dim:   #dcfce7;
+  --yellow:      #d97706;
+  --yellow-dim:  #fef3c7;
+  --blue:        #2563eb;
+  --blue-dim:    #eff6ff;
+  --red:         #dc2626;
+  --red-dim:     #fef2f2;
+  --purple:      #7c3aed;
+  --purple-dim:  #f5f3ff;
+  --cyan:        #0891b2;
+  --orange:      #ea580c;
+  --shadow-sm:   0 1px 3px rgba(91,91,214,.10), 0 1px 2px rgba(91,91,214,.06);
+  --shadow-md:   0 4px 12px rgba(91,91,214,.12), 0 2px 4px rgba(91,91,214,.08);
+  --font:        'Segoe UI', system-ui, -apple-system, sans-serif;
+  --mono:        'Cascadia Code', 'Consolas', monospace;
+}
+html, body { height: 100%; overflow: hidden; }
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Top Bar ─────────────────────────────────────────────────────────── */
+#topbar {
+  background: var(--primary);
+  border-bottom: none;
+  padding: 0 16px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(91,91,214,.25);
+}
+#topbar .logo {
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+#topbar .logo span.whale { font-size: 20px; }
+.divider { width: 1px; height: 24px; background: rgba(255,255,255,.25); }
+.cluster-badge {
+  background: rgba(255,255,255,.15);
+  border: 1px solid rgba(255,255,255,.25);
+  border-radius: 20px;
+  padding: 2px 10px;
+  font-size: 12px;
+  color: rgba(255,255,255,.85);
+}
+.cluster-badge b { color: #fff; }
+#container-count {
+  background: rgba(22,163,74,.2);
+  border: 1px solid rgba(22,163,74,.5);
+  border-radius: 20px;
+  padding: 2px 10px;
+  font-size: 12px;
+  color: #86efac;
+}
+.spacer { flex: 1; }
+#sse-status {
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,.25);
+  color: rgba(255,255,255,.7);
+}
+#sse-status.connected    { color: #86efac; border-color: rgba(22,163,74,.5); background: rgba(22,163,74,.15); }
+#sse-status.disconnected { color: #fca5a5; border-color: rgba(220,38,38,.5); background: rgba(220,38,38,.15); }
+
+.topbtn {
+  background: rgba(255,255,255,.12);
+  border: 1px solid rgba(255,255,255,.25);
+  color: #fff;
+  padding: 5px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: var(--font);
+  transition: all .15s;
+}
+.topbtn:hover { background: rgba(255,255,255,.22); }
+.topbtn.danger { border-color: #fca5a5; color: #fca5a5; }
+.topbtn.danger:hover { background: rgba(220,38,38,.25); }
+.topbtn.primary { background: rgba(255,255,255,.92); border-color: #fff; color: var(--primary); font-weight: 600; }
+.topbtn.success { border-color: #86efac; color: #86efac; }
+.topbtn.success:hover { background: rgba(22,163,74,.25); }
+.topbtn.approve { background: #16a34a; border-color: #16a34a; color: #fff; font-weight: 700; animation: pulse-green 2s infinite; }
+.topbtn.approve:hover { background: #15803d; }
+@keyframes pulse-green { 0%,100%{box-shadow:0 0 0 0 rgba(22,163,74,.6)} 50%{box-shadow:0 0 0 6px rgba(22,163,74,0)} }
+
+/* Project switcher */
+#project-switcher {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+#project-switcher label {
+  font-size: 11px;
+  color: rgba(255,255,255,.6);
+  white-space: nowrap;
+}
+#project-select {
+  background: rgba(255,255,255,.12);
+  border: 1px solid rgba(255,255,255,.25);
+  color: #fff;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-family: var(--font);
+  cursor: pointer;
+  max-width: 180px;
+}
+#project-select option { background: #2e2e50; color: #fff; }
+.topbtn.primary:hover { background: #fff; }
+.topbtn.success { border-color: #86efac; color: #86efac; }
+.topbtn.success:hover { background: rgba(22,163,74,.2); }
+#uptime { font-family: var(--mono); font-size: 12px; color: rgba(255,255,255,.65); }
+
+/* ── Main Layout ─────────────────────────────────────────────────────── */
+#main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+#board-area {
+  flex: 1;
+  display: flex;
+  gap: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* ── Kanban Board ────────────────────────────────────────────────────── */
+#kanban {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  padding: 14px;
+  min-height: 0;
+  overflow-y: auto;
+  min-width: 0;
+}
+.kanban-col {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  box-shadow: var(--shadow-sm);
+}
+.kanban-col-header {
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--border-soft);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  border-radius: 12px 12px 0 0;
+}
+.kanban-col-header .col-title {
+  font-weight: 700;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-dim);
+}
+.kanban-col-header .col-count {
+  background: var(--surface3);
+  border-radius: 20px;
+  padding: 1px 9px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-dim);
+  margin-left: auto;
+}
+.kanban-col-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.col-queue .kanban-col-header { border-top: 3px solid var(--blue); background: linear-gradient(135deg,var(--blue-dim) 0%,#fff 100%); }
+.col-wip   .kanban-col-header { border-top: 3px solid var(--primary); background: linear-gradient(135deg,var(--primary-dim) 0%,#fff 100%); }
+.col-done  .kanban-col-header { border-top: 3px solid var(--green); background: linear-gradient(135deg,var(--green-dim) 0%,#fff 100%); }
+
+/* ── Agent Card ──────────────────────────────────────────────────────── */
+.agent-card {
+  background: #fff;
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  padding: 13px;
+  cursor: default;
+  transition: box-shadow .15s, transform .1s;
+  position: relative;
+  box-shadow: 0 1px 4px rgba(91,91,214,.07);
+}
+.agent-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+.agent-card.status-blocked  { border-left: 3px solid var(--red);     background: #fff8f8; }
+.agent-card.status-done     { border-left: 3px solid var(--green);   background: #f8fff9; }
+.agent-card.status-starting { border-left: 3px solid var(--blue);    background: #f8f8ff; }
+.agent-card.status-wip      { border-left: 3px solid var(--primary); background: #fafafe; }
+.agent-card.status-queue    { border-left: 3px solid var(--border);  }
+.agent-card.status-standby  { border-left: 3px solid var(--purple);  opacity: .8; }
+.agent-card.unhealthy       { border-top: 2px solid var(--red); }
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.status-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.dot-running  { background: var(--green); box-shadow: 0 0 6px var(--green); animation: pulse 2s infinite; }
+.dot-wip      { background: var(--yellow); box-shadow: 0 0 6px var(--yellow); animation: pulse 2s infinite; }
+.dot-queue    { background: var(--blue); }
+.dot-done     { background: var(--green); }
+.dot-blocked  { background: var(--red); box-shadow: 0 0 6px var(--red); }
+.dot-standby  { background: var(--purple); }
+.dot-starting { background: var(--blue); animation: pulse .8s infinite; }
+.dot-exited   { background: var(--surface3); }
+.dot-unknown  { background: var(--text-dim); }
+
+@keyframes pulse {
+  0%,100% { opacity: 1; }
+  50%      { opacity: .4; }
+}
+
+.card-name {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--text-bright);
+  text-transform: capitalize;
+}
+.card-cpu {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.card-cpu.hot { color: var(--orange); }
+.card-role {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+}
+.card-divider {
+  height: 1px;
+  background: var(--border-soft);
+  margin: 6px 0;
+}
+.card-task {
+  font-size: 12px;
+  color: var(--text);
+  line-height: 1.5;
+  margin-bottom: 8px;
+  min-height: 30px;
+  word-break: break-word;
+}
+.card-task.blocked {
+  color: var(--red);
+  font-weight: 500;
+}
+.progress-bar {
+  height: 5px;
+  background: var(--surface3);
+  border-radius: 3px;
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width .5s ease;
+}
+.progress-fill.running { background: linear-gradient(90deg, var(--primary), var(--blue)); }
+.progress-fill.done    { background: var(--green); }
+.progress-fill.blocked { background: var(--red); }
+.progress-fill.queue   { background: var(--border); width: 0 !important; }
+
+.card-footer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.card-stat {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-dim);
+}
+.card-health {
+  font-size: 10px;
+  padding: 1px 7px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+.health-healthy   { background: var(--green-dim);   color: var(--green); }
+.health-unhealthy { background: var(--red-dim);     color: var(--red); }
+.health-starting  { background: var(--blue-dim);    color: var(--blue); }
+.health-unknown   { background: var(--surface3);    color: var(--text-dim); }
+
+.card-actions {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+}
+.card-btn {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  padding: 2px 9px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 11px;
+  font-family: var(--font);
+  transition: all .1s;
+}
+.card-btn:hover { background: var(--surface3); color: var(--text); border-color: var(--primary); }
+.card-btn.logs-btn:hover   { border-color: var(--blue);   color: var(--blue);   background: var(--blue-dim); }
+.card-btn.scale-btn:hover  { border-color: var(--purple); color: var(--purple); background: var(--purple-dim); }
+.card-btn.restart-btn:hover{ border-color: var(--orange); color: var(--orange); }
+
+/* ── Log Panel (slide-in from right) ────────────────────────────────── */
+#log-panel {
+  width: 0;
+  min-width: 0;
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: width .25s ease, min-width .25s ease;
+  flex-shrink: 0;
+  box-shadow: -3px 0 16px rgba(91,91,214,.08);
+}
+#log-panel.open { width: 420px; min-width: 420px; }
+#log-panel-header {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border-soft);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  background: var(--primary-dim);
+}
+#log-panel-title {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--primary);
+  flex: 1;
+  font-family: var(--mono);
+}
+#log-panel-close {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 16px;
+  padding: 0 4px;
+  line-height: 1;
+}
+#log-panel-close:hover { color: var(--text-bright); }
+#log-controls {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border-soft);
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+#log-search {
+  flex: 1;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-family: var(--mono);
+  outline: none;
+}
+#log-search:focus { border-color: var(--primary); }
+#log-wrap-btn {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  padding: 4px 9px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 11px;
+  font-family: var(--font);
+}
+#log-wrap-btn.active { border-color: var(--primary); color: var(--primary); }
+#log-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 12px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: #1e293b;
+  white-space: pre;
+  background: #f8f9ff;
+}
+#log-content.wrap { white-space: pre-wrap; word-break: break-all; }
+#log-content .log-line  { display: block; }
+#log-content .log-error { color: var(--red); }
+#log-content .log-warn  { color: var(--yellow); }
+#log-content .log-info  { color: var(--blue); }
+#log-content .log-done  { color: var(--green); }
+#log-tail-btn {
+  padding: 7px 10px;
+  border-top: 1px solid var(--border-soft);
+  background: var(--surface);
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-dim);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+#log-tail-btn:hover { color: var(--primary); }
+
+/* ── Chat Panel — Teams Style ─────────────────────────────────────────── */
+#chat-panel {
+  height: 280px;
+  border-top: 1px solid var(--border-soft);
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  box-shadow: 0 -2px 10px rgba(91,91,214,.07);
+}
+#chat-header {
+  padding: 0 14px;
+  height: 40px;
+  background: var(--primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+#chat-header span { font-weight: 700; font-size: 13px; color: #fff; }
+#chat-header small { color: rgba(255,255,255,.7); font-size: 11px; }
+#chat-toggle { margin-left: auto; cursor: pointer; font-size: 13px; color: rgba(255,255,255,.8); }
+#chat-toggle:hover { color: #fff; }
+#chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background: #fafbff;
+}
+
+/* ── Teams Message Bubbles ── */
+.chat-msg {
+  display: flex;
+  gap: 0;
+  align-items: flex-start;
+  font-size: 13px;
+  padding: 3px 0;
+  position: relative;
+}
+.chat-msg.is-grouped { padding-top: 1px; }
+
+/* Avatar circle */
+.chat-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-right: 10px;
+  margin-top: 2px;
+  user-select: none;
+}
+.chat-avatar.hidden {
+  width: 32px;
+  height: 32px;
+  margin-right: 10px;
+  background: none;
+}
+/* Avatar colors per sender */
+.avatar-tarun   { background: var(--primary); }
+.avatar-arjun   { background: #7c3aed; }
+.avatar-vikram  { background: #dc2626; }
+.avatar-rasool  { background: #d97706; }
+.avatar-kavya   { background: #db2777; }
+.avatar-kiran   { background: #0891b2; }
+.avatar-rohan   { background: #2563eb; }
+.avatar-keerthi { background: #16a34a; }
+.avatar-system  { background: #9ca3af; }
+
+/* Message content area */
+.chat-msg-content { flex: 1; min-width: 0; }
+.chat-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 3px;
+}
+.chat-sender {
+  font-weight: 700;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+.sender-tarun   { color: var(--primary); }
+.sender-arjun   { color: #7c3aed; }
+.sender-vikram  { color: #dc2626; }
+.sender-rasool  { color: #b45309; }
+.sender-kavya   { color: #db2777; }
+.sender-kiran   { color: #0891b2; }
+.sender-rohan   { color: #2563eb; }
+.sender-keerthi { color: #16a34a; }
+.sender-system  { color: #9ca3af; }
+.chat-time {
+  color: var(--text-dim);
+  font-size: 10px;
+  font-family: var(--mono);
+  flex-shrink: 0;
+}
+/* Message bubble */
+.chat-bubble {
+  display: inline-block;
+  background: #f0f1fc;
+  border-radius: 0 10px 10px 10px;
+  padding: 7px 12px;
+  max-width: 100%;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text);
+  word-break: break-word;
+  white-space: pre-wrap;
+  box-shadow: 0 1px 2px rgba(91,91,214,.08);
+}
+.chat-msg.is-grouped .chat-bubble { border-radius: 4px 10px 10px 10px; }
+/* Tarun's messages in blue bubble */
+.chat-msg.own-msg .chat-bubble {
+  background: var(--primary);
+  color: #fff;
+  border-radius: 10px 0 10px 10px;
+}
+/* Message type color overrides */
+.chat-type-blocker  .chat-bubble { background: var(--red-dim);    border-left: 3px solid var(--red); }
+.chat-type-done     .chat-bubble { background: var(--green-dim);  border-left: 3px solid var(--green); }
+.chat-type-plan     .chat-bubble { background: var(--purple-dim); border-left: 3px solid var(--purple); }
+.chat-type-handoff  .chat-bubble { background: #ecfeff;           border-left: 3px solid var(--cyan); }
+.chat-type-broadcast .chat-bubble { background: var(--primary-dim); border-left: 3px solid var(--primary); }
+.chat-type-system   .chat-bubble { background: var(--surface3); color: var(--text-dim); font-style: italic; font-size: 11px; }
+
+/* Type badge pill */
+.chat-type-badge {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  padding: 1px 6px;
+  border-radius: 10px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+.badge-broadcast { background: var(--primary-dim); color: var(--primary); }
+.badge-plan      { background: var(--purple-dim);  color: var(--purple); }
+.badge-done      { background: var(--green-dim);   color: var(--green); }
+.badge-blocker   { background: var(--red-dim);     color: var(--red); }
+.badge-analysis  { background: var(--blue-dim);    color: var(--blue); }
+.badge-discovery { background: var(--yellow-dim);  color: var(--yellow); }
+
+#chat-input-row {
+  padding: 8px 12px;
+  border-top: 1px solid var(--border-soft);
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+  background: #fff;
+  align-items: center;
+}
+#chat-input {
+  flex: 1;
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  color: var(--text);
+  padding: 7px 12px;
+  border-radius: 20px;
+  font-size: 12.5px;
+  font-family: var(--font);
+  outline: none;
+  transition: border-color .15s, box-shadow .15s;
+}
+#chat-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(91,91,214,.12); }
+#chat-input::placeholder { color: var(--text-dim); }
+#chat-send {
+  background: var(--primary);
+  border: none;
+  color: #fff;
+  padding: 7px 18px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 12.5px;
+  font-family: var(--font);
+  font-weight: 600;
+  transition: background .15s;
+}
+#chat-send:hover { background: var(--primary-hover); }
+
+/* ── Chat File Attachments ───────────────────────────────────────────── */
+#chat-attach-btn {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 0;
+  transition: background .15s, color .15s;
+}
+#chat-attach-btn:hover { background: var(--primary-dim); color: var(--primary); border-color: var(--primary); }
+#chat-attach-btn.has-files { background: var(--green-dim); border-color: var(--green); color: var(--green); }
+
+#attach-preview {
+  display: none;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding: 6px 12px;
+  border-top: 1px solid var(--border-soft);
+  background: var(--surface2);
+  max-height: 88px;
+  overflow-y: auto;
+}
+.attach-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 11px;
+  color: var(--text);
+  max-width: 200px;
+  box-shadow: var(--shadow-sm);
+}
+.attach-chip .attach-icon { flex-shrink: 0; font-size: 13px; }
+.attach-chip .attach-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+.attach-chip .attach-size { color: var(--text-dim); flex-shrink: 0; font-size: 10px; }
+.attach-chip .attach-remove {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 0 2px;
+  font-size: 13px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.attach-chip .attach-remove:hover { color: var(--red); }
+
+/* Attachments rendered inside a chat message */
+.chat-msg-body { flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.chat-attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 2px;
+}
+.chat-attach-file {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 9px;
+  font-size: 11px;
+  color: var(--blue);
+  text-decoration: none;
+  cursor: pointer;
+  max-width: 220px;
+  overflow: hidden;
+}
+.chat-attach-file:hover { border-color: var(--blue); background: var(--blue-dim); }
+.chat-attach-file .fa-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.chat-attach-size { color: var(--text-dim); font-size: 10px; flex-shrink: 0; }
+.chat-attach-img {
+  max-width: 180px;
+  max-height: 100px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  display: block;
+  margin-top: 3px;
+  object-fit: cover;
+}
+
+/* ── Scale Modal ─────────────────────────────────────────────────────── */
+#scale-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.7);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+}
+#scale-modal.open { display: flex; }
+#scale-modal-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 22px;
+  min-width: 320px;
+  max-width: 400px;
+  box-shadow: var(--shadow-md);
+}
+#scale-modal-box h3 { color: var(--primary); margin-bottom: 12px; font-size: 15px; }
+#scale-modal-box label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--text-dim); display: block; margin-bottom: 6px; }
+#scale-replicas {
+  width: 100%;
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  color: var(--text-bright);
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  text-align: center;
+  font-family: var(--mono);
+  outline: none;
+  margin-bottom: 14px;
+}
+#scale-replicas:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(91,91,214,.1); }
+.modal-btns { display: flex; gap: 8px; justify-content: flex-end; }
+.modal-btns button {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 7px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: var(--font);
+  font-weight: 600;
+  font-size: 12px;
+}
+.modal-btns .confirm { background: var(--primary); border-color: var(--primary); color: #fff; }
+.modal-btns .confirm:hover { background: var(--primary-hover); }
+.modal-btns .cancel:hover  { background: var(--surface3); }
+
+/* ── Empty column placeholder ────────────────────────────────────────── */
+.col-empty {
+  text-align: center;
+  padding: 24px 12px;
+  color: var(--text-dim);
+  font-size: 12px;
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+}
+
+/* ── Scrollbar ────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+
+/* ── Tooltip ─────────────────────────────────────────────────────────── */
+[title] { cursor: help; }
+
+/* ── PM Discovery Panel ────────────────────────────────────────────────── */
+#discovery-panel {
+  display: none;
+  background: var(--primary-dim);
+  border-bottom: 2px solid var(--primary);
+  padding: 12px 18px;
+  flex-shrink: 0;
+  z-index: 5;
+}
+#discovery-panel.visible { display: block; }
+#disc-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+#disc-badge {
+  background: var(--primary); color: #fff;
+  font-size: 10px; font-weight: 700;
+  padding: 2px 9px; border-radius: 10px; text-transform: uppercase;
+}
+#disc-round-label { font-size: 12px; color: var(--primary); font-weight: 700; }
+#disc-status { font-size: 11px; color: var(--text-dim); margin-left: auto; }
+#disc-question-box {
+  background: #fff; border: 1px solid var(--border);
+  border-radius: 8px; padding: 10px 14px;
+  font-size: 12px; color: var(--text); line-height: 1.6;
+  white-space: pre-wrap; word-break: break-word;
+  max-height: 160px; overflow-y: auto;
+  margin-bottom: 10px;
+  box-shadow: var(--shadow-sm);
+}
+#disc-answer-row { display: flex; gap: 8px; align-items: flex-end; }
+#disc-answer {
+  flex: 1; background: #fff; border: 1.5px solid var(--primary);
+  color: var(--text); padding: 7px 12px; border-radius: 8px;
+  font-size: 12px; font-family: var(--font); outline: none;
+  resize: vertical; min-height: 48px; max-height: 120px;
+}
+#disc-answer:focus { box-shadow: 0 0 0 3px rgba(91,91,214,.15); }
+#disc-send-btn {
+  background: var(--primary); border: none; color: #fff;
+  padding: 7px 20px; border-radius: 8px; cursor: pointer;
+  font-size: 12px; font-family: var(--font); font-weight: 700;
+  align-self: flex-end; transition: background .15s;
+}
+#disc-send-btn:hover { background: var(--primary-hover); }
+#disc-hint { font-size: 10px; color: var(--text-dim); margin-top: 6px; }
+
+/* ── Requirement Banner ────────────────────────────────────────────────── */
+#req-banner {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border-soft);
+  padding: 6px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  flex-shrink: 0;
+  min-height: 36px;
+}
+#req-banner.has-req { border-bottom-color: var(--primary); border-bottom-width: 2px; }
+#req-id    { font-family: var(--mono); font-size: 11px; color: var(--text-dim); }
+#req-title { font-weight: 600; color: var(--primary); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#req-title.empty { color: var(--text-dim); font-style: italic; font-weight: normal; }
+#req-status-pill {
+  font-size: 10px; font-weight: 600; padding: 2px 9px; border-radius: 10px;
+  background: var(--surface3); color: var(--text-dim);
+}
+#req-status-pill.in_sprint        { background: var(--blue-dim);    color: var(--blue); }
+#req-status-pill.pending_analysis { background: var(--yellow-dim);  color: var(--yellow); }
+#req-status-pill.done             { background: var(--green-dim);   color: var(--green); }
+#req-inputs-count { font-size: 11px; color: var(--text-dim); }
+#req-approve-btn {
+  background: var(--green-dim); border: 1.5px solid var(--green);
+  color: var(--green); padding: 4px 12px; border-radius: 6px;
+  cursor: pointer; font-size: 11px; font-weight: 700; font-family: var(--font);
+  display: none; transition: all .15s;
+}
+#req-approve-btn:hover { background: var(--green); color: #fff; }
+#req-approve-btn.show { display: inline-block; }
+#req-priority {
+  font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px;
+  border: 1px solid var(--border); color: var(--text-dim);
+}
+#req-priority.critical { border-color: var(--red);    color: var(--red);    background: var(--red-dim); }
+#req-priority.high     { border-color: var(--orange);  color: var(--orange); }
+#req-priority.medium   { border-color: var(--yellow);  color: var(--yellow); background: var(--yellow-dim); }
+#req-priority.low      { border-color: var(--blue);    color: var(--blue);   background: var(--blue-dim); }
+
+/* ── Permissions Modal ────────────────────────────────────────────────── */
+#perm-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.75);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+}
+#perm-modal.open { display: flex; }
+#perm-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  width: min(860px, 96vw);
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+}
+#perm-header {
+  display: flex;
+  align-items: center;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border-soft);
+  flex-shrink: 0;
+  background: linear-gradient(135deg, var(--primary-dim), #fff);
+}
+#perm-header h2 { font-size: 15px; font-weight: 700; color: var(--primary); margin: 0; flex: 1; }
+#perm-close { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 18px; padding: 0 4px; }
+#perm-close:hover { color: var(--text-bright); }
+#perm-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 10px 18px 0;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.perm-tab {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 6px 14px 8px;
+  font-size: 12px;
+  font-family: var(--font);
+  color: var(--text-dim);
+  cursor: pointer;
+}
+.perm-tab.active { border-bottom-color: var(--primary); color: var(--primary); font-weight: 700; }
+.perm-tab:hover:not(.active) { color: var(--text); }
+#perm-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 18px;
+}
+/* External tools matrix */
+#perm-external-tab, #perm-claude-tab { display: none; }
+#perm-external-tab.active, #perm-claude-tab.active { display: block; }
+.perm-matrix { width: 100%; border-collapse: collapse; font-size: 12px; }
+.perm-matrix th {
+  text-align: left;
+  padding: 6px 10px;
+  color: var(--text-dim);
+  border-bottom: 1px solid var(--border);
+  font-weight: 700;
+  white-space: nowrap;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+.perm-matrix td { padding: 7px 10px; border-bottom: 1px solid var(--border-soft); vertical-align: top; }
+.perm-matrix tr:hover td { background: var(--primary-dim); }
+.perm-agent-name { font-weight: 700; color: var(--text-bright); white-space: nowrap; }
+.perm-agent-note { color: var(--text-dim); font-size: 10px; margin-top: 2px; max-width: 160px; }
+/* Tool cell */
+.perm-tool-cell { min-width: 120px; }
+.perm-toggle-row { display: flex; align-items: center; gap: 7px; }
+.perm-toggle {
+  position: relative;
+  width: 34px;
+  height: 18px;
+  flex-shrink: 0;
+}
+.perm-toggle input { opacity: 0; width: 0; height: 0; }
+.perm-slider {
+  position: absolute;
+  inset: 0;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  cursor: pointer;
+  transition: background .2s;
+}
+.perm-slider::before {
+  content: '';
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  left: 2px;
+  top: 2px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform .2s, background .2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,.2);
+}
+.perm-toggle input:checked + .perm-slider { background: var(--primary); border-color: var(--primary); }
+.perm-toggle input:checked + .perm-slider::before { transform: translateX(16px); background: #fff; }
+.perm-tool-label { font-size: 11px; color: var(--text); text-transform: capitalize; }
+/* Sub-permissions */
+.perm-subperms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-top: 5px;
+}
+.perm-subperm-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 7px;
+  font-size: 10px;
+  color: var(--text-dim);
+  cursor: pointer;
+  user-select: none;
+}
+.perm-subperm-chip.active { background: var(--primary-dim); border-color: var(--primary); color: var(--primary); font-weight: 600; }
+.perm-subperm-chip:hover { border-color: var(--primary); color: var(--text); }
+/* Claude tools grid */
+.claude-tools-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+  padding: 4px 0;
+}
+.claude-tool-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  transition: box-shadow .15s;
+}
+.claude-tool-row:hover { box-shadow: var(--shadow-sm); }
+.claude-tool-row .perm-toggle { flex-shrink: 0; }
+.claude-tool-info { flex: 1; min-width: 0; }
+.claude-tool-name { font-size: 12px; font-weight: 700; color: var(--primary); font-family: var(--mono); }
+.claude-tool-desc { font-size: 10px; color: var(--text-dim); margin-top: 1px; }
+.perm-section-title { font-size: 11px; font-weight: 700; color: var(--text-dim); margin: 14px 0 8px; text-transform: uppercase; letter-spacing: .08em; }
+/* Save bar */
+#perm-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 18px;
+  border-top: 1px solid var(--border-soft);
+  flex-shrink: 0;
+  background: var(--surface2);
+}
+#perm-save-status { font-size: 11px; color: var(--text-dim); }
+#perm-save-status.ok  { color: var(--green); font-weight: 600; }
+#perm-save-status.err { color: var(--red); font-weight: 600; }
+.perm-btn { padding: 7px 18px; border-radius: 8px; font-size: 12px; font-weight: 600; font-family: var(--font); cursor: pointer; border: 1px solid; }
+.perm-btn.cancel { background: none; border-color: var(--border); color: var(--text-dim); }
+.perm-btn.cancel:hover { border-color: var(--text); color: var(--text); }
+.perm-btn.save { background: var(--primary); border-color: var(--primary); color: #fff; }
+.perm-btn.save:hover { background: var(--primary-hover); }
+
+/* ── Requirement Wizard Modal ─────────────────────────────────────────── */
+#req-wizard {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.7); z-index: 200;
+  align-items: center; justify-content: center;
+}
+#req-wizard.open { display: flex; }
+#wiz-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  width: 560px; max-width: 96vw;
+  max-height: 90vh; overflow-y: auto;
+  padding: 0;
+  box-shadow: var(--shadow-md), 0 20px 60px rgba(91,91,214,.15);
+}
+#wiz-header {
+  padding: 18px 22px 14px;
+  border-bottom: 1px solid var(--border-soft);
+  display: flex; align-items: center; gap: 10px;
+  background: linear-gradient(135deg, var(--primary-dim), #fff);
+}
+#wiz-header h2 { font-size: 15px; color: var(--primary); font-weight: 700; flex: 1; }
+#wiz-header small { color: var(--text-dim); font-size: 11px; }
+#wiz-close {
+  background: none; border: none; color: var(--text-dim);
+  cursor: pointer; font-size: 18px; line-height: 1; padding: 0 4px;
+}
+#wiz-close:hover { color: var(--text-bright); }
+#wiz-body { padding: 18px 22px; display: flex; flex-direction: column; gap: 14px; }
+.wiz-row { display: flex; gap: 12px; }
+.wiz-field { display: flex; flex-direction: column; gap: 5px; flex: 1; }
+.wiz-field label { font-size: 10.5px; color: var(--text-dim); font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+.wiz-field input,
+.wiz-field select,
+.wiz-field textarea {
+  background: var(--surface2); border: 1.5px solid var(--border);
+  color: var(--text); padding: 8px 11px; border-radius: 8px;
+  font-size: 12.5px; font-family: var(--font); outline: none;
+  transition: border-color .15s, box-shadow .15s;
+}
+.wiz-field input:focus,
+.wiz-field select:focus,
+.wiz-field textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(91,91,214,.1); }
+.wiz-field textarea { resize: vertical; min-height: 64px; line-height: 1.5; }
+.wiz-field select option { background: #fff; }
+#wiz-footer {
+  padding: 14px 22px 18px;
+  border-top: 1px solid var(--border-soft);
+  display: flex; gap: 8px; justify-content: flex-end; align-items: center;
+  background: var(--surface2);
+}
+#wiz-footer small { flex: 1; color: var(--text-dim); font-size: 11px; }
+.wiz-btn {
+  background: var(--surface3); border: 1px solid var(--border);
+  color: var(--text-dim); padding: 7px 18px; border-radius: 8px;
+  cursor: pointer; font-size: 12px; font-weight: 600; font-family: var(--font);
+}
+.wiz-btn.cancel:hover { background: var(--surface3); color: var(--text); }
+.wiz-btn.post { background: var(--primary); border-color: var(--primary); color: #fff; }
+.wiz-btn.post:hover { background: var(--primary-hover); }
+#wiz-msg { font-size: 11px; color: var(--green); margin-top: 2px; display: none; font-weight: 600; }
+
+/* ── Chat sender colours (kept for JS class assignment) ──────────────── */
+.chat-msg.chat-type-question .chat-bubble { background: var(--blue-dim); border-left: 3px solid var(--blue); }
+
+/* ══════════════════════════════════════════════════════════════════════
+   UX DESIGN REVIEW SCREEN
+   Full-screen overlay: left 1/4 chat | right 3/4 design canvas
+   ══════════════════════════════════════════════════════════════════════ */
+#ux-screen {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  z-index: 200;
+  flex-direction: column;
+  font-family: var(--font);
+}
+#ux-screen.open { display: flex; }
+
+#ux-topbar {
+  background: linear-gradient(135deg, #6d28d9 0%, var(--primary) 100%);
+  height: 52px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 10px rgba(109,40,217,.35);
+}
+.ux-title { font-size: 15px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px; }
+#ux-project-name { opacity: .7; font-size: 13px; font-weight: 400; }
+.ux-topbtn {
+  background: rgba(255,255,255,.12);
+  border: 1px solid rgba(255,255,255,.25);
+  color: #fff;
+  padding: 5px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: var(--font);
+  transition: all .15s;
+  white-space: nowrap;
+}
+.ux-topbtn:hover { background: rgba(255,255,255,.22); }
+.ux-topbtn.back { font-weight: 700; }
+.ux-topbtn.phase-tag { cursor: default; pointer-events: none; font-size: 11px; border-radius: 20px; }
+.ux-topbtn.approve-ux { background: #16a34a; border-color: #16a34a; font-weight: 700; }
+.ux-topbtn.approve-ux:hover { background: #15803d; }
+.ux-topbtn.changes-ux { border-color: #fbbf24; color: #fbbf24; }
+.ux-topbtn.changes-ux:hover { background: rgba(251,191,36,.15); }
+
+#ux-body { flex: 1; display: flex; min-height: 0; overflow: hidden; }
+
+/* ── Left: Chat (1/4) ── */
+#ux-chat-panel {
+  width: 25%;
+  min-width: 240px;
+  max-width: 360px;
+  border-right: 2px solid #e8e4ff;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  box-shadow: 2px 0 8px rgba(91,91,214,.06);
+  flex-shrink: 0;
+}
+#ux-chat-header {
+  padding: 12px 14px 10px;
+  background: linear-gradient(135deg, #f5f3ff, #ede9fe);
+  border-bottom: 1px solid #ddd6fe;
+  flex-shrink: 0;
+}
+#ux-chat-header h3 { font-size: 13px; font-weight: 700; color: var(--purple); margin: 0 0 2px 0; }
+#ux-chat-header small { font-size: 10px; color: var(--text-dim); }
+#ux-chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: #fafbff;
+}
+.ux-chat-bubble {
+  max-width: 92%;
+  padding: 8px 11px;
+  border-radius: 10px;
+  font-size: 12px;
+  line-height: 1.5;
+  word-break: break-word;
+}
+.ux-chat-bubble.from-kavya  { background: #f5f3ff; border: 1px solid #ddd6fe; color: var(--text); align-self: flex-start; border-radius: 2px 10px 10px 10px; }
+.ux-chat-bubble.from-tarun  { background: var(--primary); color: #fff; align-self: flex-end; border-radius: 10px 10px 2px 10px; }
+.ux-chat-bubble.from-other  { background: var(--surface2); border: 1px solid var(--border); color: var(--text-dim); align-self: flex-start; font-size: 11px; }
+.ux-bubble-sender { font-size: 10px; font-weight: 700; margin-bottom: 3px; opacity: .65; text-transform: uppercase; letter-spacing: .04em; }
+.ux-bubble-time   { font-size: 9px; opacity: .45; text-align: right; margin-top: 3px; }
+.ux-empty-chat    { text-align: center; padding: 28px 12px; color: var(--text-dim); font-size: 11px; line-height: 1.6; }
+
+#ux-chat-input-area { padding: 10px; border-top: 1px solid #e8e4ff; background: #fff; flex-shrink: 0; }
+#ux-chat-to { font-size: 10px; color: var(--text-dim); margin-bottom: 6px; }
+#ux-chat-to strong { color: var(--purple); }
+#ux-feedback-input {
+  width: 100%;
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  color: var(--text);
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-family: var(--font);
+  outline: none;
+  resize: none;
+  min-height: 60px;
+  max-height: 120px;
+  box-sizing: border-box;
+}
+#ux-feedback-input:focus { border-color: var(--purple); box-shadow: 0 0 0 3px rgba(124,58,237,.12); }
+#ux-send-feedback {
+  width: 100%;
+  margin-top: 6px;
+  background: var(--purple);
+  border: none;
+  color: #fff;
+  padding: 8px 0;
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: var(--font);
+  font-weight: 600;
+  transition: background .15s;
+}
+#ux-send-feedback:hover { background: #5b21b6; }
+
+/* ── Right: Design Canvas (3/4) ── */
+#ux-canvas { flex: 1; overflow-y: auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 14px; }
+
+#ux-status-card {
+  background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 50%, #fff 100%);
+  border: 2px solid #c4b5fd;
+  border-radius: 14px;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: var(--shadow-sm);
+  flex-shrink: 0;
+}
+.ux-avatar {
+  width: 52px; height: 52px; border-radius: 50%;
+  background: linear-gradient(135deg, #7c3aed, #db2777);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; flex-shrink: 0;
+  box-shadow: 0 3px 10px rgba(124,58,237,.3);
+}
+.ux-agent-info { flex-shrink: 0; }
+.ux-agent-info h2 { font-size: 14px; font-weight: 700; color: var(--purple); margin: 0 0 3px; }
+.ux-agent-info p  { font-size: 11px; color: var(--text-dim); margin: 0; max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ux-progress-wrap { flex: 1; }
+.ux-progress-label { font-size: 11px; color: var(--text-dim); margin-bottom: 5px; display: flex; justify-content: space-between; }
+.ux-progress-bar  { height: 8px; background: #ede9fe; border-radius: 4px; overflow: hidden; }
+.ux-progress-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, #7c3aed, #db2777); transition: width .5s ease; }
+
+.ux-section { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow-sm); }
+.ux-section-header {
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--border-soft);
+  display: flex; align-items: center; gap: 10px;
+  background: linear-gradient(135deg, #f9f7ff 0%, #fff 100%);
+}
+.ux-section-icon  { font-size: 16px; }
+.ux-section-title { font-weight: 700; font-size: 13px; color: var(--text-bright); flex: 1; }
+.ux-section-badge { font-size: 10px; font-weight: 600; padding: 2px 9px; border-radius: 10px; background: var(--purple-dim); color: var(--purple); }
+.ux-section-body  { padding: 14px 16px; }
+
+.ux-flow { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; padding: 4px 0; }
+.ux-flow-step {
+  background: var(--primary-dim); border: 2px solid var(--primary);
+  border-radius: 8px; padding: 9px 14px;
+  font-size: 12px; font-weight: 600; color: var(--primary);
+  text-align: center; min-width: 100px; flex-shrink: 0;
+}
+.ux-flow-step small { display: block; font-size: 9px; font-weight: 400; margin-top: 2px; opacity: .75; }
+.ux-flow-step.active {
+  background: var(--primary); color: #fff;
+  box-shadow: 0 2px 8px rgba(91,91,214,.3);
+  animation: pulse-step 2s infinite;
+}
+@keyframes pulse-step { 0%,100%{box-shadow:0 0 0 0 rgba(91,91,214,.4)} 50%{box-shadow:0 0 0 6px rgba(91,91,214,0)} }
+.ux-flow-step.done   { background: var(--green-dim); border-color: var(--green); color: var(--green); }
+.ux-flow-step.future { background: var(--surface2); border-color: var(--border); color: var(--text-dim); opacity: .55; }
+.ux-flow-arrow { font-size: 16px; color: var(--text-dim); flex-shrink: 0; }
+
+.ux-qa-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.ux-qa-item { background: var(--surface2); border: 1px solid var(--border-soft); border-radius: 8px; padding: 11px 12px; }
+.ux-qa-item.answered { border-left: 3px solid var(--purple); }
+.ux-qa-item.pending  { border-left: 3px solid var(--border); opacity: .7; }
+.ux-qa-q { font-size: 10px; font-weight: 700; color: var(--purple); margin-bottom: 5px; text-transform: uppercase; letter-spacing: .05em; }
+.ux-qa-a { font-size: 12px; color: var(--text); line-height: 1.5; }
+.ux-qa-a.empty { color: var(--text-dim); font-style: italic; }
+
+.ux-token-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px,1fr)); gap: 10px; }
+.ux-swatch { border-radius: 8px; overflow: hidden; border: 1px solid var(--border); box-shadow: var(--shadow-sm); }
+.ux-swatch-color { height: 44px; width: 100%; }
+.ux-swatch-label { padding: 5px 8px 0; font-size: 10px; font-weight: 600; color: var(--text-dim); background: var(--surface); }
+.ux-swatch-value { font-size: 9px; color: var(--text-dim); font-family: var(--mono); padding: 2px 8px 6px; background: var(--surface); }
+
+.ux-comp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(175px,1fr)); gap: 10px; }
+.ux-comp-card { background: var(--surface2); border: 1px solid var(--border-soft); border-radius: 8px; padding: 11px 12px; transition: box-shadow .15s; }
+.ux-comp-card:hover { box-shadow: var(--shadow-sm); }
+.ux-comp-name { font-size: 12px; font-weight: 700; color: var(--text-bright); margin-bottom: 5px; display: flex; align-items: center; gap: 6px; }
+.ux-comp-desc { font-size: 11px; color: var(--text-dim); line-height: 1.5; }
+
+.ux-approval-bar { border-radius: 10px; padding: 14px 18px; display: flex; align-items: center; gap: 12px; border: 2px solid var(--green); background: linear-gradient(135deg,#f0fdf4,#dcfce7); }
+.ux-approval-bar.waiting { border-color: var(--border); background: var(--surface2); }
+.ux-approval-bar.pending-approval { border-color: var(--yellow); background: linear-gradient(135deg,#fffbeb,#fef3c7); }
+.ux-approval-text { flex: 1; }
+.ux-approval-text h4 { font-size: 13px; font-weight: 700; margin: 0 0 3px; color: var(--green); }
+.ux-approval-bar.waiting .ux-approval-text h4 { color: var(--text-dim); }
+.ux-approval-bar.pending-approval .ux-approval-text h4 { color: var(--yellow); }
+.ux-approval-text p { font-size: 11px; color: var(--text-dim); margin: 0; }
+.ux-approve-btn { background: var(--green); border: none; color: #fff; padding: 8px 18px; border-radius: 8px; cursor: pointer; font-size: 13px; font-family: var(--font); font-weight: 700; transition: background .15s; white-space: nowrap; }
+.ux-approve-btn:hover { background: #15803d; }
+.ux-req-changes-btn { background: #fff; border: 1.5px solid var(--yellow); color: var(--yellow); padding: 7px 14px; border-radius: 8px; cursor: pointer; font-size: 12px; font-family: var(--font); font-weight: 600; transition: all .15s; white-space: nowrap; }
+.ux-req-changes-btn:hover { background: var(--yellow-dim); }
+
+/* ══════════════════════════════════════════════════════════════════════
+   NEW PROJECT SCREEN  — full-page welcome & project launcher
+   ══════════════════════════════════════════════════════════════════════ */
+#new-project-screen {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #1e40af 100%);
+  z-index: 300;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow-y: auto;
+  padding: 40px 20px;
+}
+#new-project-screen.open { display: flex; }
+
+#np-card {
+  background: #fff;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 680px;
+  box-shadow: 0 25px 60px rgba(0,0,0,.4);
+  overflow: hidden;
+}
+#np-card-header {
+  padding: 28px 32px 20px;
+  background: linear-gradient(135deg, #f5f3ff, #ede9fe);
+  border-bottom: 1px solid #ddd6fe;
+  text-align: center;
+}
+#np-card-header .np-logo { font-size: 36px; margin-bottom: 8px; }
+#np-card-header h1 { font-size: 20px; font-weight: 800; color: #1e1b4b; margin: 0 0 4px; }
+#np-card-header p  { font-size: 12px; color: var(--text-dim); margin: 0; }
+
+#np-existing { padding: 16px 28px; border-bottom: 1px solid var(--border-soft); display: none; }
+#np-existing h3 { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--text-dim); margin: 0 0 10px; }
+.np-existing-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border-soft);
+  margin-bottom: 8px; cursor: pointer; transition: all .15s;
+  background: var(--surface2);
+}
+.np-existing-item:hover { background: var(--primary-dim); border-color: var(--primary); }
+.np-existing-item .np-ei-icon { font-size: 20px; }
+.np-existing-item .np-ei-info { flex: 1; }
+.np-existing-item .np-ei-name { font-size: 13px; font-weight: 600; color: var(--text-bright); }
+.np-existing-item .np-ei-meta { font-size: 10px; color: var(--text-dim); margin-top: 2px; }
+.np-existing-item .np-ei-status {
+  font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px;
+  background: var(--blue-dim); color: var(--blue);
+}
+.np-existing-item .np-ei-status.done { background: var(--green-dim); color: var(--green); }
+.np-existing-item .np-ei-status.in_sprint { background: var(--purple-dim); color: var(--purple); }
+
+#np-form { padding: 24px 28px; }
+#np-form h3 { font-size: 13px; font-weight: 700; color: var(--text-bright); margin: 0 0 16px; display: flex; align-items: center; gap: 8px; }
+.np-field { margin-bottom: 16px; }
+.np-field label { display: block; font-size: 11px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
+.np-field input, .np-field textarea {
+  width: 100%; background: var(--surface2); border: 1.5px solid var(--border);
+  color: var(--text); padding: 10px 12px; border-radius: 8px; font-size: 13px;
+  font-family: var(--font); outline: none; box-sizing: border-box; transition: border-color .15s;
+}
+.np-field input:focus, .np-field textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(91,91,214,.1); }
+.np-field textarea { resize: vertical; min-height: 72px; }
+.np-field small { font-size: 10px; color: var(--text-dim); margin-top: 4px; display: block; }
+.np-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+#np-footer {
+  padding: 16px 28px 24px;
+  display: flex; align-items: center; gap: 10px;
+  border-top: 1px solid var(--border-soft);
+}
+#np-footer small { flex: 1; font-size: 10px; color: var(--text-dim); }
+#np-cancel-btn { background: none; border: 1.5px solid var(--border); color: var(--text-dim); padding: 9px 18px; border-radius: 8px; cursor: pointer; font-size: 13px; font-family: var(--font); transition: all .15s; }
+#np-cancel-btn:hover { background: var(--surface3); }
+#np-launch-btn {
+  background: linear-gradient(135deg, var(--primary), #7c3aed);
+  border: none; color: #fff; padding: 10px 24px; border-radius: 8px; cursor: pointer;
+  font-size: 13px; font-family: var(--font); font-weight: 700; transition: opacity .15s;
+  display: flex; align-items: center; gap: 8px;
+}
+#np-launch-btn:hover { opacity: .9; }
+#np-msg { font-size: 11px; color: var(--green); font-weight: 600; display: none; }
+
+/* ══════════════════════════════════════════════════════════════════════
+   TEAM DISCOVERY PANEL  — Kavya / Vikram / Rasool ask their questions
+   ══════════════════════════════════════════════════════════════════════ */
+#team-disc-panel {
+  display: none;
+  background: linear-gradient(135deg, #fffbeb 0%, #fff 100%);
+  border-bottom: 2px solid var(--yellow);
+  padding: 14px 18px;
+  flex-shrink: 0;
+  z-index: 5;
+}
+#team-disc-panel.visible { display: block; }
+
+#tdp-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+#tdp-badge {
+  background: var(--yellow); color: #fff;
+  font-size: 10px; font-weight: 700; padding: 2px 9px; border-radius: 10px; text-transform: uppercase;
+}
+#tdp-title { font-size: 13px; font-weight: 700; color: #92400e; flex: 1; }
+#tdp-subtitle { font-size: 11px; color: var(--text-dim); }
+
+/* Agent tabs */
+#tdp-tabs { display: flex; gap: 4px; margin-bottom: 12px; }
+.tdp-tab {
+  padding: 6px 16px; border-radius: 8px 8px 0 0; border: 1px solid var(--border);
+  border-bottom: none; cursor: pointer; font-size: 12px; font-weight: 600;
+  color: var(--text-dim); background: var(--surface2); transition: all .15s;
+  display: flex; align-items: center; gap: 6px;
+}
+.tdp-tab.active { background: #fff; color: var(--text-bright); border-color: var(--yellow); border-bottom: 1px solid #fff; margin-bottom: -1px; z-index: 1; }
+.tdp-tab .tdp-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--border); }
+.tdp-tab.active .tdp-dot { background: var(--yellow); }
+.tdp-tab.done   .tdp-dot { background: var(--green); }
+
+/* Tab content */
+.tdp-content { display: none; }
+.tdp-content.active {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  background: #fff;
+  border: 1px solid var(--yellow);
+  border-radius: 0 10px 10px 10px;
+  padding: 14px 16px;
+}
+.tdp-agent-profile {
+  grid-column: 1 / -1;
+  display: flex; align-items: center; gap: 12px;
+  padding-bottom: 12px; border-bottom: 1px solid var(--border-soft); margin-bottom: 2px;
+}
+.tdp-avatar {
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0;
+}
+.tdp-agent-name { font-size: 14px; font-weight: 700; color: var(--text-bright); }
+.tdp-agent-role { font-size: 11px; color: var(--text-dim); }
+.tdp-agent-desc { font-size: 11px; color: var(--text-dim); flex: 1; line-height: 1.5; }
+
+.tdp-q-block { background: var(--surface2); border: 1px solid var(--border-soft); border-radius: 8px; padding: 10px 12px; }
+.tdp-q-label { font-size: 10px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 4px; }
+.tdp-q-text  { font-size: 12px; color: var(--text); margin-bottom: 6px; line-height: 1.5; }
+.tdp-q-input {
+  width: 100%; background: #fff; border: 1px solid var(--border); color: var(--text);
+  padding: 6px 10px; border-radius: 6px; font-size: 12px; font-family: var(--font);
+  outline: none; box-sizing: border-box; resize: none; min-height: 40px;
+}
+.tdp-q-input:focus { border-color: var(--yellow); }
+
+.tdp-submit-row {
+  grid-column: 1 / -1;
+  display: flex; align-items: center; justify-content: flex-end;
+  gap: 10px; margin-top: 4px;
+  padding-top: 12px; border-top: 1px solid var(--border-soft);
+}
+.tdp-submit-row small { flex: 1; font-size: 10px; color: var(--text-dim); }
+.tdp-submit-btn {
+  background: var(--yellow); border: none; color: #fff;
+  padding: 8px 20px; border-radius: 8px; cursor: pointer;
+  font-size: 12px; font-family: var(--font); font-weight: 700; transition: opacity .15s;
+}
+.tdp-submit-btn:hover { opacity: .85; }
+.tdp-done-badge {
+  background: var(--green-dim); color: var(--green);
+  font-size: 11px; font-weight: 700; padding: 6px 16px; border-radius: 8px;
+}
+</style>
+</head>
+<body>
+
+<!-- ── Top Bar ──────────────────────────────────────────────────────────── -->
+<div id="topbar">
+  <div class="logo">
+    <span class="whale">🐳</span>
+    <span>Team Panchayat</span>
+  </div>
+  <div class="divider"></div>
+  <div class="cluster-badge">Sprint <b id="sprint-id">01</b></div>
+  <div id="container-count">0 containers</div>
+  <div class="divider"></div>
+  <div id="uptime">⏱ 00:00:00</div>
+  <div class="spacer"></div>
+  <div id="project-switcher">
+    <label>Project:</label>
+    <select id="project-select" onchange="onProjectSelectChange(this.value)" title="Switch active project">
+      <option value="">Loading...</option>
+    </select>
+  </div>
+  <div class="divider"></div>
+  <div id="sse-status">● Connecting...</div>
+  <button id="btn-approve-next" class="topbtn approve" onclick="approveAndStartNext()" style="display:none" title="Mark this project done and start the next requirement">✅ Approve &amp; Start Next</button>
+  <button class="topbtn primary" onclick="openNewProjectScreen()">+ New Project</button>
+  <button class="topbtn" onclick="openUXScreen()" title="Open UX Design Review screen" style="border-color:#c4b5fd;color:#e9d5ff">🎨 UX Design</button>
+  <button class="topbtn" onclick="openPermModal()" title="Manage agent tool permissions">🔐 Permissions</button>
+  <button class="topbtn success" onclick="activateKeerthi()">🟢 Activate QA</button>
+  <button class="topbtn danger"  onclick="stopAll()">⏹ Stop All</button>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     TEAM DISCOVERY PANEL  (shown after Arjun discovery, before approval)
+     Kavya asks UX Qs | Vikram asks Cloud Qs | Rasool asks DB Qs
+     ══════════════════════════════════════════════════════════════════════ -->
+<div id="team-disc-panel">
+  <div id="tdp-header">
+    <span id="tdp-badge">Team Discovery</span>
+    <span id="tdp-title">Your team leads need answers before the sprint starts</span>
+    <span id="tdp-subtitle">Answer each agent's questions — they'll build their proposal based on your input</span>
+  </div>
+  <div id="tdp-tabs">
+    <div class="tdp-tab active" onclick="switchTdpTab('kavya')" id="tdp-tab-kavya">
+      <span class="tdp-dot"></span>🎨 Kavya (UX)
+    </div>
+    <div class="tdp-tab" onclick="switchTdpTab('vikram')" id="tdp-tab-vikram">
+      <span class="tdp-dot"></span>☁️ Vikram (Cloud)
+    </div>
+    <div class="tdp-tab" onclick="switchTdpTab('rasool')" id="tdp-tab-rasool">
+      <span class="tdp-dot"></span>🗄️ Rasool (DB)
+    </div>
+  </div>
+
+  <!-- Kavya Tab -->
+  <div class="tdp-content active" id="tdp-content-kavya">
+    <div class="tdp-agent-profile">
+      <div class="tdp-avatar" style="background:linear-gradient(135deg,#7c3aed,#db2777)">🎨</div>
+      <div>
+        <div class="tdp-agent-name">Kavya — UX Designer</div>
+        <div class="tdp-agent-role">Frontend Design &amp; Tokens</div>
+      </div>
+      <div class="tdp-agent-desc">Kavya will design your colour palette, typography, component library and user flows based on your answers.</div>
+    </div>
+    <div class="tdp-q-block">
+      <div class="tdp-q-label">Visual Style</div>
+      <div class="tdp-q-text">What visual style should this product have? (minimal, bold, corporate, playful, dark-tech…)</div>
+      <textarea class="tdp-q-input" id="kavya-q1" placeholder="e.g. Minimal and clean, like Linear or Notion"></textarea>
+    </div>
+    <div class="tdp-q-block">
+      <div class="tdp-q-label">Colour Mode</div>
+      <div class="tdp-q-text">Dark mode first, light mode first, or both toggle?</div>
+      <textarea class="tdp-q-input" id="kavya-q2" placeholder="e.g. Dark mode primary, light mode toggle"></textarea>
+    </div>
+    <div class="tdp-q-block">
+      <div class="tdp-q-label">Brand Colours</div>
+      <div class="tdp-q-text">Any preferred primary / accent / background colours? (hex codes or descriptions)</div>
+      <textarea class="tdp-q-input" id="kavya-q3" placeholder="e.g. #5b5bd6 primary, teal accent, dark navy bg"></textarea>
+    </div>
+    <div class="tdp-q-block">
+      <div class="tdp-q-label">Priority Actions</div>
+      <div class="tdp-q-text">What are the 3 most important actions a user takes in this product?</div>
+      <textarea class="tdp-q-input" id="kavya-q4" placeholder="e.g. 1. View cost anomalies  2. Set alert thresholds  3. Export reports"></textarea>
+    </div>
+    <div class="tdp-q-block">
+      <div class="tdp-q-label">Reference UI</div>
+      <div class="tdp-q-text">Any existing products or screenshots to draw design inspiration from?</div>
+      <textarea class="tdp-q-input" id="kavya-q5" placeholder="e.g. AWS Cost Explorer, Datadog, Grafana"></textarea>
+    </div>
+    <div class="tdp-q-block">
+      <div class="tdp-q-label">Accessibility</div>
+      <div class="tdp-q-text">WCAG level, minimum font size, contrast requirements?</div>
+      <textarea class="tdp-q-input" id="kavya-q6" placeholder="e.g. WCAG AA, 14px minimum, high contrast mode optional"></textarea>
+    </div>
+    <div class="tdp-submit-row" id="tdp-submit-kavya">
+      <small>Answers are sent to Kavya via team chat. She will reply with a design proposal.</small>
+      <button class="tdp-submit-btn" onclick="submitTdpAnswers('kavya')">Send to Kavya →</button>
+    </div>
+  </div>
+
+  <!-- Vikram Tab -->
+  <div class="tdp-content" id="tdp-content-vikram">
+    <div class="tdp-agent-profile">
+      <div class="tdp-avatar" style="background:linear-gradient(135deg,#dc2626,#ea580c)">☁️</div>
+      <div>
+        <div class="tdp-agent-name">Vikram — Cloud Architect</div>
+        <div class="tdp-agent-role">Infrastructure &amp; Terraform</div>
+      </div>
+      <div class="tdp-agent-desc">Vikram will design your AWS infrastructure, write Terraform modules, and estimate costs based on your answers.</div>
+    </div>
+    <div class="tdp-q-block">
+      <div class="tdp-q-label">Cloud &amp; Region</div>
+      <div class="tdp-q-text">Which cloud provider and region should infrastructure be deployed to?</div>
+      <textarea class="tdp-q-input" id="vikram-q1" placeholder="e.g. AWS us-east-1, or AWS + GCP multi-cloud"></textarea>
+    </div>
+    <div class="tdp-q-block">
+      <div class="tdp-q-label">Scale &amp; Traffic</div>
+      <div class="tdp-q-text">Expected users, requests per second, and data volume?</div>
+      <textarea class="tdp-q-input" id="vikram-q2" placeholder="e.g. 100 users, ~50 RPS, 10GB data/month"></textarea>
+    </div>
+    <div class="tdp-q-block">
+      <div class="tdp-q-label">Compute Type</div>
+      <div class="tdp-q-text">Containers (ECS/Fargate), serverless (Lambda), or EC2 VMs?</div>
+      <textarea class="tdp-q-input" id="vikram-q3" placeholder="e.g. ECS Fargate for backend, Lambda for triggers"></textarea>
+    </div>
+    <div class="tdp-q-block">
+      <div class="tdp-q-label">Existing Infra</div>
+      <div class="tdp-q-text">Any existing AWS resources or VPCs to integrate with?</div>
+      <textarea class="tdp-q-input" id="vikram-q4" placeholder="e.g. Fresh account, no existing infra"></textarea>
+    </div>
+    <div class="tdp-q-block">
+      <div class="tdp-q-label">Cost Priority</div>
+      <div class="tdp-q-text">Monthly budget ceiling and cost optimisation priority?</div>
+      <textarea class="tdp-q-input" id="vikram-q5" placeholder="e.g. Under $200/month, optimise for cost over performance"></textarea>
+    </div>
+    <div class="tdp-q-block">
+      <div class="tdp-q-label">Compliance &amp; Security</div>
+      <div class="tdp-q-text">Any compliance requirements? (SOC2, HIPAA, GDPR, PCI-DSS…)</div>
+      <textarea class="tdp-q-input" id="vikram-q6" placeholder="e.g. No strict compliance, basic IAM least-privilege"></textarea>
+    </div>
+    <div class="tdp-submit-row" id="tdp-submit-vikram">
+      <small>Answers are sent to Vikram via team chat. He will reply with an architecture proposal and cost estimate.</small>
+      <button class="tdp-submit-btn" style="background:var(--red)" onclick="submitTdpAnswers('vikram')">Send to Vikram →</button>
+    </div>
+  </div>
+
+  <!-- Rasool Tab -->
+  <div class="tdp-content" id="tdp-content-rasool">
+    <div class="tdp-agent-profile">
+      <div class="tdp-avatar" style="background:linear-gradient(135deg,#d97706,#b45309)">🗄️</div>
+      <div>
+        <div class="tdp-agent-name">Rasool — Database Agent</div>
+        <div class="tdp-agent-role">Schema Design &amp; Migrations</div>
+      </div>
+      <div class="tdp-agent-desc">Rasool will design your PostgreSQL schema, write Alembic migrations, and create the db-schema.md documentation.</div>
+    </div>
+    <div class="tdp-q-block">
+      <div class="tdp-q-label">Multi-Tenancy</div>
+      <div class="tdp-q-text">Single-tenant or multi-tenant? If multi, row-level or schema-per-tenant?</div>
+      <textarea class="tdp-q-input" id="rasool-q1" placeholder="e.g. Single tenant for now, row-level isolation later"></textarea>
+    </div>
+    <div class="tdp-q-block">
+      <div class="tdp-q-label">Data Scale</div>
+      <div class="tdp-q-text">Expected row counts for the largest tables and write frequency?</div>
+      <textarea class="tdp-q-input" id="rasool-q2" placeholder="e.g. 1M cost records/month, 10K alerts, mostly reads"></textarea>
+    </div>
+    <div class="tdp-q-block">
+      <div class="tdp-q-label">Soft Delete</div>
+      <div class="tdp-q-text">Should records be soft-deleted (deleted_at) or hard-deleted?</div>
+      <textarea class="tdp-q-input" id="rasool-q3" placeholder="e.g. Soft delete for cost records, hard delete for sessions"></textarea>
+    </div>
+    <div class="tdp-q-block">
+      <div class="tdp-q-label">Real-Time</div>
+      <div class="tdp-q-text">Any real-time or streaming data requirements? (WebSockets, polling, CDC)</div>
+      <textarea class="tdp-q-input" id="rasool-q4" placeholder="e.g. Cost anomaly alerts should push in real-time via SSE"></textarea>
+    </div>
+    <div class="tdp-q-block">
+      <div class="tdp-q-label">File / Blob Storage</div>
+      <div class="tdp-q-text">Any file uploads, exports, or blob data to store? (S3 or in DB?)</div>
+      <textarea class="tdp-q-input" id="rasool-q5" placeholder="e.g. CSV export to S3, no file uploads in DB"></textarea>
+    </div>
+    <div class="tdp-q-block">
+      <div class="tdp-q-label">Audit Log</div>
+      <div class="tdp-q-text">Do you need an audit trail of who changed what and when?</div>
+      <textarea class="tdp-q-input" id="rasool-q6" placeholder="e.g. Yes — track cost threshold changes and alert dismissals"></textarea>
+    </div>
+    <div class="tdp-submit-row" id="tdp-submit-rasool">
+      <small>Answers are sent to Rasool via team chat. He will reply with a schema proposal and ERD.</small>
+      <button class="tdp-submit-btn" style="background:var(--yellow)" onclick="submitTdpAnswers('rasool')">Send to Rasool →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── PM Discovery Panel (shown when Arjun is in discovery mode) ──────── -->
+<div id="discovery-panel">
+  <div id="disc-header">
+    <span id="disc-badge">Arjun is asking</span>
+    <span id="disc-round-label">Discovery Round 1 of 3</span>
+    <span id="disc-status">Waiting for your answers...</span>
+  </div>
+  <div id="disc-question-box">Loading questions from Arjun...</div>
+  <div id="disc-answer-row">
+    <textarea id="disc-answer" placeholder="Type your answers here (number each answer: 1. ... 2. ... etc.) then press Send..."></textarea>
+    <button id="disc-send-btn" onclick="sendDiscoveryAnswer()">Send to Arjun</button>
+  </div>
+  <div id="disc-hint">
+    Tip: Number each answer (1. answer ... 2. answer ...). Arjun saves your answers and
+    moves to the next round automatically. All answers are stored in requirement.json.
+  </div>
+</div>
+
+<!-- ── Requirement Status Banner ───────────────────────────────────────── -->
+<div id="req-banner">
+  <span id="req-id" style="display:none"></span>
+  <span id="req-title" class="empty">No active requirement -- click "+ New Requirement" to post one</span>
+  <span id="req-priority" style="display:none"></span>
+  <span id="req-status-pill" style="display:none"></span>
+  <span id="req-inputs-count" style="display:none"></span>
+  <button id="req-approve-btn" onclick="approveSprint()" title="Approve sprint plan and start execution">
+    Approve Sprint Plan
+  </button>
+</div>
+
+<!-- ── Main ─────────────────────────────────────────────────────────────── -->
+<div id="main">
+  <div id="board-area">
+
+    <!-- ── Kanban Board ─────────────────────────────────────────────────── -->
+    <div id="kanban">
+
+      <!-- Queue -->
+      <div class="kanban-col col-queue">
+        <div class="kanban-col-header">
+          <span style="color:var(--blue)">●</span>
+          <span class="col-title">Queue</span>
+          <span class="col-count" id="count-queue">0</span>
+        </div>
+        <div class="kanban-col-body" id="col-queue-body">
+          <div class="col-empty">No agents queued</div>
+        </div>
+      </div>
+
+      <!-- In Progress -->
+      <div class="kanban-col col-wip">
+        <div class="kanban-col-header">
+          <span style="color:var(--yellow)">●</span>
+          <span class="col-title">In Progress</span>
+          <span class="col-count" id="count-wip">0</span>
+        </div>
+        <div class="kanban-col-body" id="col-wip-body">
+          <div class="col-empty">No active agents</div>
+        </div>
+      </div>
+
+      <!-- Done -->
+      <div class="kanban-col col-done">
+        <div class="kanban-col-header">
+          <span style="color:var(--green)">●</span>
+          <span class="col-title">Done</span>
+          <span class="col-count" id="count-done">0</span>
+        </div>
+        <div class="kanban-col-body" id="col-done-body">
+          <div class="col-empty">No completed agents</div>
+        </div>
+      </div>
+
+    </div><!-- /#kanban -->
+
+    <!-- ── Log Panel ────────────────────────────────────────────────────── -->
+    <div id="log-panel">
+      <div id="log-panel-header">
+        <span id="log-panel-title">agent.log</span>
+        <div id="log-live-badge" style="font-size:10px;padding:1px 6px;border-radius:10px;background:var(--green-dim);color:var(--green)">● Live</div>
+        <button id="log-panel-close" onclick="closeLogPanel()" title="Close">✕</button>
+      </div>
+      <div id="log-controls">
+        <input id="log-search" placeholder="Filter logs..." oninput="filterLogs()">
+        <button id="log-wrap-btn" onclick="toggleWrap()">Wrap</button>
+      </div>
+      <div id="log-content"></div>
+      <div id="log-tail-btn" onclick="scrollToBottom()" title="Scroll to bottom">▼ Tail</div>
+    </div>
+
+  </div><!-- /#board-area -->
+
+  <!-- ── Chat Panel ───────────────────────────────────────────────────── -->
+  <div id="chat-panel">
+    <div id="chat-header">
+      <span>💬 Group Chat</span>
+      <small id="chat-msg-count">0 messages</small>
+      <small id="chat-attach-count" style="color:var(--green);display:none;margin-left:4px;"></small>
+      <span id="chat-toggle" onclick="toggleChat()" title="Toggle chat">▼</span>
+    </div>
+    <div id="chat-messages"></div>
+
+    <!-- File preview strip (shown only when files are staged) -->
+    <div id="attach-preview"></div>
+
+    <!-- Input row: attach button + text input + send -->
+    <div id="chat-input-row">
+      <!-- Hidden multi-file input -->
+      <input type="file" id="chat-file-input" multiple style="display:none"
+             onchange="handleFileSelect(this.files)">
+      <!-- Attach button -->
+      <button id="chat-attach-btn" title="Attach files (multiple supported)"
+              onclick="document.getElementById('chat-file-input').click()">📎</button>
+      <input id="chat-input" placeholder="Post a message or attach files to the team..."
+             onkeydown="chatKey(event)">
+      <button id="chat-send" onclick="sendChat()">Send</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Permissions Modal ─────────────────────────────────────────────────── -->
+<div id="perm-modal">
+  <div id="perm-box">
+    <div id="perm-header">
+      <h2>🔐 Agent Permissions Manager</h2>
+      <button id="perm-close" onclick="closePermModal()" title="Close">✕</button>
+    </div>
+    <div id="perm-tabs">
+      <button class="perm-tab active" onclick="switchPermTab('external')">External Tools</button>
+      <button class="perm-tab" onclick="switchPermTab('claude')">Claude Tools (.claude/settings.json)</button>
+    </div>
+    <div id="perm-body">
+      <!-- Tab: External Tools -->
+      <div id="perm-external-tab" class="active">
+        <p style="font-size:11px;color:var(--text-dim);margin:0 0 12px;">
+          Toggle which external tools (GitHub, Docker, Database, AWS) each agent is allowed to use.
+          Click permission chips to grant or revoke individual operations.
+        </p>
+        <div id="perm-matrix-wrap">
+          <!-- Rendered by renderPermMatrix() -->
+          <div style="color:var(--text-dim);font-size:12px;">Loading permissions...</div>
+        </div>
+      </div>
+      <!-- Tab: Claude Tools -->
+      <div id="perm-claude-tab">
+        <p style="font-size:11px;color:var(--text-dim);margin:0 0 12px;">
+          These permissions apply to ALL agents globally. They control which Claude Code tools
+          agents can use without being prompted for approval during their session.
+        </p>
+        <div id="perm-claude-wrap">
+          <!-- Rendered by renderClaudePerms() -->
+          <div style="color:var(--text-dim);font-size:12px;">Loading...</div>
+        </div>
+      </div>
+    </div>
+    <div id="perm-footer">
+      <span id="perm-save-status"></span>
+      <div style="display:flex;gap:8px;">
+        <button class="perm-btn cancel" onclick="closePermModal()">Cancel</button>
+        <button class="perm-btn save" onclick="savePermissions()">Save Changes</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Scale Modal ───────────────────────────────────────────────────────── -->
+<div id="scale-modal">
+  <div id="scale-modal-box">
+    <h3>⚡ Scale Agent</h3>
+    <p style="color:var(--text-dim);font-size:12px;margin-bottom:12px" id="scale-desc">
+      Spin up additional containers for this agent to work in parallel.
+    </p>
+    <label for="scale-replicas">Number of replicas</label>
+    <input type="number" id="scale-replicas" value="2" min="1" max="5">
+    <div class="modal-btns">
+      <button class="cancel" onclick="closeScaleModal()">Cancel</button>
+      <button class="confirm" onclick="doScale()">Scale ⚡</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Requirement Wizard Modal ──────────────────────────────────────────── -->
+<div id="req-wizard">
+  <div id="wiz-box">
+    <div id="wiz-header">
+      <h2>New Requirement</h2>
+      <small>Broadcasts to all agents via group-chat.json</small>
+      <button id="wiz-close" onclick="closeReqWizard()" title="Close">x</button>
+    </div>
+    <div id="wiz-body">
+      <div class="wiz-field">
+        <label>Title *</label>
+        <input id="wiz-title" type="text" placeholder="e.g. Cost Anomaly Alert Dashboard">
+      </div>
+      <div class="wiz-row">
+        <div class="wiz-field">
+          <label>Sprint Number *</label>
+          <input id="wiz-sprint" type="text" placeholder="01" value="01">
+        </div>
+        <div class="wiz-field">
+          <label>Type</label>
+          <select id="wiz-type">
+            <option value="new_feature">New Feature</option>
+            <option value="new_project">New Project</option>
+            <option value="enhancement">Enhancement</option>
+            <option value="bug_fix">Bug Fix</option>
+          </select>
+        </div>
+        <div class="wiz-field">
+          <label>Priority</label>
+          <select id="wiz-priority">
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+            <option value="critical">Critical</option>
+            <option value="low">Low</option>
+          </select>
+        </div>
+      </div>
+      <div class="wiz-field">
+        <label>Description -- what do you want to build? *</label>
+        <textarea id="wiz-desc" placeholder="Describe the feature or project in detail..."></textarea>
+      </div>
+      <div class="wiz-field">
+        <label>Business Goal -- why are we building this?</label>
+        <textarea id="wiz-goal" style="min-height:48px" placeholder="e.g. Reduce cloud cost overruns by catching anomalies within 1 hour"></textarea>
+      </div>
+      <div class="wiz-row">
+        <div class="wiz-field">
+          <label>Target Users / Audience</label>
+          <input id="wiz-users" type="text" placeholder="e.g. DevOps engineers, Finance team">
+        </div>
+        <div class="wiz-field">
+          <label>Deadline</label>
+          <input id="wiz-deadline" type="date">
+        </div>
+      </div>
+      <div class="wiz-field">
+        <label>Tech Constraints (comma-separated)</label>
+        <input id="wiz-constraints" type="text" placeholder="e.g. AWS only, Python 3.11+, PostgreSQL">
+      </div>
+      <div id="wiz-msg">Requirement posted to all agents!</div>
+    </div>
+    <div id="wiz-footer">
+      <small>All fields except Title, Sprint, and Description are optional.</small>
+      <button class="wiz-btn cancel" onclick="closeReqWizard()">Cancel</button>
+      <button class="wiz-btn post" onclick="submitReqWizard()">Post to Team</button>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ── Agent metadata ───────────────────────────────────────────────────────────
+const AGENT_META = {
+  arjun  : { role: 'PM / Orchestrator', model: 'Opus',   color: '#bc8cff' },
+  vikram : { role: 'Cloud Architect',   model: 'Sonnet', color: '#f85149' },
+  rasool : { role: 'Database Agent',    model: 'Sonnet', color: '#d29922' },
+  kavya  : { role: 'UX Designer',       model: 'Sonnet', color: '#ff7be5' },
+  kiran  : { role: 'Backend Engineer',  model: 'Sonnet', color: '#39c5cf' },
+  rohan  : { role: 'Frontend Engineer', model: 'Sonnet', color: '#388bfd' },
+  keerthi: { role: 'QA Agent',          model: 'Sonnet', color: '#3fb950' },
+};
+
+// ── State ────────────────────────────────────────────────────────────────────
+let currentState   = {};
+let logEventSource = null;
+let logAgent       = null;
+let startTime      = Date.now();
+let logWrap        = false;
+let chatOpen       = true;
+let scaleTarget    = null;
+
+// ── Uptime counter ────────────────────────────────────────────────────────────
+setInterval(() => {
+  const s = Math.floor((Date.now() - startTime) / 1000);
+  const h = String(Math.floor(s / 3600)).padStart(2,'0');
+  const m = String(Math.floor((s % 3600) / 60)).padStart(2,'0');
+  const sec = String(s % 60).padStart(2,'0');
+  document.getElementById('uptime').textContent = `⏱ ${h}:${m}:${sec}`;
+}, 1000);
+
+// ── Project switcher ──────────────────────────────────────────────────────────
+function renderProjectSwitcher(state) {
+  const projects     = state.projects      || [];
+  const activeProject = state.activeProject || {};
+  const sel = document.getElementById('project-select');
+  if (!sel) return;
+
+  const prev = sel.value;
+  sel.innerHTML = '';
+  projects.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p.path;
+    opt.textContent = `${p.name} (S${p.sprint || '?'}) ${p.isActive ? '*' : ''}`;
+    opt.selected = p.isActive;
+    sel.appendChild(opt);
+  });
+  if (projects.length === 0) {
+    const opt = document.createElement('option');
+    opt.value = '.'; opt.textContent = 'Default Project';
+    sel.appendChild(opt);
+  }
+
+  // Show "Approve & Start Next" button when ALL build agents are done in current project
+  const agents  = (state.status && state.status.agents) || {};
+  const buildAgents = ['arjun','vikram','rasool','kavya','kiran','rohan'];
+  const allDone = buildAgents.every(a => agents[a] && agents[a].status === 'done');
+  const hasNext = projects.some(p => !p.isActive && (p.status === 'pending_analysis' || p.status === 'queued'));
+  const btn = document.getElementById('btn-approve-next');
+  if (btn) btn.style.display = (allDone && projects.length > 1) ? '' : 'none';
+}
+
+function onProjectSelectChange(value) {
+  if (!value) return;
+  fetch('/api/switch-project', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path: value }),
+  })
+  .then(r => r.json())
+  .then(d => {
+    if (d.ok) {
+      console.log('Switched project to:', value);
+    } else {
+      alert('Could not switch project: ' + (d.error || 'unknown error'));
+      // Reset select to current active
+      renderProjectSwitcher(currentState);
+    }
+  })
+  .catch(err => alert('Switch failed: ' + err.message));
+}
+
+// Called when Tarun clicks "Approve & Start Next"
+function approveAndStartNext() {
+  const projects = (currentState && currentState.projects) || [];
+  const next = projects.find(p => !p.isActive && (p.status === 'pending_analysis' || p.status === 'queued' || p.status === 'pending'));
+  if (!next) {
+    alert('No queued project found. Use "+ New Requirement" to add the next project first, then come back here.');
+    return;
+  }
+  if (!confirm(`Mark current project DONE and switch to:\n\n"${next.name}" (Sprint ${next.sprint})\n\nProceed?`)) return;
+
+  fetch('/api/switch-project', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path: next.path }),
+  })
+  .then(r => r.json())
+  .then(d => {
+    if (d.ok) {
+      const btn = document.getElementById('btn-approve-next');
+      if (btn) btn.style.display = 'none';
+      // Show toast
+      const t = document.createElement('div');
+      t.style.cssText = 'position:fixed;top:72px;right:20px;background:#16a34a;color:#fff;padding:12px 20px;border-radius:8px;font-weight:700;z-index:9999;font-size:14px;box-shadow:0 4px 12px rgba(0,0,0,.3)';
+      t.textContent = 'Switched to: ' + next.name;
+      document.body.appendChild(t);
+      setTimeout(() => t.remove(), 3500);
+    } else {
+      alert('Switch failed: ' + (d.error || 'unknown error'));
+    }
+  })
+  .catch(err => alert('Error: ' + err.message));
+}
+
+// ── Receive state updates ─────────────────────────────────────────────────────
+window.addEventListener('panchayat-state', e => {
+  currentState = e.detail;
+  renderBoard(currentState);
+  renderProjectSwitcher(currentState);
+  renderTeamDiscovery(currentState);
+  maybeShowNewProjectScreen(currentState);
+  if (document.getElementById('ux-screen').classList.contains('open')) {
+    renderUXScreen(currentState);
+  }
+});
+
+// ── Render Kanban board ───────────────────────────────────────────────────────
+function renderBoard(state) {
+  const agents     = state.agents     || {};
+  const containers = state.containers || {};
+
+  const queueBody = document.getElementById('col-queue-body');
+  const wipBody   = document.getElementById('col-wip-body');
+  const doneBody  = document.getElementById('col-done-body');
+
+  queueBody.innerHTML = '';
+  wipBody.innerHTML   = '';
+  doneBody.innerHTML  = '';
+
+  let qCount = 0, wCount = 0, dCount = 0;
+
+  // Running container count
+  const running = Object.values(containers).filter(c => c.state === 'running').length;
+  document.getElementById('container-count').textContent = `${running} running`;
+
+  // Requirement info
+  const req = state.req || state.requirement || {};
+  if (req.sprint) document.getElementById('sprint-id').textContent = req.sprint;
+  renderReqBanner(req);
+
+  // Render each agent
+  Object.keys(AGENT_META).forEach(name => {
+    const agentStatus = agents[name] || {};
+    const containerInfo = containers[name] || {};
+    const card = buildCard(name, agentStatus, containerInfo);
+    const status = normaliseStatus(agentStatus.status, containerInfo);
+
+    if (status === 'done') {
+      doneBody.appendChild(card);
+      dCount++;
+    } else if (['wip','in_progress','starting','blocked'].includes(status)) {
+      wipBody.appendChild(card);
+      wCount++;
+    } else {
+      queueBody.appendChild(card);
+      qCount++;
+    }
+  });
+
+  // Empty state
+  if (!qCount) queueBody.innerHTML = '<div class="col-empty">No agents queued</div>';
+  if (!wCount) wipBody.innerHTML   = '<div class="col-empty">No active agents</div>';
+  if (!dCount) doneBody.innerHTML  = '<div class="col-empty">No completed agents</div>';
+
+  document.getElementById('count-queue').textContent = qCount;
+  document.getElementById('count-wip').textContent   = wCount;
+  document.getElementById('count-done').textContent  = dCount;
+
+  // Render chat -- state.chat is the full {channel, messages:[]} object
+  renderChat((state.chat && state.chat.messages) ? state.chat.messages : []);
+}
+
+function normaliseStatus(agentStatus, containerInfo) {
+  if (!agentStatus || agentStatus === 'queue' || agentStatus === 'standby') {
+    return containerInfo.state === 'running' ? 'queue' : 'standby';
+  }
+  if (agentStatus === 'done') return 'done';
+  if (agentStatus === 'blocked') return 'blocked';
+  if (agentStatus === 'starting') return 'starting';
+  if (agentStatus === 'wip' || agentStatus === 'in_progress') return 'wip';
+  return 'queue';
+}
+
+function dotClass(status, containerState) {
+  if (containerState === 'exited') return 'dot-exited';
+  const map = { running:'dot-running', wip:'dot-wip', in_progress:'dot-wip', done:'dot-done',
+                blocked:'dot-blocked', starting:'dot-starting', queue:'dot-queue', standby:'dot-standby' };
+  return map[status] || 'dot-unknown';
+}
+
+function buildCard(name, agentStatus, containerInfo) {
+  const meta    = AGENT_META[name];
+  const status  = normaliseStatus(agentStatus.status, containerInfo);
+  const progress= agentStatus.progress || 0;
+  const task    = agentStatus.task || (status === 'standby' ? 'Waiting for activation' : 'Waiting for instructions');
+  const blocker = agentStatus.blocker || '';
+  const cpu     = containerInfo.cpuPercent || 0;
+  const mem     = containerInfo.memMB || 0;
+  const uptime  = containerInfo.uptime || '--';
+  const health  = containerInfo.health || 'unknown';
+  const containerState = containerInfo.state || 'unknown';
+
+  const card = document.createElement('div');
+  card.className = `agent-card status-${status} ${health === 'unhealthy' ? 'unhealthy' : ''}`;
+  card.id = `card-${name}`;
+
+  const progressClass = status === 'done' ? 'done' : status === 'blocked' ? 'blocked' : 'running';
+  const cpuClass = cpu > 50 ? 'hot' : '';
+
+  const canScale = ['kiran','rohan','vikram'].includes(name);
+  const isKeerthi = name === 'keerthi';
+
+  card.innerHTML = `
+    <div class="card-header">
+      <div class="status-dot ${dotClass(status, containerState)}"></div>
+      <span class="card-name">${name}</span>
+      <small style="font-size:10px;color:${meta.color};margin-left:2px">${meta.model}</small>
+      <span class="card-cpu ${cpuClass}">${cpu > 0 ? cpu + '%' : ''}</span>
+    </div>
+    <div class="card-role">${meta.role}</div>
+    <div class="card-divider"></div>
+    <div class="card-task ${blocker ? 'blocked' : ''}">${blocker ? '🔴 BLOCKED: ' + blocker : escHtml(task)}</div>
+    <div class="progress-bar">
+      <div class="progress-fill ${progressClass}" style="width:${progress}%"></div>
+    </div>
+    <div class="card-footer">
+      <span class="card-stat">⏱ ${uptime}</span>
+      ${mem > 0 ? `<span class="card-stat">📦 ${mem}MB</span>` : ''}
+      <span class="card-health health-${health}" title="Container health">${health}</span>
+      <div class="card-actions">
+        ${isKeerthi && status === 'standby'
+          ? `<button class="card-btn" onclick="activateKeerthi()" title="Activate QA">🟢 Activate</button>`
+          : ''
+        }
+        ${name === 'kavya'
+          ? `<button class="card-btn" onclick="openUXScreen()" title="Open UX Design Review" style="border-color:#c4b5fd;color:#7c3aed">🎨 Design</button>`
+          : ''
+        }
+        ${canScale
+          ? `<button class="card-btn scale-btn" onclick="openScaleModal('${name}')" title="Scale agent">⚡ Scale</button>`
+          : ''
+        }
+        ${containerState === 'running'
+          ? `<button class="card-btn restart-btn" onclick="restartAgent('${name}')" title="Restart container">↺</button>`
+          : ''
+        }
+        <button class="card-btn logs-btn" onclick="openLogPanel('${name}')" title="View live logs">📋 Logs</button>
+      </div>
+    </div>`;
+
+  return card;
+}
+
+function escHtml(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+
+// ── Log Panel ─────────────────────────────────────────────────────────────────
+function openLogPanel(agentName) {
+  logAgent = agentName;
+  document.getElementById('log-panel-title').textContent = `${agentName}.log`;
+  document.getElementById('log-panel').classList.add('open');
+
+  // Close previous SSE if any
+  if (logEventSource) { logEventSource.close(); logEventSource = null; }
+
+  const content = document.getElementById('log-content');
+  content.innerHTML = '<span style="color:var(--text-dim)">Loading logs...</span>';
+
+  // Open SSE log stream
+  logEventSource = new EventSource(`/api/logs/${agentName}/stream`);
+  logEventSource.onmessage = e => {
+    try {
+      const msg = JSON.parse(e.data);
+      if (msg.type === 'init') {
+        content.innerHTML = formatLogLines(msg.content);
+        if (document.getElementById('log-tail-btn').dataset.tail !== 'off') scrollToBottom();
+      } else if (msg.type === 'append') {
+        const frag = document.createRange().createContextualFragment(formatLogLines(msg.content));
+        content.appendChild(frag);
+        if (document.getElementById('log-tail-btn').dataset.tail !== 'off') scrollToBottom();
+      }
+    } catch {}
+  };
+
+  logEventSource.onerror = () => {
+    document.getElementById('log-live-badge').textContent = '● Offline';
+    document.getElementById('log-live-badge').style.background = 'var(--red-dim)';
+    document.getElementById('log-live-badge').style.color = 'var(--red)';
+  };
+
+  filterLogs();
+}
+
+function formatLogLines(text) {
+  return text.split('\n').map(line => {
+    const cls = line.match(/error|Error|ERROR|fail|FAIL/)  ? 'log-error'
+              : line.match(/warn|WARN|warning/)            ? 'log-warn'
+              : line.match(/\[info\]|INFO|starting|Start/) ? 'log-info'
+              : line.match(/done|Done|DONE|complete|✅/)   ? 'log-done'
+              : '';
+    return `<span class="log-line ${cls}">${escHtml(line)}</span>`;
+  }).join('\n');
+}
+
+function closeLogPanel() {
+  document.getElementById('log-panel').classList.remove('open');
+  if (logEventSource) { logEventSource.close(); logEventSource = null; }
+  logAgent = null;
+}
+
+function filterLogs() {
+  const q = document.getElementById('log-search').value.toLowerCase();
+  const lines = document.getElementById('log-content').querySelectorAll('.log-line');
+  lines.forEach(l => {
+    l.style.display = (!q || l.textContent.toLowerCase().includes(q)) ? '' : 'none';
+  });
+}
+
+function toggleWrap() {
+  logWrap = !logWrap;
+  const content = document.getElementById('log-content');
+  content.classList.toggle('wrap', logWrap);
+  const btn = document.getElementById('log-wrap-btn');
+  btn.classList.toggle('active', logWrap);
+}
+
+function scrollToBottom() {
+  const el = document.getElementById('log-content');
+  el.scrollTop = el.scrollHeight;
+}
+
+document.getElementById('log-tail-btn').addEventListener('click', function() {
+  if (this.dataset.tail === 'off') {
+    delete this.dataset.tail;
+    this.textContent = '▼ Tail';
+  } else {
+    this.dataset.tail = 'off';
+    this.textContent = '⏸ Pause tail';
+  }
+});
+
+// ── Group Chat — Teams Style ──────────────────────────────────────────────────
+let lastChatLen = 0;
+
+function senderInitials(name) {
+  const n = (name || '?').toUpperCase();
+  return n.length >= 2 ? n.slice(0,2) : n;
+}
+
+function typeBadge(type) {
+  const badges = {
+    broadcast: 'badge-broadcast', plan: 'badge-plan', done: 'badge-done',
+    blocker: 'badge-blocker', analysis: 'badge-analysis', discovery: 'badge-discovery',
+  };
+  const cls = badges[type];
+  if (!cls) return '';
+  return '<span class="chat-type-badge ' + cls + '">' + escHtml(type) + '</span>';
+}
+
+function renderChat(messages) {
+  if (messages.length === lastChatLen) return;
+  lastChatLen = messages.length;
+  document.getElementById('chat-msg-count').textContent = `${messages.length} messages`;
+
+  const box = document.getElementById('chat-messages');
+  const atBottom = box.scrollTop + box.clientHeight >= box.scrollHeight - 20;
+
+  box.innerHTML = '';
+  const recent = messages.slice(-80);
+  let prevSender = null;
+
+  recent.forEach((msg, idx) => {
+    const msgType = msg.type || 'message';
+    const sender  = (msg.from || msg.sender || '?').toUpperCase();
+    const senderL = sender.toLowerCase();
+    const isOwn   = senderL === 'tarun';
+    const isSystem= senderL === 'system';
+    const time    = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' }) : '';
+    const isGrouped = (sender === prevSender) && !isSystem;
+    prevSender = sender;
+
+    const el = document.createElement('div');
+    el.className = [
+      'chat-msg',
+      'chat-type-' + msgType,
+      isOwn     ? 'own-msg'    : '',
+      isGrouped ? 'is-grouped' : '',
+    ].filter(Boolean).join(' ');
+
+    // Avatar
+    const avatarHtml = isGrouped
+      ? '<div class="chat-avatar hidden"></div>'
+      : '<div class="chat-avatar avatar-' + senderL + '">' + senderInitials(sender) + '</div>';
+
+    // Sender meta row (only on first message of group)
+    const metaHtml = isGrouped ? '' :
+      '<div class="chat-meta">' +
+        '<span class="chat-sender sender-' + senderL + '">' + escHtml(sender) + '</span>' +
+        typeBadge(msgType) +
+        '<span class="chat-time">' + time + '</span>' +
+      '</div>';
+
+    // Attachment HTML
+    let attachHtml = '';
+    if (Array.isArray(msg.attachments) && msg.attachments.length) {
+      const chips = msg.attachments.map(a => {
+        const icon    = fileIcon(a.mimeType, a.name);
+        const isImage = a.mimeType && a.mimeType.startsWith('image/');
+        const href    = a.url ? a.url : (a.data || '#');
+        const sizeStr = a.size ? formatSize(a.size) : '';
+        if (isImage && (a.url || a.data)) {
+          return '<a class="chat-attach-file" href="' + escHtml(href) + '" download="' + escHtml(a.name) + '" target="_blank">' +
+            icon + ' <span class="fa-name">' + escHtml(a.name) + '</span>' +
+            (sizeStr ? ' <span class="chat-attach-size">(' + sizeStr + ')</span>' : '') + '</a>' +
+            '<a href="' + escHtml(href) + '" target="_blank">' +
+            '<img class="chat-attach-img" src="' + escHtml(href) + '" alt="' + escHtml(a.name) + '">' +
+            '</a>';
+        }
+        return '<a class="chat-attach-file" href="' + escHtml(href) + '" download="' + escHtml(a.name) + '" target="_blank">' +
+          icon + ' <span class="fa-name">' + escHtml(a.name) + '</span>' +
+          (sizeStr ? ' <span class="chat-attach-size">(' + sizeStr + ')</span>' : '') + '</a>';
+      }).join('');
+      attachHtml = '<div class="chat-attachments" style="margin-top:6px;">' + chips + '</div>';
+    }
+
+    const bubbleText = escHtml(msg.message || '').replace(/\n/g, '<br>');
+
+    el.innerHTML =
+      avatarHtml +
+      '<div class="chat-msg-content">' +
+        metaHtml +
+        '<div class="chat-bubble">' + bubbleText + attachHtml + '</div>' +
+      '</div>';
+
+    box.appendChild(el);
+  });
+
+  if (atBottom) box.scrollTop = box.scrollHeight;
+}
+
+function toggleChat() {
+  chatOpen = !chatOpen;
+  const panel = document.getElementById('chat-panel');
+  panel.style.height = chatOpen ? '180px' : '36px';
+  document.getElementById('chat-toggle').textContent = chatOpen ? '▼' : '▲';
+}
+
+function chatKey(e) { if (e.key === 'Enter' && !e.shiftKey) sendChat(); }
+
+// ── File attachment state ───────────────────────────────────────────────────
+let attachedFiles = [];  // [{ name, mimeType, size, data (dataURL) }]
+const ATTACH_MAX_SIZE  = 25 * 1024 * 1024;  // 25 MB per file
+const ATTACH_MAX_FILES = 10;
+
+function fileIcon(mimeType, name) {
+  const ext = (name || '').split('.').pop().toLowerCase();
+  if (!mimeType && !name) return '📄';
+  if (mimeType && mimeType.startsWith('image/')) return '🖼️';
+  if (['tf','hcl'].includes(ext)) return '🏗️';
+  if (['yml','yaml'].includes(ext)) return '⚙️';
+  if (['json'].includes(ext) || (mimeType && mimeType.includes('json'))) return '{}';
+  if (['py'].includes(ext)) return '🐍';
+  if (['js','ts','tsx','jsx'].includes(ext)) return '📜';
+  if (['md','txt'].includes(ext)) return '📝';
+  if (['pdf'].includes(ext) || (mimeType && mimeType.includes('pdf'))) return '📋';
+  if (['zip','tar','gz'].includes(ext)) return '📦';
+  if (['sh','bat','ps1'].includes(ext)) return '⚡';
+  if (['sql'].includes(ext)) return '🗄️';
+  return '📄';
+}
+
+function formatSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return Math.round(bytes / 1024) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+function handleFileSelect(fileList) {
+  const files = Array.from(fileList);
+  const remaining = ATTACH_MAX_FILES - attachedFiles.length;
+  if (remaining <= 0) { alert('Maximum ' + ATTACH_MAX_FILES + ' files per message.'); return; }
+
+  let added = 0;
+  files.slice(0, remaining).forEach(file => {
+    if (file.size > ATTACH_MAX_SIZE) {
+      alert('File too large: ' + file.name + ' (' + formatSize(file.size) + '). Max 25 MB.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = e => {
+      attachedFiles.push({ name: file.name, mimeType: file.type || 'application/octet-stream', size: file.size, data: e.target.result });
+      renderAttachPreview();
+    };
+    reader.readAsDataURL(file);
+    added++;
+  });
+
+  // Reset input so same file can be re-selected
+  document.getElementById('chat-file-input').value = '';
+}
+
+function removeAttachment(idx) {
+  attachedFiles.splice(idx, 1);
+  renderAttachPreview();
+}
+
+function clearAttachments() {
+  attachedFiles = [];
+  renderAttachPreview();
+}
+
+function renderAttachPreview() {
+  const preview = document.getElementById('attach-preview');
+  const btn     = document.getElementById('chat-attach-btn');
+  const counter = document.getElementById('chat-attach-count');
+
+  if (!attachedFiles.length) {
+    preview.style.display = 'none';
+    preview.innerHTML = '';
+    btn.classList.remove('has-files');
+    counter.style.display = 'none';
+    return;
+  }
+
+  btn.classList.add('has-files');
+  counter.style.display = '';
+  counter.textContent = attachedFiles.length + ' file' + (attachedFiles.length > 1 ? 's' : '') + ' staged';
+
+  preview.style.display = 'flex';
+  preview.innerHTML = attachedFiles.map((f, i) => {
+    const isImage = f.mimeType && f.mimeType.startsWith('image/');
+    const thumb   = isImage ? '<img src="' + f.data + '" style="width:28px;height:28px;object-fit:cover;border-radius:3px;flex-shrink:0;" alt="">' : '';
+    return '<div class="attach-chip">' +
+      (isImage ? thumb : '<span class="attach-icon">' + fileIcon(f.mimeType, f.name) + '</span>') +
+      '<span class="attach-name" title="' + escHtml(f.name) + '">' + escHtml(f.name.length > 22 ? f.name.slice(0,19) + '...' : f.name) + '</span>' +
+      '<span class="attach-size">' + formatSize(f.size) + '</span>' +
+      '<button class="attach-remove" onclick="removeAttachment(' + i + ')" title="Remove">×</button>' +
+      '</div>';
+  }).join('');
+}
+
+function sendChat() {
+  const input   = document.getElementById('chat-input');
+  const message = input.value.trim();
+  if (!message && !attachedFiles.length) return;
+
+  const payload = {
+    from:    'TARUN',
+    role:    'Product Owner',
+    message: message || '📎 ' + attachedFiles.length + ' file' + (attachedFiles.length > 1 ? 's' : '') + ' shared',
+    type:    'message',
+  };
+
+  if (attachedFiles.length) {
+    payload.attachments = attachedFiles.map(f => ({
+      name:     f.name,
+      mimeType: f.mimeType,
+      size:     f.size,
+      data:     f.data,  // base64 dataURL -- server will save to disk
+    }));
+  }
+
+  input.value = '';
+  clearAttachments();
+
+  fetch('/api/chat', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify(payload),
+  }).catch(console.error);
+}
+
+// ── Scale ─────────────────────────────────────────────────────────────────────
+function openScaleModal(agentName) {
+  scaleTarget = agentName;
+  document.getElementById('scale-desc').textContent =
+    `Spin up additional "${agentName}" containers for parallel work.`;
+  document.getElementById('scale-replicas').value = 2;
+  document.getElementById('scale-modal').classList.add('open');
+}
+function closeScaleModal() {
+  document.getElementById('scale-modal').classList.remove('open');
+  scaleTarget = null;
+}
+function doScale() {
+  if (!scaleTarget) return;
+  const replicas = parseInt(document.getElementById('scale-replicas').value, 10);
+  fetch('/api/scale', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ service: scaleTarget, replicas }),
+  })
+  .then(r => r.json())
+  .then(d => {
+    if (d.ok) {
+      sendTeamMessage(`⚡ Scaling ${scaleTarget} to ${replicas} replicas`, 'broadcast');
+    } else {
+      alert('Scale error: ' + (d.error || 'unknown'));
+    }
+  })
+  .catch(e => alert('Scale failed: ' + e.message));
+  closeScaleModal();
+}
+
+// Close modal on backdrop click
+document.getElementById('scale-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeScaleModal();
+});
+
+// ── Agent Actions ─────────────────────────────────────────────────────────────
+function restartAgent(name) {
+  if (!confirm(`Restart ${name} container?`)) return;
+  fetch(`/api/agent/${name}/restart`, { method: 'POST' })
+    .then(r => r.json())
+    .then(d => {
+      if (!d.ok) alert('Restart error: ' + (d.error || 'unknown'));
+    })
+    .catch(e => alert('Error: ' + e.message));
+}
+
+function activateKeerthi() {
+  if (!confirm('Activate Keerthi QA agent? Make sure all 5 developers are done.')) return;
+  fetch('/api/agent/keerthi/activate', { method: 'POST' })
+    .then(r => r.json())
+    .then(d => {
+      if (d.ok) sendTeamMessage('🟢 Keerthi QA agent activated — starting quality gates', 'broadcast');
+      else alert('Error: ' + (d.error || 'unknown'));
+    });
+}
+
+function stopAll() {
+  if (!confirm('Stop all agent containers? The cluster will shut down.')) return;
+  sendTeamMessage('⏹ Cluster stop requested by Tarun', 'broadcast');
+  setTimeout(() => {
+    alert('Run: docker compose down\n(in the ADLC-Agent-Kit directory)');
+  }, 500);
+}
+
+// ── Permissions Manager ───────────────────────────────────────────────────────
+// State
+let permData = null;   // { toolPerms, claudeSettings }
+let permActiveTab = 'external';
+
+// Tool definitions: available sub-permissions per tool
+const EXT_TOOLS = {
+  github:   { label: 'GitHub',   icon: '🐙', perms: ['read_repo','push','create_branch','create_pr','create_issue','comment_pr','merge_pr'] },
+  docker:   { label: 'Docker',   icon: '🐳', perms: ['build','run','push_image','logs','exec','stop'] },
+  database: { label: 'Database', icon: '🗄️', perms: ['connect','read','write','migrate','seed','drop'] },
+  aws:      { label: 'AWS',      icon: '☁️',  perms: ['terraform_plan','terraform_apply','terraform_destroy','s3_read','s3_write','ecr_push','ssm_read'] },
+};
+
+const CLAUDE_TOOLS_DEF = [
+  { name: 'Bash(*)',      desc: 'Run shell commands (cd, git, node, terraform…)' },
+  { name: 'Read(*)',      desc: 'Read any file in the workspace' },
+  { name: 'Write(*)',     desc: 'Create new files' },
+  { name: 'Edit(*)',      desc: 'Edit existing files' },
+  { name: 'MultiEdit(*)', desc: 'Multiple edits in one call' },
+  { name: 'Glob(*)',      desc: 'Search files by pattern' },
+  { name: 'Grep(*)',      desc: 'Search file contents' },
+  { name: 'LS(*)',        desc: 'List directory contents' },
+  { name: 'TodoWrite(*)', desc: 'Manage agent task lists' },
+  { name: 'TodoRead(*)',  desc: 'Read agent task lists' },
+  { name: 'WebFetch(*)',  desc: 'Fetch URLs (docs, APIs)' },
+  { name: 'WebSearch(*)', desc: 'Search the web' },
+];
+
+const AGENT_COLORS = {
+  arjun:'#bc8cff', vikram:'#f85149', rasool:'#d29922',
+  kavya:'#ff7be5', kiran:'#39c5cf', rohan:'#388bfd', keerthi:'#3fb950',
+};
+
+function openPermModal() {
+  document.getElementById('perm-modal').classList.add('open');
+  document.getElementById('perm-save-status').textContent = '';
+  document.getElementById('perm-save-status').className = '';
+  loadPermissions();
+}
+function closePermModal() { document.getElementById('perm-modal').classList.remove('open'); }
+
+function switchPermTab(tab) {
+  permActiveTab = tab;
+  document.querySelectorAll('.perm-tab').forEach((btn, i) => {
+    btn.classList.toggle('active', (i === 0 && tab === 'external') || (i === 1 && tab === 'claude'));
+  });
+  document.getElementById('perm-external-tab').classList.toggle('active', tab === 'external');
+  document.getElementById('perm-claude-tab').classList.toggle('active', tab === 'claude');
+}
+
+function loadPermissions() {
+  fetch('/api/permissions')
+    .then(r => r.json())
+    .then(data => {
+      permData = data;
+      renderPermMatrix();
+      renderClaudePerms();
+    })
+    .catch(e => {
+      document.getElementById('perm-matrix-wrap').innerHTML =
+        '<div style="color:var(--red);font-size:12px;">Could not load permissions: ' + escHtml(e.message) + '</div>';
+    });
+}
+
+function renderPermMatrix() {
+  if (!permData) return;
+  const agents   = ['arjun','vikram','rasool','kavya','kiran','rohan','keerthi'];
+  const toolKeys = Object.keys(EXT_TOOLS);
+  const perms    = permData.toolPerms || {};
+
+  let html = '<table class="perm-matrix">';
+  // Header row
+  html += '<tr><th>Agent</th>';
+  toolKeys.forEach(t => { html += '<th>' + EXT_TOOLS[t].icon + ' ' + EXT_TOOLS[t].label + '</th>'; });
+  html += '</tr>';
+
+  agents.forEach(agent => {
+    const agentPerms  = perms.agents?.[agent] || {};
+    const agentColor  = AGENT_COLORS[agent] || '#888';
+    const note        = agentPerms.notes || '';
+    html += '<tr>';
+    html += '<td><div class="perm-agent-name" style="color:' + agentColor + '">' + agent.toUpperCase() + '</div>';
+    if (note) html += '<div class="perm-agent-note">' + escHtml(note) + '</div>';
+    html += '</td>';
+
+    toolKeys.forEach(tool => {
+      const cell       = agentPerms[tool] || { enabled: false, permissions: [] };
+      const isEnabled  = !!cell.enabled;
+      const activePerms = Array.isArray(cell.permissions) ? cell.permissions : [];
+      const toolDef    = EXT_TOOLS[tool];
+      const toggleId   = 'perm-' + agent + '-' + tool;
+
+      html += '<td class="perm-tool-cell">';
+      // Toggle switch
+      html += '<div class="perm-toggle-row">';
+      html += '<label class="perm-toggle">';
+      html += '<input type="checkbox" id="' + toggleId + '" ' + (isEnabled ? 'checked' : '') +
+              ' onchange="onPermToggle(\'' + agent + '\',\'' + tool + '\',this.checked)">';
+      html += '<span class="perm-slider"></span>';
+      html += '</label>';
+      html += '<span class="perm-tool-label">' + (isEnabled ? 'Allowed' : 'Blocked') + '</span>';
+      html += '</div>';
+
+      // Sub-permission chips (only show when enabled)
+      html += '<div class="perm-subperms" id="subperms-' + agent + '-' + tool + '" style="' + (isEnabled ? '' : 'opacity:.35;pointer-events:none;') + '">';
+      toolDef.perms.forEach(p => {
+        const active = activePerms.includes(p);
+        html += '<span class="perm-subperm-chip' + (active ? ' active' : '') + '" ' +
+                'onclick="onSubPermToggle(\'' + agent + '\',\'' + tool + '\',\'' + p + '\',this)">' +
+                p + '</span>';
+      });
+      html += '</div>';
+      html += '</td>';
+    });
+
+    html += '</tr>';
+  });
+
+  html += '</table>';
+  document.getElementById('perm-matrix-wrap').innerHTML = html;
+}
+
+function renderClaudePerms() {
+  if (!permData) return;
+  const allowList = permData.claudeSettings?.permissions?.allow || [];
+  const denyList  = permData.claudeSettings?.permissions?.deny  || [];
+
+  let html = '<p class="perm-section-title">Allowed Tools (all agents)</p>';
+  html += '<div class="claude-tools-grid">';
+  CLAUDE_TOOLS_DEF.forEach(tool => {
+    const isAllowed = allowList.includes(tool.name);
+    const isDenied  = denyList.includes(tool.name);
+    const checkId   = 'claude-' + tool.name.replace(/[^a-z]/gi,'');
+    html += '<div class="claude-tool-row">';
+    html += '<label class="perm-toggle">';
+    html += '<input type="checkbox" id="' + checkId + '" ' + (isAllowed && !isDenied ? 'checked' : '') +
+            ' onchange="onClaudeToolToggle(\'' + escHtml(tool.name) + '\',this.checked)">';
+    html += '<span class="perm-slider"></span>';
+    html += '</label>';
+    html += '<div class="claude-tool-info">';
+    html += '<div class="claude-tool-name">' + escHtml(tool.name) + '</div>';
+    html += '<div class="claude-tool-desc">' + escHtml(tool.desc) + '</div>';
+    html += '</div></div>';
+  });
+  html += '</div>';
+
+  if (denyList.length) {
+    html += '<p class="perm-section-title" style="margin-top:16px;">Explicitly Denied</p>';
+    html += '<div style="display:flex;flex-wrap:wrap;gap:5px;">';
+    denyList.forEach(d => {
+      html += '<span style="background:var(--red-dim,rgba(248,81,73,.15));border:1px solid var(--red);border-radius:4px;padding:2px 8px;font-size:11px;color:var(--red);">' + escHtml(d) + '</span>';
+    });
+    html += '</div>';
+  }
+
+  document.getElementById('perm-claude-wrap').innerHTML = html;
+}
+
+// Called when the main enabled/disabled toggle is flipped
+function onPermToggle(agent, tool, enabled) {
+  if (!permData) return;
+  if (!permData.toolPerms.agents) permData.toolPerms.agents = {};
+  if (!permData.toolPerms.agents[agent]) permData.toolPerms.agents[agent] = {};
+  if (!permData.toolPerms.agents[agent][tool]) permData.toolPerms.agents[agent][tool] = { enabled: false, permissions: [] };
+  permData.toolPerms.agents[agent][tool].enabled = enabled;
+
+  // Grey-out / re-enable the sub-permission chips
+  const subRow = document.getElementById('subperms-' + agent + '-' + tool);
+  if (subRow) { subRow.style.opacity = enabled ? '1' : '.35'; subRow.style.pointerEvents = enabled ? '' : 'none'; }
+
+  // Update the label next to the toggle
+  const label = document.querySelector('#perm-' + agent + '-' + tool)?.closest('.perm-toggle-row')?.querySelector('.perm-tool-label');
+  if (label) label.textContent = enabled ? 'Allowed' : 'Blocked';
+
+  showUnsaved();
+}
+
+// Called when a sub-permission chip is clicked
+function onSubPermToggle(agent, tool, perm, chipEl) {
+  if (!permData) return;
+  const cell = permData.toolPerms.agents?.[agent]?.[tool];
+  if (!cell) return;
+  if (!Array.isArray(cell.permissions)) cell.permissions = [];
+  const idx = cell.permissions.indexOf(perm);
+  if (idx >= 0) { cell.permissions.splice(idx, 1); chipEl.classList.remove('active'); }
+  else          { cell.permissions.push(perm);     chipEl.classList.add('active'); }
+  showUnsaved();
+}
+
+// Called when a Claude tool checkbox is toggled
+function onClaudeToolToggle(toolName, enabled) {
+  if (!permData) return;
+  if (!permData.claudeSettings.permissions) permData.claudeSettings.permissions = { allow: [], deny: [] };
+  const allow = permData.claudeSettings.permissions.allow || [];
+  const deny  = permData.claudeSettings.permissions.deny  || [];
+  if (enabled) {
+    if (!allow.includes(toolName)) allow.push(toolName);
+    const di = deny.indexOf(toolName);
+    if (di >= 0) deny.splice(di, 1);
+  } else {
+    const ai = allow.indexOf(toolName);
+    if (ai >= 0) allow.splice(ai, 1);
+  }
+  permData.claudeSettings.permissions.allow = allow;
+  permData.claudeSettings.permissions.deny  = deny;
+  showUnsaved();
+}
+
+function showUnsaved() {
+  const el = document.getElementById('perm-save-status');
+  el.textContent = 'Unsaved changes';
+  el.className = '';
+}
+
+function savePermissions() {
+  if (!permData) return;
+  const statusEl = document.getElementById('perm-save-status');
+  statusEl.textContent = 'Saving...';
+  statusEl.className = '';
+
+  fetch('/api/permissions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(permData),
+  })
+  .then(r => r.json())
+  .then(d => {
+    if (d.ok) {
+      statusEl.textContent = 'Saved successfully';
+      statusEl.className = 'ok';
+      setTimeout(() => { statusEl.textContent = ''; statusEl.className = ''; }, 3000);
+    } else {
+      statusEl.textContent = 'Save failed: ' + (d.error || 'unknown error');
+      statusEl.className = 'err';
+    }
+  })
+  .catch(e => {
+    statusEl.textContent = 'Error: ' + e.message;
+    statusEl.className = 'err';
+  });
+}
+
+// ── Requirement Wizard ────────────────────────────────────────────────────────
+function openReqWizard() {
+  document.getElementById('wiz-msg').style.display = 'none';
+  document.getElementById('req-wizard').classList.add('open');
+  document.getElementById('wiz-title').focus();
+}
+
+function closeReqWizard() {
+  document.getElementById('req-wizard').classList.remove('open');
+}
+
+function submitReqWizard() {
+  const title = document.getElementById('wiz-title').value.trim();
+  const desc  = document.getElementById('wiz-desc').value.trim();
+  const sprint= document.getElementById('wiz-sprint').value.trim() || '01';
+  if (!title) { alert('Please enter a requirement title.'); return; }
+  if (!desc)  { alert('Please describe the requirement.'); return; }
+
+  const payload = {
+    title,
+    sprint,
+    type:            document.getElementById('wiz-type').value,
+    priority:        document.getElementById('wiz-priority').value,
+    description:     desc,
+    businessGoal:    document.getElementById('wiz-goal').value.trim(),
+    targetUsers:     document.getElementById('wiz-users').value.trim(),
+    techConstraints: document.getElementById('wiz-constraints').value.trim(),
+    deadline:        document.getElementById('wiz-deadline').value,
+  };
+
+  fetch('/api/requirement', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  .then(r => r.json())
+  .then(d => {
+    if (d.ok) {
+      const msg = document.getElementById('wiz-msg');
+      msg.textContent = 'Posted! ID: ' + d.requirementId;
+      msg.style.display = 'block';
+      // Clear form fields
+      ['wiz-title','wiz-desc','wiz-goal','wiz-users','wiz-constraints','wiz-deadline'].forEach(id => {
+        document.getElementById(id).value = '';
+      });
+      setTimeout(closeReqWizard, 1800);
+    } else {
+      alert('Error posting requirement: ' + (d.error || 'unknown'));
+    }
+  })
+  .catch(e => alert('Network error: ' + e.message));
+}
+
+// Close wizard on backdrop click
+document.getElementById('req-wizard').addEventListener('click', function(e) {
+  if (e.target === this) closeReqWizard();
+});
+
+// ── Requirement Banner ────────────────────────────────────────────────────────
+function renderReqBanner(req) {
+  const banner   = document.getElementById('req-banner');
+  const titleEl  = document.getElementById('req-title');
+  const idEl     = document.getElementById('req-id');
+  const pillEl   = document.getElementById('req-status-pill');
+  const prioEl   = document.getElementById('req-priority');
+  const countEl  = document.getElementById('req-inputs-count');
+  const approveBtn = document.getElementById('req-approve-btn');
+
+  if (!req || !req.title) {
+    titleEl.textContent = 'No active requirement -- click "+ New Requirement" to post one';
+    titleEl.className = 'empty';
+    idEl.style.display = pillEl.style.display = prioEl.style.display =
+      countEl.style.display = 'none';
+    approveBtn.classList.remove('show');
+    banner.classList.remove('has-req');
+    return;
+  }
+
+  banner.classList.add('has-req');
+  titleEl.textContent = req.title;
+  titleEl.className   = '';
+
+  idEl.textContent    = req.requirementId || '';
+  idEl.style.display  = req.requirementId ? 'inline' : 'none';
+
+  prioEl.textContent  = req.priority || 'medium';
+  prioEl.className    = 'req-priority ' + (req.priority || 'medium');
+  prioEl.style.display = 'inline';
+
+  pillEl.textContent  = (req.status || '').replace(/_/g, ' ');
+  pillEl.className    = 'req-status-pill ' + (req.status || '');
+  pillEl.style.display = 'inline';
+
+  // Count agent inputs received
+  const inputs  = req.agentInputs || {};
+  const total   = Object.keys(inputs).length;
+  const received= Object.values(inputs).filter(v => v && v.received).length;
+  if (total > 0) {
+    countEl.textContent  = received + '/' + total + ' agent inputs';
+    countEl.style.display = 'inline';
+  } else {
+    countEl.style.display = 'none';
+  }
+
+  // Show approve button if not yet approved and in pending_analysis
+  const canApprove = !req.approvedByTarun && req.status !== 'in_sprint';
+  if (canApprove) {
+    approveBtn.classList.add('show');
+  } else {
+    approveBtn.classList.remove('show');
+  }
+}
+
+function approveSprint() {
+  if (!confirm('Approve the sprint plan? This will set all agents to In Progress.')) return;
+  fetch('/api/requirement/approve', { method: 'POST' })
+    .then(r => r.json())
+    .then(d => {
+      if (!d.ok) alert('Error: ' + (d.error || 'unknown'));
+    })
+    .catch(e => alert('Network error: ' + e.message));
+}
+
+function sendTeamMessage(message, type = 'broadcast') {
+  fetch('/api/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ from: 'TARUN', role: 'Product Owner', message, type }),
+  }).catch(console.error);
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// NEW PROJECT SCREEN
+// ══════════════════════════════════════════════════════════════════════════════
+
+function openNewProjectScreen() {
+  renderNPExisting(currentState);
+  document.getElementById('new-project-screen').classList.add('open');
+}
+
+function closeNewProjectScreen() {
+  document.getElementById('new-project-screen').classList.remove('open');
+}
+
+function renderNPExisting(state) {
+  const projects = (state.projects || []).filter(p => p.name && p.name !== 'Unnamed');
+  const wrap = document.getElementById('np-existing');
+  const list = document.getElementById('np-existing-list');
+  if (!projects.length) { wrap.style.display = 'none'; return; }
+
+  wrap.style.display = 'block';
+  list.innerHTML = '';
+  projects.forEach(p => {
+    const div = document.createElement('div');
+    div.className = 'np-existing-item';
+    div.onclick = () => { switchToProject(p.path); closeNewProjectScreen(); };
+    const statusCls = p.status === 'done' ? 'done' : p.status === 'in_sprint' ? 'in_sprint' : '';
+    div.innerHTML =
+      `<div class="np-ei-icon">📁</div>
+       <div class="np-ei-info">
+         <div class="np-ei-name">${escHtml(p.name)}</div>
+         <div class="np-ei-meta">Sprint ${escHtml(p.sprint || '?')} · ${escHtml(p.path)}</div>
+       </div>
+       <span class="np-ei-status ${statusCls}">${escHtml((p.status || 'pending').replace(/_/g,' '))}</span>`;
+    list.appendChild(div);
+  });
+}
+
+function switchToProject(path) {
+  fetch('/api/switch-project', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path }) }).catch(console.error);
+}
+
+function submitNewProject() {
+  const title       = document.getElementById('np-title').value.trim();
+  const description = document.getElementById('np-desc').value.trim();
+  if (!title || !description) { alert('Project name and description are required.'); return; }
+
+  const payload = {
+    title,
+    description,
+    businessGoal:    document.getElementById('np-goal').value.trim(),
+    targetUsers:     document.getElementById('np-users').value.trim(),
+    techConstraints: document.getElementById('np-constraints').value.trim()
+      ? document.getElementById('np-constraints').value.split(',').map(s => s.trim()) : [],
+    deadline:        document.getElementById('np-deadline').value || null,
+    priority: 'high',
+    type: 'new_project',
+    sprint: '',
+  };
+
+  fetch('/api/requirement', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+  })
+  .then(r => r.json())
+  .then(d => {
+    if (d.ok || d.requirementId) {
+      const msg = document.getElementById('np-msg');
+      msg.style.display = 'block';
+      setTimeout(closeNewProjectScreen, 1800);
+    } else { alert('Error: ' + (d.error || 'unknown')); }
+  })
+  .catch(e => alert('Network error: ' + e.message));
+}
+
+// Auto-show New Project screen when there is no active requirement
+function maybeShowNewProjectScreen(state) {
+  const req  = state.req || {};
+  const isOpen = document.getElementById('new-project-screen').classList.contains('open');
+  const uxOpen = document.getElementById('ux-screen').classList.contains('open');
+  if (uxOpen) return;
+  if (!req.title && !isOpen) {
+    renderNPExisting(state);
+    document.getElementById('new-project-screen').classList.add('open');
+  } else if (req.title && isOpen) {
+    closeNewProjectScreen();
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// TEAM DISCOVERY PANEL  — Kavya / Vikram / Rasool discovery tabs
+// ══════════════════════════════════════════════════════════════════════════════
+
+const TDP_AGENTS = {
+  kavya:  { label: 'Kavya (UX)',   qs: ['kavya-q1','kavya-q2','kavya-q3','kavya-q4','kavya-q5','kavya-q6'],
+            keys: ['visualStyle','colourMode','brandColours','priorityActions','referenceUI','accessibility'] },
+  vikram: { label: 'Vikram (Cloud)', qs: ['vikram-q1','vikram-q2','vikram-q3','vikram-q4','vikram-q5','vikram-q6'],
+            keys: ['cloudRegion','scaleTraffic','computeType','existingInfra','costPriority','compliance'] },
+  rasool: { label: 'Rasool (DB)',  qs: ['rasool-q1','rasool-q2','rasool-q3','rasool-q4','rasool-q5','rasool-q6'],
+            keys: ['multiTenancy','dataScale','softDelete','realTime','fileStorage','auditLog'] },
+};
+let tdpSubmitted = { kavya: false, vikram: false, rasool: false };
+
+function renderTeamDiscovery(state) {
+  const req  = state.req || {};
+  const panel = document.getElementById('team-disc-panel');
+
+  // Show only when PM discovery done but sprint not yet approved
+  if (req.discoveryComplete && !req.approvedByTarun) {
+    panel.classList.add('visible');
+  } else {
+    panel.classList.remove('visible');
+    return;
+  }
+
+  // Pre-fill any existing answers and mark done tabs
+  const disc = req.teamDiscovery || {};
+  ['kavya','vikram','rasool'].forEach(agent => {
+    const existing = disc[agent];
+    const tab = document.getElementById('tdp-tab-' + agent);
+    const submitRow = document.getElementById('tdp-submit-' + agent);
+
+    if (existing || tdpSubmitted[agent]) {
+      if (tab) { tab.classList.add('done'); }
+      if (submitRow) {
+        submitRow.innerHTML = '<div class="tdp-done-badge">✓ Answers sent — waiting for ' + agent + '\'s proposal</div>';
+      }
+    }
+  });
+}
+
+function switchTdpTab(agent) {
+  ['kavya','vikram','rasool'].forEach(a => {
+    document.getElementById('tdp-tab-' + a).classList.toggle('active', a === agent);
+    document.getElementById('tdp-content-' + a).classList.toggle('active', a === agent);
+  });
+}
+
+function submitTdpAnswers(agent) {
+  const cfg = TDP_AGENTS[agent];
+  if (!cfg) return;
+
+  const answers = {};
+  let anyFilled = false;
+  cfg.qs.forEach((id, i) => {
+    const val = (document.getElementById(id) || {}).value || '';
+    answers[cfg.keys[i]] = val.trim();
+    if (val.trim()) anyFilled = true;
+  });
+
+  if (!anyFilled) { alert('Please answer at least one question before submitting.'); return; }
+
+  const names = { kavya: 'Kavya (UX Designer)', vikram: 'Vikram (Cloud Architect)', rasool: 'Rasool (DB Agent)' };
+  const lines = cfg.keys.map((k, i) => {
+    const qEl = document.getElementById(cfg.qs[i]);
+    const labelEl = qEl ? qEl.closest('.tdp-q-block').querySelector('.tdp-q-label') : null;
+    const label = labelEl ? labelEl.textContent : k;
+    return `${label}: ${answers[k] || '(skipped)'}`;
+  });
+
+  const msg = `📋 Discovery Answers for ${names[agent]}:\n\n${lines.join('\n')}`;
+
+  fetch('/api/chat', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ from: 'TARUN', role: 'Product Owner', message: msg, type: 'discovery',
+      tags: [agent, 'team-discovery', 'discovery'] }),
+  })
+  .then(() => {
+    tdpSubmitted[agent] = true;
+    renderTeamDiscovery(currentState);
+    // Auto-switch to next unanswered tab
+    const order = ['kavya','vikram','rasool'];
+    const next  = order.find(a => !tdpSubmitted[a] && a !== agent);
+    if (next) switchTdpTab(next);
+  })
+  .catch(e => alert('Network error: ' + e.message));
+}
+
+// ── Initial load ──────────────────────────────────────────────────────────────
+fetch('/api/state')
+  .then(r => r.json())
+  .then(state => {
+    currentState = state;
+    renderBoard(state);
+    renderProjectSwitcher(state);
+    renderTeamDiscovery(state);
+    maybeShowNewProjectScreen(state);
+  })
+  .catch(console.error);
+
+// ══════════════════════════════════════════════════════════════════════════════
+// UX DESIGN REVIEW SCREEN
+// ══════════════════════════════════════════════════════════════════════════════
+
+const UX_FLOW_STEPS = [
+  { id: 'discovery', label: 'PM Discovery',    sub: 'Arjun gathers brief' },
+  { id: 'questions', label: 'UX Questions',    sub: 'Kavya asks 6 questions' },
+  { id: 'proposal',  label: 'Design Proposal', sub: 'Kavya presents concept' },
+  { id: 'feedback',  label: 'Tarun Feedback',  sub: 'Review & iterate' },
+  { id: 'approval',  label: 'Approved',        sub: 'approvedByTarun = true' },
+  { id: 'build',     label: 'Build Tokens',    sub: 'tokens.css + comp-spec' },
+];
+
+const UX_QUESTIONS = [
+  { key: 'visualStyle',     label: 'Visual Style',       q: 'What visual style? (minimal, bold, corporate, playful…)' },
+  { key: 'colourMode',      label: 'Colour Mode',        q: 'Dark mode first, light, or both?' },
+  { key: 'brandColours',    label: 'Brand Colours',      q: 'Preferred primary / accent / background colours?' },
+  { key: 'priorityActions', label: 'Priority Actions',   q: 'What are the 3 most important user actions?' },
+  { key: 'referenceUI',     label: 'Reference UI',       q: 'Any reference products or designs to draw from?' },
+  { key: 'accessibility',   label: 'Accessibility',      q: 'WCAG level, font sizes, contrast requirements?' },
+];
+
+const DEFAULT_TOKENS = [
+  { name: 'Primary',    value: '#5b5bd6' },
+  { name: 'Background', value: '#f0f2fa' },
+  { name: 'Surface',    value: '#ffffff' },
+  { name: 'Text',       value: '#2e2e50' },
+  { name: 'Success',    value: '#16a34a' },
+  { name: 'Warning',    value: '#d97706' },
+  { name: 'Danger',     value: '#dc2626' },
+  { name: 'Purple',     value: '#7c3aed' },
+];
+
+const DEFAULT_COMPONENTS = [
+  { icon: '🖱️', name: 'Button',       desc: 'Primary, secondary, danger variants. 36px default height.' },
+  { icon: '🃏', name: 'Card',         desc: 'Surface + shadow, border-radius 12px, padding 16px.' },
+  { icon: '📝', name: 'Input / Form', desc: 'Label, error state, helper text, focus ring.' },
+  { icon: '🔔', name: 'Toast',        desc: 'Non-blocking notification — 4 semantic variants.' },
+  { icon: '📊', name: 'Data Table',   desc: 'Sortable columns, pagination, row actions.' },
+  { icon: '🧭', name: 'Nav / Sidebar',desc: 'Collapsible, icon + label, active highlight.' },
+  { icon: '📈', name: 'Chart',        desc: 'Recharts: area, bar, pie. Fully responsive.' },
+  { icon: '🏷️', name: 'Badge / Tag',  desc: 'Status pills, dismissible tags, count chips.' },
+];
+
+function openUXScreen() {
+  document.getElementById('ux-screen').classList.add('open');
+  renderUXScreen(currentState);
+}
+
+function closeUXScreen() {
+  document.getElementById('ux-screen').classList.remove('open');
+}
+
+function renderUXScreen(state) {
+  if (!document.getElementById('ux-screen').classList.contains('open')) return;
+
+  const req    = state.req || {};
+  const agents = state.agents || {};
+  const msgs   = (state.chat && state.chat.messages) ? state.chat.messages : [];
+  const kavya  = agents.kavya  || {};
+  const disc   = (req.teamDiscovery && req.teamDiscovery.kavya) || {};
+
+  // Project name in header
+  document.getElementById('ux-project-name').textContent = req.title ? '— ' + req.title : '';
+
+  // Kavya status card
+  const pct  = kavya.progress || 0;
+  const task = kavya.task || 'Waiting for project brief…';
+  document.getElementById('ux-kavya-task').textContent = task;
+  document.getElementById('ux-kavya-pct').textContent  = pct + '%';
+  document.getElementById('ux-kavya-bar').style.width  = pct + '%';
+
+  // Phase tag in topbar
+  let phase = 'Phase 1: PM Discovery';
+  if (req.discoveryComplete && !req.approvedByTarun) phase = 'Phase 2: Team Discovery';
+  else if (req.approvedByTarun && pct < 100)         phase = 'Phase 3: Building';
+  else if (pct === 100)                               phase = 'Phase 4: Done';
+  document.getElementById('ux-phase-tag').textContent = phase;
+
+  renderUXFlow(req, kavya);
+  renderUXQA(disc);
+  renderUXTokens(disc);
+  renderUXComponents(kavya);
+  renderUXApproval(req);
+  renderUXChat(msgs);
+}
+
+function renderUXFlow(req, kavya) {
+  const steps = document.getElementById('ux-flow-steps');
+  steps.innerHTML = '';
+
+  const discDone  = !!req.discoveryComplete;
+  const kavyaQs   = !!(req.teamDiscovery && req.teamDiscovery.kavya);
+  const approved  = !!req.approvedByTarun;
+  const built     = kavya.status === 'done';
+
+  UX_FLOW_STEPS.forEach((step, i) => {
+    let s = 'future';
+    if (step.id === 'discovery') s = discDone  ? 'done' : 'active';
+    if (step.id === 'questions') s = kavyaQs   ? 'done' : (discDone  ? 'active' : 'future');
+    if (step.id === 'proposal')  s = approved  ? 'done' : (kavyaQs   ? 'active' : 'future');
+    if (step.id === 'feedback')  s = approved  ? 'done' : (kavyaQs   ? 'active' : 'future');
+    if (step.id === 'approval')  s = approved  ? 'done' : (kavyaQs   ? 'active' : 'future');
+    if (step.id === 'build')     s = built     ? 'done' : (approved   ? 'active' : 'future');
+
+    const el = document.createElement('div');
+    el.className = `ux-flow-step ${s}`;
+    el.innerHTML = (s === 'done' ? '✓ ' : '') + escHtml(step.label) + `<small>${escHtml(step.sub)}</small>`;
+    steps.appendChild(el);
+
+    if (i < UX_FLOW_STEPS.length - 1) {
+      const arr = document.createElement('span');
+      arr.className = 'ux-flow-arrow';
+      arr.textContent = '→';
+      steps.appendChild(arr);
+    }
+  });
+}
+
+function renderUXQA(disc) {
+  const grid = document.getElementById('ux-qa-grid');
+  grid.innerHTML = '';
+  let answered = 0;
+
+  UX_QUESTIONS.forEach(q => {
+    const ans = disc[q.key];
+    if (ans) answered++;
+    const div = document.createElement('div');
+    div.className = `ux-qa-item ${ans ? 'answered' : 'pending'}`;
+    div.innerHTML =
+      `<div class="ux-qa-q">${escHtml(q.label)}</div>` +
+      `<div class="ux-qa-a${ans ? '' : ' empty'}">${ans ? escHtml(String(ans)) : 'Not answered — Kavya will ask via chat'}</div>`;
+    grid.appendChild(div);
+  });
+
+  document.getElementById('ux-qa-badge').textContent = answered + ' / ' + UX_QUESTIONS.length + ' answered';
+}
+
+function renderUXTokens(disc) {
+  const grid = document.getElementById('ux-token-grid');
+  grid.innerHTML = '';
+
+  let tokens = [...DEFAULT_TOKENS];
+  if (disc.brandColours) {
+    const hexMatches = String(disc.brandColours).match(/#[0-9a-fA-F]{3,6}/g) || [];
+    hexMatches.slice(0, 4).forEach((hex, i) => {
+      tokens[i] = { name: 'Brand ' + (i + 1), value: hex };
+    });
+  }
+  if (disc.colourMode && disc.colourMode.toLowerCase().includes('dark')) {
+    tokens[0] = { name: 'Primary', value: '#818cf8' };
+    tokens[1] = { name: 'Background', value: '#0f172a' };
+    tokens[2] = { name: 'Surface', value: '#1e293b' };
+    tokens[3] = { name: 'Text', value: '#f1f5f9' };
+  }
+
+  tokens.forEach(t => {
+    const div = document.createElement('div');
+    div.className = 'ux-swatch';
+    div.innerHTML =
+      `<div class="ux-swatch-color" style="background:${escHtml(t.value)}"></div>` +
+      `<div class="ux-swatch-label">${escHtml(t.name)}</div>` +
+      `<div class="ux-swatch-value">${escHtml(t.value)}</div>`;
+    grid.appendChild(div);
+  });
+}
+
+function renderUXComponents(kavya) {
+  const grid    = document.getElementById('ux-comp-grid');
+  const badge   = document.getElementById('ux-comp-badge');
+  const isDone  = kavya.status === 'done';
+  grid.innerHTML = '';
+  badge.textContent = isDone ? 'Delivered' : 'Pending';
+  badge.style.background = isDone ? 'var(--green-dim)' : '';
+  badge.style.color       = isDone ? 'var(--green)' : '';
+
+  DEFAULT_COMPONENTS.forEach(c => {
+    const div = document.createElement('div');
+    div.className = 'ux-comp-card';
+    div.innerHTML =
+      `<div class="ux-comp-name">${c.icon} ${escHtml(c.name)}${isDone ? ' <span style="color:var(--green);font-size:11px">✓</span>' : ''}</div>` +
+      `<div class="ux-comp-desc">${escHtml(c.desc)}</div>`;
+    grid.appendChild(div);
+  });
+}
+
+function renderUXApproval(req) {
+  const section  = document.getElementById('ux-approval-section');
+  const approved = req.approvedByTarun;
+  const hasDisc  = !!(req.teamDiscovery && req.teamDiscovery.kavya);
+
+  if (approved) {
+    section.innerHTML =
+      `<div class="ux-approval-bar">
+        <div class="ux-approval-text"><h4>✅ UX Design Approved</h4>
+          <p>Design tokens locked. Kavya is building tokens.css and component-spec.md.</p></div>
+      </div>`;
+    return;
+  }
+
+  if (!hasDisc) {
+    section.innerHTML =
+      `<div class="ux-approval-bar waiting">
+        <div class="ux-approval-text"><h4>Waiting for UX Discovery</h4>
+          <p>Kavya will ask 6 design questions once Arjun completes the PM discovery phase.</p></div>
+      </div>`;
+    return;
+  }
+
+  section.innerHTML =
+    `<div class="ux-approval-bar pending-approval">
+      <div class="ux-approval-text"><h4>Design Proposal Ready for Review</h4>
+        <p>Review Kavya's answers above. Approve to lock tokens, or request changes via chat.</p></div>
+      <button class="ux-req-changes-btn" onclick="requestUXChanges()">✏️ Request Changes</button>
+      <button class="ux-approve-btn"     onclick="approveUXDesign()">✅ Approve Design</button>
+    </div>`;
+}
+
+function renderUXChat(messages) {
+  const box = document.getElementById('ux-chat-messages');
+
+  const uxMsgs = (messages || []).filter(m =>
+    (m.from && m.from.toLowerCase() === 'kavya') ||
+    (m.tags && (m.tags.includes('ux-feedback') || m.tags.includes('kavya')))
+  );
+
+  if (!uxMsgs.length) {
+    box.innerHTML = '<div class="ux-empty-chat">💬 No UX messages yet.<br>Send feedback to Kavya using the input below.</div>';
+    return;
+  }
+
+  const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 40;
+  box.innerHTML  = '';
+
+  uxMsgs.slice(-50).forEach(msg => {
+    const from    = (msg.from || '').toLowerCase();
+    const isKavya = from === 'kavya';
+    const isTarun = from === 'tarun';
+    const cls     = isKavya ? 'from-kavya' : isTarun ? 'from-tarun' : 'from-other';
+    const time    = msg.timestamp
+      ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      : '';
+
+    const el = document.createElement('div');
+    el.className = `ux-chat-bubble ${cls}`;
+    el.innerHTML =
+      `<div class="ux-bubble-sender">${escHtml(msg.from || 'unknown')}</div>` +
+      escHtml(msg.message || '').replace(/\n/g, '<br>') +
+      `<div class="ux-bubble-time">${time}</div>`;
+    box.appendChild(el);
+  });
+
+  if (atBottom) box.scrollTop = box.scrollHeight;
+}
+
+function sendUXFeedback() {
+  const input = document.getElementById('ux-feedback-input');
+  const msg   = input.value.trim();
+  if (!msg) return;
+
+  fetch('/api/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      from: 'TARUN',
+      role: 'Product Owner',
+      message: msg,
+      type: 'ux-feedback',
+      tags: ['ux-feedback', 'kavya'],
+    }),
+  }).then(() => { input.value = ''; }).catch(console.error);
+}
+
+document.getElementById('ux-feedback-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendUXFeedback(); }
+});
+
+function approveUXDesign() {
+  if (!confirm('Approve the UX design? Kavya will proceed to build tokens.css and component-spec.md.')) return;
+  fetch('/api/requirement/approve', { method: 'POST' })
+    .then(r => r.json())
+    .then(d => {
+      if (!d.ok) { alert('Error: ' + (d.error || 'unknown')); return; }
+      const t = document.createElement('div');
+      t.style.cssText = 'position:fixed;top:72px;right:20px;background:#16a34a;color:#fff;padding:12px 20px;border-radius:8px;font-weight:700;z-index:9999;font-size:14px;box-shadow:0 4px 12px rgba(0,0,0,.3)';
+      t.textContent = '✅ UX Design Approved — Kavya is building tokens.css';
+      document.body.appendChild(t);
+      setTimeout(() => t.remove(), 3500);
+    })
+    .catch(e => alert('Network error: ' + e.message));
+}
+
+function requestUXChanges() {
+  const msg = prompt('Describe the design changes you want:\n(Kavya will receive this in the team chat)');
+  if (!msg || !msg.trim()) return;
+  fetch('/api/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      from: 'TARUN',
+      role: 'Product Owner',
+      message: '🔄 Change Request: ' + msg,
+      type: 'ux-feedback',
+      tags: ['ux-feedback', 'kavya', 'change-request'],
+    }),
+  }).then(() => alert('Change request sent to Kavya.')).catch(console.error);
+}
+</script>
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     UX DESIGN REVIEW SCREEN OVERLAY
+     Left 1/4 = feedback chat  |  Right 3/4 = design canvas
+     ══════════════════════════════════════════════════════════════════════ -->
+<div id="ux-screen">
+
+  <!-- ── Header ── -->
+  <div id="ux-topbar">
+    <button class="ux-topbtn back" onclick="closeUXScreen()">← Dashboard</button>
+    <div class="divider"></div>
+    <div class="ux-title">🎨 UX Design Review <span id="ux-project-name"></span></div>
+    <div class="spacer"></div>
+    <span id="ux-phase-tag" class="ux-topbtn phase-tag">Phase 1: PM Discovery</span>
+    <button class="ux-topbtn changes-ux" onclick="requestUXChanges()">✏️ Request Changes</button>
+    <button class="ux-topbtn approve-ux" onclick="approveUXDesign()">✅ Approve Design</button>
+  </div>
+
+  <!-- ── Body ── -->
+  <div id="ux-body">
+
+    <!-- ── Left: Chat Panel (1/4) ── -->
+    <div id="ux-chat-panel">
+      <div id="ux-chat-header">
+        <h3>💬 Design Feedback</h3>
+        <small>UX messages between you and Kavya</small>
+      </div>
+      <div id="ux-chat-messages">
+        <div class="ux-empty-chat">💬 No UX messages yet.<br>Send feedback to Kavya below.</div>
+      </div>
+      <div id="ux-chat-input-area">
+        <div id="ux-chat-to">To: <strong>Kavya (UX Designer)</strong> + team</div>
+        <textarea id="ux-feedback-input" placeholder="Type design feedback, approve colours, request changes… (Enter to send)"></textarea>
+        <button id="ux-send-feedback" onclick="sendUXFeedback()">Send to Kavya</button>
+      </div>
+    </div>
+
+    <!-- ── Right: Design Canvas (3/4) ── -->
+    <div id="ux-canvas">
+
+      <!-- Kavya Status Hero -->
+      <div id="ux-status-card">
+        <div class="ux-avatar">🎨</div>
+        <div class="ux-agent-info">
+          <h2>Kavya — UX Designer</h2>
+          <p id="ux-kavya-task">Waiting for project brief…</p>
+        </div>
+        <div class="ux-progress-wrap">
+          <div class="ux-progress-label">
+            <span>Design Progress</span>
+            <span id="ux-kavya-pct">0%</span>
+          </div>
+          <div class="ux-progress-bar">
+            <div class="ux-progress-fill" id="ux-kavya-bar" style="width:0%"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- UX Workflow / Action Flow -->
+      <div class="ux-section">
+        <div class="ux-section-header">
+          <span class="ux-section-icon">🗺️</span>
+          <span class="ux-section-title">UX Workflow</span>
+          <span class="ux-section-badge">Kavya's Design Process</span>
+        </div>
+        <div class="ux-section-body">
+          <div class="ux-flow" id="ux-flow-steps"><!-- rendered by JS --></div>
+        </div>
+      </div>
+
+      <!-- Discovery Q&A -->
+      <div class="ux-section">
+        <div class="ux-section-header">
+          <span class="ux-section-icon">❓</span>
+          <span class="ux-section-title">UX Discovery Questions</span>
+          <span class="ux-section-badge" id="ux-qa-badge">0 / 6 answered</span>
+        </div>
+        <div class="ux-section-body">
+          <div class="ux-qa-grid" id="ux-qa-grid"><!-- rendered by JS --></div>
+        </div>
+      </div>
+
+      <!-- Design Tokens & Palette -->
+      <div class="ux-section">
+        <div class="ux-section-header">
+          <span class="ux-section-icon">🎨</span>
+          <span class="ux-section-title">Design Tokens &amp; Palette</span>
+          <span class="ux-section-badge">Live preview from discovery answers</span>
+        </div>
+        <div class="ux-section-body">
+          <div class="ux-token-grid" id="ux-token-grid"><!-- rendered by JS --></div>
+        </div>
+      </div>
+
+      <!-- Component Spec -->
+      <div class="ux-section">
+        <div class="ux-section-header">
+          <span class="ux-section-icon">🧩</span>
+          <span class="ux-section-title">Component Spec</span>
+          <span class="ux-section-badge" id="ux-comp-badge">Pending</span>
+        </div>
+        <div class="ux-section-body">
+          <div class="ux-comp-grid" id="ux-comp-grid"><!-- rendered by JS --></div>
+        </div>
+      </div>
+
+      <!-- Approval Bar -->
+      <div id="ux-approval-section"><!-- rendered by JS --></div>
+
+    </div><!-- /#ux-canvas -->
+  </div><!-- /#ux-body -->
+</div><!-- /#ux-screen -->
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     NEW PROJECT SCREEN  — first-run & project launcher
+     ══════════════════════════════════════════════════════════════════════ -->
+<div id="new-project-screen">
+  <div id="np-card">
+
+    <div id="np-card-header">
+      <div class="np-logo">🚀</div>
+      <h1>What would you like to build?</h1>
+      <p>Tell Arjun about your project — he'll lead the team through discovery and kick off the sprint.</p>
+    </div>
+
+    <!-- Existing projects list (shown if any exist) -->
+    <div id="np-existing">
+      <h3>or continue an existing project</h3>
+      <div id="np-existing-list"><!-- rendered by JS --></div>
+    </div>
+
+    <div id="np-form">
+      <h3>✦ New Project</h3>
+      <div class="np-field">
+        <label>Project Name *</label>
+        <input id="np-title" type="text" placeholder="e.g. Cost Anomaly Detection Platform">
+      </div>
+      <div class="np-field">
+        <label>What do you want to build? *</label>
+        <textarea id="np-desc" placeholder="Describe the product — what it does, who uses it, key features…"></textarea>
+        <small>Be specific. The more detail you give, the better Arjun can guide the team.</small>
+      </div>
+      <div class="np-row">
+        <div class="np-field">
+          <label>Business Goal</label>
+          <input id="np-goal" type="text" placeholder="e.g. Reduce cloud spend by 30%">
+        </div>
+        <div class="np-field">
+          <label>Target Users</label>
+          <input id="np-users" type="text" placeholder="e.g. DevOps, Finance team">
+        </div>
+      </div>
+      <div class="np-row">
+        <div class="np-field">
+          <label>Tech Constraints</label>
+          <input id="np-constraints" type="text" placeholder="e.g. AWS, Python 3.11+, PostgreSQL">
+        </div>
+        <div class="np-field">
+          <label>Deadline</label>
+          <input id="np-deadline" type="date">
+        </div>
+      </div>
+      <div id="np-msg">Project posted! Arjun is starting discovery...</div>
+    </div>
+
+    <div id="np-footer">
+      <small>Arjun (PM) starts first. Kavya, Vikram and Rasool activate after discovery.</small>
+      <button id="np-cancel-btn" onclick="closeNewProjectScreen()">Cancel</button>
+      <button id="np-launch-btn" onclick="submitNewProject()">🚀 Start Project →</button>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>

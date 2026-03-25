@@ -1,48 +1,61 @@
 {
-  "sprint": "01",
-  "lastSync": "",
+  "lastSync": null,
   "agents": {
+    "arjun": {
+      "status": "standby",
+      "role": "pm",
+      "progress": 0,
+      "task": "Waiting to start",
+      "blocker": "",
+      "updated": null
+    },
     "vikram": {
-      "status": "queue",
+      "status": "standby",
+      "role": "team-lead",
       "progress": 0,
-      "task": "AWS S3 + CloudWatch Terraform modules with IAM roles",
-      "blocker": "",
-      "updated": ""
-    },
-    "rohan": {
-      "status": "queue",
-      "progress": 0,
-      "task": "Cost anomaly dashboard — React + Recharts components",
-      "blocker": "",
-      "updated": ""
-    },
-    "kiran": {
-      "status": "queue",
-      "progress": 0,
-      "task": "GET /api/v1/costs/anomalies endpoint with Pydantic schemas",
-      "blocker": "",
-      "updated": ""
+      "task": "Waiting for PM discovery",
+      "blocker": "requirement.discoveryComplete not yet true",
+      "updated": null
     },
     "rasool": {
-      "status": "queue",
+      "status": "standby",
+      "role": "team-lead",
       "progress": 0,
-      "task": "cost_events table schema + migration + indexes",
-      "blocker": "",
-      "updated": ""
+      "task": "Waiting for PM discovery",
+      "blocker": "requirement.discoveryComplete not yet true",
+      "updated": null
     },
     "kavya": {
-      "status": "queue",
+      "status": "standby",
+      "role": "team-lead",
       "progress": 0,
-      "task": "Design tokens + component spec for cost dashboard",
-      "blocker": "",
-      "updated": ""
+      "task": "Waiting for PM discovery",
+      "blocker": "requirement.discoveryComplete not yet true",
+      "updated": null
+    },
+    "kiran": {
+      "status": "standby",
+      "role": "builder",
+      "progress": 0,
+      "task": "Waiting for sprint approval",
+      "blocker": "requirement.approvedByTarun not yet true",
+      "updated": null
+    },
+    "rohan": {
+      "status": "standby",
+      "role": "builder",
+      "progress": 0,
+      "task": "Waiting for sprint approval",
+      "blocker": "requirement.approvedByTarun not yet true",
+      "updated": null
     },
     "keerthi": {
-      "status": "queue",
+      "status": "standby",
+      "role": "qa",
       "progress": 0,
-      "task": "Awaiting all agents DONE — then full QA sign-off",
-      "blocker": "",
-      "updated": ""
+      "task": "Waiting for all build agents to complete",
+      "blocker": "Not all build agents are done yet",
+      "updated": null
     }
   }
 }

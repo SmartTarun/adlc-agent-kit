@@ -23,12 +23,12 @@
 - [ ] No hardcoded credentials or secrets
 - [ ] No TODO comments left in code
 - [ ] No `console.log` or `print` debug statements
-- [ ] Top comment added: `# Agent: {name} | Sprint: 01 | Date: {date}`
+- [ ] Top comment added: `# Agent: {name} | Sprint: {sprint} | Date: {date}`
 
 ### Terraform (if applicable — Vikram)
 - [ ] `terraform fmt` passed
 - [ ] `terraform validate` passed
-- [ ] All AWS resources tagged: `Owner=TeamPanchayat`, `CostCenter=ADLC-Sprint01`
+- [ ] All AWS resources tagged: `Owner=TeamPanchayat`, `CostCenter=ADLC-{sprint from active-project.json}`
 - [ ] No hardcoded credentials — using SSM / Secrets Manager
 
 ### Backend (if applicable — Kiran / Rasool)
