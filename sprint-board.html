@@ -1372,6 +1372,179 @@ body {
 .ux-approve-btn:hover { background: #15803d; }
 .ux-req-changes-btn { background: #fff; border: 1.5px solid var(--yellow); color: var(--yellow); padding: 7px 14px; border-radius: 8px; cursor: pointer; font-size: 12px; font-family: var(--font); font-weight: 600; transition: all .15s; white-space: nowrap; }
 .ux-req-changes-btn:hover { background: var(--yellow-dim); }
+
+/* ══════════════════════════════════════════════════════════════════════
+   NEW PROJECT SCREEN  — full-page welcome & project launcher
+   ══════════════════════════════════════════════════════════════════════ */
+#new-project-screen {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #1e40af 100%);
+  z-index: 300;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow-y: auto;
+  padding: 40px 20px;
+}
+#new-project-screen.open { display: flex; }
+
+#np-card {
+  background: #fff;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 680px;
+  box-shadow: 0 25px 60px rgba(0,0,0,.4);
+  overflow: hidden;
+}
+#np-card-header {
+  padding: 28px 32px 20px;
+  background: linear-gradient(135deg, #f5f3ff, #ede9fe);
+  border-bottom: 1px solid #ddd6fe;
+  text-align: center;
+}
+#np-card-header .np-logo { font-size: 36px; margin-bottom: 8px; }
+#np-card-header h1 { font-size: 20px; font-weight: 800; color: #1e1b4b; margin: 0 0 4px; }
+#np-card-header p  { font-size: 12px; color: var(--text-dim); margin: 0; }
+
+#np-existing { padding: 16px 28px; border-bottom: 1px solid var(--border-soft); display: none; }
+#np-existing h3 { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--text-dim); margin: 0 0 10px; }
+.np-existing-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border-soft);
+  margin-bottom: 8px; cursor: pointer; transition: all .15s;
+  background: var(--surface2);
+}
+.np-existing-item:hover { background: var(--primary-dim); border-color: var(--primary); }
+.np-existing-item .np-ei-icon { font-size: 20px; }
+.np-existing-item .np-ei-info { flex: 1; }
+.np-existing-item .np-ei-name { font-size: 13px; font-weight: 600; color: var(--text-bright); }
+.np-existing-item .np-ei-meta { font-size: 10px; color: var(--text-dim); margin-top: 2px; }
+.np-existing-item .np-ei-status {
+  font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px;
+  background: var(--blue-dim); color: var(--blue);
+}
+.np-existing-item .np-ei-status.done { background: var(--green-dim); color: var(--green); }
+.np-existing-item .np-ei-status.in_sprint { background: var(--purple-dim); color: var(--purple); }
+
+#np-form { padding: 24px 28px; }
+#np-form h3 { font-size: 13px; font-weight: 700; color: var(--text-bright); margin: 0 0 16px; display: flex; align-items: center; gap: 8px; }
+.np-field { margin-bottom: 16px; }
+.np-field label { display: block; font-size: 11px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
+.np-field input, .np-field textarea {
+  width: 100%; background: var(--surface2); border: 1.5px solid var(--border);
+  color: var(--text); padding: 10px 12px; border-radius: 8px; font-size: 13px;
+  font-family: var(--font); outline: none; box-sizing: border-box; transition: border-color .15s;
+}
+.np-field input:focus, .np-field textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(91,91,214,.1); }
+.np-field textarea { resize: vertical; min-height: 72px; }
+.np-field small { font-size: 10px; color: var(--text-dim); margin-top: 4px; display: block; }
+.np-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+#np-footer {
+  padding: 16px 28px 24px;
+  display: flex; align-items: center; gap: 10px;
+  border-top: 1px solid var(--border-soft);
+}
+#np-footer small { flex: 1; font-size: 10px; color: var(--text-dim); }
+#np-cancel-btn { background: none; border: 1.5px solid var(--border); color: var(--text-dim); padding: 9px 18px; border-radius: 8px; cursor: pointer; font-size: 13px; font-family: var(--font); transition: all .15s; }
+#np-cancel-btn:hover { background: var(--surface3); }
+#np-launch-btn {
+  background: linear-gradient(135deg, var(--primary), #7c3aed);
+  border: none; color: #fff; padding: 10px 24px; border-radius: 8px; cursor: pointer;
+  font-size: 13px; font-family: var(--font); font-weight: 700; transition: opacity .15s;
+  display: flex; align-items: center; gap: 8px;
+}
+#np-launch-btn:hover { opacity: .9; }
+#np-msg { font-size: 11px; color: var(--green); font-weight: 600; display: none; }
+
+/* ══════════════════════════════════════════════════════════════════════
+   TEAM DISCOVERY PANEL  — Kavya / Vikram / Rasool ask their questions
+   ══════════════════════════════════════════════════════════════════════ */
+#team-disc-panel {
+  display: none;
+  background: linear-gradient(135deg, #fffbeb 0%, #fff 100%);
+  border-bottom: 2px solid var(--yellow);
+  padding: 14px 18px;
+  flex-shrink: 0;
+  z-index: 5;
+}
+#team-disc-panel.visible { display: block; }
+
+#tdp-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+#tdp-badge {
+  background: var(--yellow); color: #fff;
+  font-size: 10px; font-weight: 700; padding: 2px 9px; border-radius: 10px; text-transform: uppercase;
+}
+#tdp-title { font-size: 13px; font-weight: 700; color: #92400e; flex: 1; }
+#tdp-subtitle { font-size: 11px; color: var(--text-dim); }
+
+/* Agent tabs */
+#tdp-tabs { display: flex; gap: 4px; margin-bottom: 12px; }
+.tdp-tab {
+  padding: 6px 16px; border-radius: 8px 8px 0 0; border: 1px solid var(--border);
+  border-bottom: none; cursor: pointer; font-size: 12px; font-weight: 600;
+  color: var(--text-dim); background: var(--surface2); transition: all .15s;
+  display: flex; align-items: center; gap: 6px;
+}
+.tdp-tab.active { background: #fff; color: var(--text-bright); border-color: var(--yellow); border-bottom: 1px solid #fff; margin-bottom: -1px; z-index: 1; }
+.tdp-tab .tdp-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--border); }
+.tdp-tab.active .tdp-dot { background: var(--yellow); }
+.tdp-tab.done   .tdp-dot { background: var(--green); }
+
+/* Tab content */
+.tdp-content { display: none; }
+.tdp-content.active {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  background: #fff;
+  border: 1px solid var(--yellow);
+  border-radius: 0 10px 10px 10px;
+  padding: 14px 16px;
+}
+.tdp-agent-profile {
+  grid-column: 1 / -1;
+  display: flex; align-items: center; gap: 12px;
+  padding-bottom: 12px; border-bottom: 1px solid var(--border-soft); margin-bottom: 2px;
+}
+.tdp-avatar {
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0;
+}
+.tdp-agent-name { font-size: 14px; font-weight: 700; color: var(--text-bright); }
+.tdp-agent-role { font-size: 11px; color: var(--text-dim); }
+.tdp-agent-desc { font-size: 11px; color: var(--text-dim); flex: 1; line-height: 1.5; }
+
+.tdp-q-block { background: var(--surface2); border: 1px solid var(--border-soft); border-radius: 8px; padding: 10px 12px; }
+.tdp-q-label { font-size: 10px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 4px; }
+.tdp-q-text  { font-size: 12px; color: var(--text); margin-bottom: 6px; line-height: 1.5; }
+.tdp-q-input {
+  width: 100%; background: #fff; border: 1px solid var(--border); color: var(--text);
+  padding: 6px 10px; border-radius: 6px; font-size: 12px; font-family: var(--font);
+  outline: none; box-sizing: border-box; resize: none; min-height: 40px;
+}
+.tdp-q-input:focus { border-color: var(--yellow); }
+
+.tdp-submit-row {
+  grid-column: 1 / -1;
+  display: flex; align-items: center; justify-content: flex-end;
+  gap: 10px; margin-top: 4px;
+  padding-top: 12px; border-top: 1px solid var(--border-soft);
+}
+.tdp-submit-row small { flex: 1; font-size: 10px; color: var(--text-dim); }
+.tdp-submit-btn {
+  background: var(--yellow); border: none; color: #fff;
+  padding: 8px 20px; border-radius: 8px; cursor: pointer;
+  font-size: 12px; font-family: var(--font); font-weight: 700; transition: opacity .15s;
+}
+.tdp-submit-btn:hover { opacity: .85; }
+.tdp-done-badge {
+  background: var(--green-dim); color: var(--green);
+  font-size: 11px; font-weight: 700; padding: 6px 16px; border-radius: 8px;
+}
 </style>
 </head>
 <body>
@@ -1397,11 +1570,172 @@ body {
   <div class="divider"></div>
   <div id="sse-status">● Connecting...</div>
   <button id="btn-approve-next" class="topbtn approve" onclick="approveAndStartNext()" style="display:none" title="Mark this project done and start the next requirement">✅ Approve &amp; Start Next</button>
-  <button class="topbtn primary" onclick="openReqWizard()">+ New Requirement</button>
+  <button class="topbtn primary" onclick="openNewProjectScreen()">+ New Project</button>
   <button class="topbtn" onclick="openUXScreen()" title="Open UX Design Review screen" style="border-color:#c4b5fd;color:#e9d5ff">🎨 UX Design</button>
   <button class="topbtn" onclick="openPermModal()" title="Manage agent tool permissions">🔐 Permissions</button>
   <button class="topbtn success" onclick="activateKeerthi()">🟢 Activate QA</button>
   <button class="topbtn danger"  onclick="stopAll()">⏹ Stop All</button>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     TEAM DISCOVERY PANEL  (shown after Arjun discovery, before approval)
+     Kavya asks UX Qs | Vikram asks Cloud Qs | Rasool asks DB Qs
+     ══════════════════════════════════════════════════════════════════════ -->
+<div id="team-disc-panel">
+  <div id="tdp-header">
+    <span id="tdp-badge">Team Discovery</span>
+    <span id="tdp-title">Your team leads need answers before the sprint starts</span>
+    <span id="tdp-subtitle">Answer each agent's questions — they'll build their proposal based on your input</span>
+  </div>
+  <div id="tdp-tabs">
+    <div class="tdp-tab active" onclick="switchTdpTab('kavya')" id="tdp-tab-kavya">
+      <span class="tdp-dot"></span>🎨 Kavya (UX)
+    </div>
+    <div class="tdp-tab" onclick="switchTdpTab('vikram')" id="tdp-tab-vikram">
+      <span class="tdp-dot"></span>☁️ Vikram (Cloud)
+    </div>
+    <div class="tdp-tab" onclick="switchTdpTab('rasool')" id="tdp-tab-rasool">
+      <span class="tdp-dot"></span>🗄️ Rasool (DB)
+    </div>
+  </div>
+
+  <!-- Kavya Tab -->
+  <div class="tdp-content active" id="tdp-content-kavya">
+    <div class="tdp-agent-profile">
+      <div class="tdp-avatar" style="background:linear-gradient(135deg,#7c3aed,#db2777)">🎨</div>
+      <div>
+        <div class="tdp-agent-name">Kavya — UX Designer</div>
+        <div class="tdp-agent-role">Frontend Design &amp; Tokens</div>
+      </div>
+      <div class="tdp-agent-desc">Kavya will design your colour palette, typography, component library and user flows based on your answers.</div>
+    </div>
+    <div class="tdp-q-block">
+      <div class="tdp-q-label">Visual Style</div>
+      <div class="tdp-q-text">What visual style should this product have? (minimal, bold, corporate, playful, dark-tech…)</div>
+      <textarea class="tdp-q-input" id="kavya-q1" placeholder="e.g. Minimal and clean, like Linear or Notion"></textarea>
+    </div>
+    <div class="tdp-q-block">
+      <div class="tdp-q-label">Colour Mode</div>
+      <div class="tdp-q-text">Dark mode first, light mode first, or both toggle?</div>
+      <textarea class="tdp-q-input" id="kavya-q2" placeholder="e.g. Dark mode primary, light mode toggle"></textarea>
+    </div>
+    <div class="tdp-q-block">
+      <div class="tdp-q-label">Brand Colours</div>
+      <div class="tdp-q-text">Any preferred primary / accent / background colours? (hex codes or descriptions)</div>
+      <textarea class="tdp-q-input" id="kavya-q3" placeholder="e.g. #5b5bd6 primary, teal accent, dark navy bg"></textarea>
+    </div>
+    <div class="tdp-q-block">
+      <div class="tdp-q-label">Priority Actions</div>
+      <div class="tdp-q-text">What are the 3 most important actions a user takes in this product?</div>
+      <textarea class="tdp-q-input" id="kavya-q4" placeholder="e.g. 1. View cost anomalies  2. Set alert thresholds  3. Export reports"></textarea>
+    </div>
+    <div class="tdp-q-block">
+      <div class="tdp-q-label">Reference UI</div>
+      <div class="tdp-q-text">Any existing products or screenshots to draw design inspiration from?</div>
+      <textarea class="tdp-q-input" id="kavya-q5" placeholder="e.g. AWS Cost Explorer, Datadog, Grafana"></textarea>
+    </div>
+    <div class="tdp-q-block">
+      <div class="tdp-q-label">Accessibility</div>
+      <div class="tdp-q-text">WCAG level, minimum font size, contrast requirements?</div>
+      <textarea class="tdp-q-input" id="kavya-q6" placeholder="e.g. WCAG AA, 14px minimum, high contrast mode optional"></textarea>
+    </div>
+    <div class="tdp-submit-row" id="tdp-submit-kavya">
+      <small>Answers are sent to Kavya via team chat. She will reply with a design proposal.</small>
+      <button class="tdp-submit-btn" onclick="submitTdpAnswers('kavya')">Send to Kavya →</button>
+    </div>
+  </div>
+
+  <!-- Vikram Tab -->
+  <div class="tdp-content" id="tdp-content-vikram">
+    <div class="tdp-agent-profile">
+      <div class="tdp-avatar" style="background:linear-gradient(135deg,#dc2626,#ea580c)">☁️</div>
+      <div>
+        <div class="tdp-agent-name">Vikram — Cloud Architect</div>
+        <div class="tdp-agent-role">Infrastructure &amp; Terraform</div>
+      </div>
+      <div class="tdp-agent-desc">Vikram will design your AWS infrastructure, write Terraform modules, and estimate costs based on your answers.</div>
+    </div>
+    <div class="tdp-q-block">
+      <div class="tdp-q-label">Cloud &amp; Region</div>
+      <div class="tdp-q-text">Which cloud provider and region should infrastructure be deployed to?</div>
+      <textarea class="tdp-q-input" id="vikram-q1" placeholder="e.g. AWS us-east-1, or AWS + GCP multi-cloud"></textarea>
+    </div>
+    <div class="tdp-q-block">
+      <div class="tdp-q-label">Scale &amp; Traffic</div>
+      <div class="tdp-q-text">Expected users, requests per second, and data volume?</div>
+      <textarea class="tdp-q-input" id="vikram-q2" placeholder="e.g. 100 users, ~50 RPS, 10GB data/month"></textarea>
+    </div>
+    <div class="tdp-q-block">
+      <div class="tdp-q-label">Compute Type</div>
+      <div class="tdp-q-text">Containers (ECS/Fargate), serverless (Lambda), or EC2 VMs?</div>
+      <textarea class="tdp-q-input" id="vikram-q3" placeholder="e.g. ECS Fargate for backend, Lambda for triggers"></textarea>
+    </div>
+    <div class="tdp-q-block">
+      <div class="tdp-q-label">Existing Infra</div>
+      <div class="tdp-q-text">Any existing AWS resources or VPCs to integrate with?</div>
+      <textarea class="tdp-q-input" id="vikram-q4" placeholder="e.g. Fresh account, no existing infra"></textarea>
+    </div>
+    <div class="tdp-q-block">
+      <div class="tdp-q-label">Cost Priority</div>
+      <div class="tdp-q-text">Monthly budget ceiling and cost optimisation priority?</div>
+      <textarea class="tdp-q-input" id="vikram-q5" placeholder="e.g. Under $200/month, optimise for cost over performance"></textarea>
+    </div>
+    <div class="tdp-q-block">
+      <div class="tdp-q-label">Compliance &amp; Security</div>
+      <div class="tdp-q-text">Any compliance requirements? (SOC2, HIPAA, GDPR, PCI-DSS…)</div>
+      <textarea class="tdp-q-input" id="vikram-q6" placeholder="e.g. No strict compliance, basic IAM least-privilege"></textarea>
+    </div>
+    <div class="tdp-submit-row" id="tdp-submit-vikram">
+      <small>Answers are sent to Vikram via team chat. He will reply with an architecture proposal and cost estimate.</small>
+      <button class="tdp-submit-btn" style="background:var(--red)" onclick="submitTdpAnswers('vikram')">Send to Vikram →</button>
+    </div>
+  </div>
+
+  <!-- Rasool Tab -->
+  <div class="tdp-content" id="tdp-content-rasool">
+    <div class="tdp-agent-profile">
+      <div class="tdp-avatar" style="background:linear-gradient(135deg,#d97706,#b45309)">🗄️</div>
+      <div>
+        <div class="tdp-agent-name">Rasool — Database Agent</div>
+        <div class="tdp-agent-role">Schema Design &amp; Migrations</div>
+      </div>
+      <div class="tdp-agent-desc">Rasool will design your PostgreSQL schema, write Alembic migrations, and create the db-schema.md documentation.</div>
+    </div>
+    <div class="tdp-q-block">
+      <div class="tdp-q-label">Multi-Tenancy</div>
+      <div class="tdp-q-text">Single-tenant or multi-tenant? If multi, row-level or schema-per-tenant?</div>
+      <textarea class="tdp-q-input" id="rasool-q1" placeholder="e.g. Single tenant for now, row-level isolation later"></textarea>
+    </div>
+    <div class="tdp-q-block">
+      <div class="tdp-q-label">Data Scale</div>
+      <div class="tdp-q-text">Expected row counts for the largest tables and write frequency?</div>
+      <textarea class="tdp-q-input" id="rasool-q2" placeholder="e.g. 1M cost records/month, 10K alerts, mostly reads"></textarea>
+    </div>
+    <div class="tdp-q-block">
+      <div class="tdp-q-label">Soft Delete</div>
+      <div class="tdp-q-text">Should records be soft-deleted (deleted_at) or hard-deleted?</div>
+      <textarea class="tdp-q-input" id="rasool-q3" placeholder="e.g. Soft delete for cost records, hard delete for sessions"></textarea>
+    </div>
+    <div class="tdp-q-block">
+      <div class="tdp-q-label">Real-Time</div>
+      <div class="tdp-q-text">Any real-time or streaming data requirements? (WebSockets, polling, CDC)</div>
+      <textarea class="tdp-q-input" id="rasool-q4" placeholder="e.g. Cost anomaly alerts should push in real-time via SSE"></textarea>
+    </div>
+    <div class="tdp-q-block">
+      <div class="tdp-q-label">File / Blob Storage</div>
+      <div class="tdp-q-text">Any file uploads, exports, or blob data to store? (S3 or in DB?)</div>
+      <textarea class="tdp-q-input" id="rasool-q5" placeholder="e.g. CSV export to S3, no file uploads in DB"></textarea>
+    </div>
+    <div class="tdp-q-block">
+      <div class="tdp-q-label">Audit Log</div>
+      <div class="tdp-q-text">Do you need an audit trail of who changed what and when?</div>
+      <textarea class="tdp-q-input" id="rasool-q6" placeholder="e.g. Yes — track cost threshold changes and alert dismissals"></textarea>
+    </div>
+    <div class="tdp-submit-row" id="tdp-submit-rasool">
+      <small>Answers are sent to Rasool via team chat. He will reply with a schema proposal and ERD.</small>
+      <button class="tdp-submit-btn" style="background:var(--yellow)" onclick="submitTdpAnswers('rasool')">Send to Rasool →</button>
+    </div>
+  </div>
 </div>
 
 <!-- ── PM Discovery Panel (shown when Arjun is in discovery mode) ──────── -->
@@ -1775,7 +2109,8 @@ window.addEventListener('panchayat-state', e => {
   currentState = e.detail;
   renderBoard(currentState);
   renderProjectSwitcher(currentState);
-  // Keep UX screen live if open
+  renderTeamDiscovery(currentState);
+  maybeShowNewProjectScreen(currentState);
   if (document.getElementById('ux-screen').classList.contains('open')) {
     renderUXScreen(currentState);
   }
@@ -2679,10 +3014,193 @@ function sendTeamMessage(message, type = 'broadcast') {
   }).catch(console.error);
 }
 
+// ══════════════════════════════════════════════════════════════════════════════
+// NEW PROJECT SCREEN
+// ══════════════════════════════════════════════════════════════════════════════
+
+function openNewProjectScreen() {
+  renderNPExisting(currentState);
+  document.getElementById('new-project-screen').classList.add('open');
+}
+
+function closeNewProjectScreen() {
+  document.getElementById('new-project-screen').classList.remove('open');
+}
+
+function renderNPExisting(state) {
+  const projects = (state.projects || []).filter(p => p.name && p.name !== 'Unnamed');
+  const wrap = document.getElementById('np-existing');
+  const list = document.getElementById('np-existing-list');
+  if (!projects.length) { wrap.style.display = 'none'; return; }
+
+  wrap.style.display = 'block';
+  list.innerHTML = '';
+  projects.forEach(p => {
+    const div = document.createElement('div');
+    div.className = 'np-existing-item';
+    div.onclick = () => { switchToProject(p.path); closeNewProjectScreen(); };
+    const statusCls = p.status === 'done' ? 'done' : p.status === 'in_sprint' ? 'in_sprint' : '';
+    div.innerHTML =
+      `<div class="np-ei-icon">📁</div>
+       <div class="np-ei-info">
+         <div class="np-ei-name">${escHtml(p.name)}</div>
+         <div class="np-ei-meta">Sprint ${escHtml(p.sprint || '?')} · ${escHtml(p.path)}</div>
+       </div>
+       <span class="np-ei-status ${statusCls}">${escHtml((p.status || 'pending').replace(/_/g,' '))}</span>`;
+    list.appendChild(div);
+  });
+}
+
+function switchToProject(path) {
+  fetch('/api/switch-project', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path }) }).catch(console.error);
+}
+
+function submitNewProject() {
+  const title       = document.getElementById('np-title').value.trim();
+  const description = document.getElementById('np-desc').value.trim();
+  if (!title || !description) { alert('Project name and description are required.'); return; }
+
+  const payload = {
+    title,
+    description,
+    businessGoal:    document.getElementById('np-goal').value.trim(),
+    targetUsers:     document.getElementById('np-users').value.trim(),
+    techConstraints: document.getElementById('np-constraints').value.trim()
+      ? document.getElementById('np-constraints').value.split(',').map(s => s.trim()) : [],
+    deadline:        document.getElementById('np-deadline').value || null,
+    priority: 'high',
+    type: 'new_project',
+    sprint: '',
+  };
+
+  fetch('/api/requirement', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+  })
+  .then(r => r.json())
+  .then(d => {
+    if (d.ok || d.requirementId) {
+      const msg = document.getElementById('np-msg');
+      msg.style.display = 'block';
+      setTimeout(closeNewProjectScreen, 1800);
+    } else { alert('Error: ' + (d.error || 'unknown')); }
+  })
+  .catch(e => alert('Network error: ' + e.message));
+}
+
+// Auto-show New Project screen when there is no active requirement
+function maybeShowNewProjectScreen(state) {
+  const req  = state.req || {};
+  const isOpen = document.getElementById('new-project-screen').classList.contains('open');
+  const uxOpen = document.getElementById('ux-screen').classList.contains('open');
+  if (uxOpen) return;
+  if (!req.title && !isOpen) {
+    renderNPExisting(state);
+    document.getElementById('new-project-screen').classList.add('open');
+  } else if (req.title && isOpen) {
+    closeNewProjectScreen();
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// TEAM DISCOVERY PANEL  — Kavya / Vikram / Rasool discovery tabs
+// ══════════════════════════════════════════════════════════════════════════════
+
+const TDP_AGENTS = {
+  kavya:  { label: 'Kavya (UX)',   qs: ['kavya-q1','kavya-q2','kavya-q3','kavya-q4','kavya-q5','kavya-q6'],
+            keys: ['visualStyle','colourMode','brandColours','priorityActions','referenceUI','accessibility'] },
+  vikram: { label: 'Vikram (Cloud)', qs: ['vikram-q1','vikram-q2','vikram-q3','vikram-q4','vikram-q5','vikram-q6'],
+            keys: ['cloudRegion','scaleTraffic','computeType','existingInfra','costPriority','compliance'] },
+  rasool: { label: 'Rasool (DB)',  qs: ['rasool-q1','rasool-q2','rasool-q3','rasool-q4','rasool-q5','rasool-q6'],
+            keys: ['multiTenancy','dataScale','softDelete','realTime','fileStorage','auditLog'] },
+};
+let tdpSubmitted = { kavya: false, vikram: false, rasool: false };
+
+function renderTeamDiscovery(state) {
+  const req  = state.req || {};
+  const panel = document.getElementById('team-disc-panel');
+
+  // Show only when PM discovery done but sprint not yet approved
+  if (req.discoveryComplete && !req.approvedByTarun) {
+    panel.classList.add('visible');
+  } else {
+    panel.classList.remove('visible');
+    return;
+  }
+
+  // Pre-fill any existing answers and mark done tabs
+  const disc = req.teamDiscovery || {};
+  ['kavya','vikram','rasool'].forEach(agent => {
+    const existing = disc[agent];
+    const tab = document.getElementById('tdp-tab-' + agent);
+    const submitRow = document.getElementById('tdp-submit-' + agent);
+
+    if (existing || tdpSubmitted[agent]) {
+      if (tab) { tab.classList.add('done'); }
+      if (submitRow) {
+        submitRow.innerHTML = '<div class="tdp-done-badge">✓ Answers sent — waiting for ' + agent + '\'s proposal</div>';
+      }
+    }
+  });
+}
+
+function switchTdpTab(agent) {
+  ['kavya','vikram','rasool'].forEach(a => {
+    document.getElementById('tdp-tab-' + a).classList.toggle('active', a === agent);
+    document.getElementById('tdp-content-' + a).classList.toggle('active', a === agent);
+  });
+}
+
+function submitTdpAnswers(agent) {
+  const cfg = TDP_AGENTS[agent];
+  if (!cfg) return;
+
+  const answers = {};
+  let anyFilled = false;
+  cfg.qs.forEach((id, i) => {
+    const val = (document.getElementById(id) || {}).value || '';
+    answers[cfg.keys[i]] = val.trim();
+    if (val.trim()) anyFilled = true;
+  });
+
+  if (!anyFilled) { alert('Please answer at least one question before submitting.'); return; }
+
+  const names = { kavya: 'Kavya (UX Designer)', vikram: 'Vikram (Cloud Architect)', rasool: 'Rasool (DB Agent)' };
+  const lines = cfg.keys.map((k, i) => {
+    const qEl = document.getElementById(cfg.qs[i]);
+    const labelEl = qEl ? qEl.closest('.tdp-q-block').querySelector('.tdp-q-label') : null;
+    const label = labelEl ? labelEl.textContent : k;
+    return `${label}: ${answers[k] || '(skipped)'}`;
+  });
+
+  const msg = `📋 Discovery Answers for ${names[agent]}:\n\n${lines.join('\n')}`;
+
+  fetch('/api/chat', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ from: 'TARUN', role: 'Product Owner', message: msg, type: 'discovery',
+      tags: [agent, 'team-discovery', 'discovery'] }),
+  })
+  .then(() => {
+    tdpSubmitted[agent] = true;
+    renderTeamDiscovery(currentState);
+    // Auto-switch to next unanswered tab
+    const order = ['kavya','vikram','rasool'];
+    const next  = order.find(a => !tdpSubmitted[a] && a !== agent);
+    if (next) switchTdpTab(next);
+  })
+  .catch(e => alert('Network error: ' + e.message));
+}
+
 // ── Initial load ──────────────────────────────────────────────────────────────
 fetch('/api/state')
   .then(r => r.json())
-  .then(state => { currentState = state; renderBoard(state); })
+  .then(state => {
+    currentState = state;
+    renderBoard(state);
+    renderProjectSwitcher(state);
+    renderTeamDiscovery(state);
+    maybeShowNewProjectScreen(state);
+  })
   .catch(console.error);
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -3105,5 +3623,66 @@ function requestUXChanges() {
     </div><!-- /#ux-canvas -->
   </div><!-- /#ux-body -->
 </div><!-- /#ux-screen -->
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     NEW PROJECT SCREEN  — first-run & project launcher
+     ══════════════════════════════════════════════════════════════════════ -->
+<div id="new-project-screen">
+  <div id="np-card">
+
+    <div id="np-card-header">
+      <div class="np-logo">🚀</div>
+      <h1>What would you like to build?</h1>
+      <p>Tell Arjun about your project — he'll lead the team through discovery and kick off the sprint.</p>
+    </div>
+
+    <!-- Existing projects list (shown if any exist) -->
+    <div id="np-existing">
+      <h3>or continue an existing project</h3>
+      <div id="np-existing-list"><!-- rendered by JS --></div>
+    </div>
+
+    <div id="np-form">
+      <h3>✦ New Project</h3>
+      <div class="np-field">
+        <label>Project Name *</label>
+        <input id="np-title" type="text" placeholder="e.g. Cost Anomaly Detection Platform">
+      </div>
+      <div class="np-field">
+        <label>What do you want to build? *</label>
+        <textarea id="np-desc" placeholder="Describe the product — what it does, who uses it, key features…"></textarea>
+        <small>Be specific. The more detail you give, the better Arjun can guide the team.</small>
+      </div>
+      <div class="np-row">
+        <div class="np-field">
+          <label>Business Goal</label>
+          <input id="np-goal" type="text" placeholder="e.g. Reduce cloud spend by 30%">
+        </div>
+        <div class="np-field">
+          <label>Target Users</label>
+          <input id="np-users" type="text" placeholder="e.g. DevOps, Finance team">
+        </div>
+      </div>
+      <div class="np-row">
+        <div class="np-field">
+          <label>Tech Constraints</label>
+          <input id="np-constraints" type="text" placeholder="e.g. AWS, Python 3.11+, PostgreSQL">
+        </div>
+        <div class="np-field">
+          <label>Deadline</label>
+          <input id="np-deadline" type="date">
+        </div>
+      </div>
+      <div id="np-msg">Project posted! Arjun is starting discovery...</div>
+    </div>
+
+    <div id="np-footer">
+      <small>Arjun (PM) starts first. Kavya, Vikram and Rasool activate after discovery.</small>
+      <button id="np-cancel-btn" onclick="closeNewProjectScreen()">Cancel</button>
+      <button id="np-launch-btn" onclick="submitNewProject()">🚀 Start Project →</button>
+    </div>
+
+  </div>
+</div>
 </body>
 </html>
