@@ -49,3 +49,12 @@ class Project(Base):
     llm_conversations: Mapped[list["LlmConversation"]] = relationship(  # noqa: F821
         "LlmConversation", back_populates="project", cascade="all, delete-orphan", lazy="select"
     )
+    infra_resources: Mapped[list["InfraResource"]] = relationship(  # noqa: F821
+        "InfraResource", back_populates="project", cascade="all, delete-orphan", lazy="select"
+    )
+    deployments: Mapped[list["Deployment"]] = relationship(  # noqa: F821
+        "Deployment", back_populates="project", cascade="all, delete-orphan", lazy="select"
+    )
+    drift_records: Mapped[list["DriftRecord"]] = relationship(  # noqa: F821
+        "DriftRecord", back_populates="project", cascade="all, delete-orphan", lazy="select"
+    )

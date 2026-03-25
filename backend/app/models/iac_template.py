@@ -50,3 +50,6 @@ class IacTemplate(Base):
     project: Mapped["Project"] = relationship(  # noqa: F821
         "Project", back_populates="iac_templates", lazy="select"
     )
+    deployments: Mapped[list["Deployment"]] = relationship(  # noqa: F821
+        "Deployment", back_populates="template", lazy="select"
+    )

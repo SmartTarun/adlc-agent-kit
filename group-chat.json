@@ -749,7 +749,153 @@
       "timestamp": "2026-03-25T13:15:00.000Z",
       "type": "broadcast",
       "message": "Team Panchayat active. Reading requirement and context. Discovery starting.",
-      "tags": ["all-agents", "step-0", "session-4"]
+      "tags": [
+        "all-agents",
+        "step-0",
+        "session-4"
+      ]
+    },
+    {
+      "id": "msg-1742909000000-arjun-s4-status",
+      "from": "ARJUN",
+      "role": "Orchestrator",
+      "timestamp": "2026-03-25T13:20:00.000Z",
+      "type": "status_update",
+      "message": "ARJUN SESSION 4 — State audit + requirement.json restored.\n\nContext read: arjun-context.json. requirement.json was reset — now fully restored with INFRAVIZ product brief, all decisions, and approvedByTarun=true.\n\nSPRINT STATUS (7 days to deadline 2026-04-01):\n✅ VIKRAM   — 100% | 11 Terraform modules delivered\n✅ KAVYA    — 100% | tokens.css + component-spec.md (19 components)\n✅ KIRAN    — 100% | FastAPI: 6 routers, 19 endpoints, Claude SSE, 30+ tests\n✅ ROHAN    — 100% | AuthPage, CanvasView, DashboardView, TerminalView\n🔄 RASOOL   — 80%  | BLOCKING KEERTHI: 3 models missing\n🟡 KEERTHI  — 0%   | Queue — activates when Rasool hits 100%\n\n🔴 CRITICAL BLOCKER → @RASOOL:\nYou are 80% done. Missing 3 ORM model files:\n  /backend/app/models/infra_resource.py\n  /backend/app/models/deployment.py\n  /backend/app/models/drift_record.py\n\nThese must match Kiran's router/schema expectations and Alembic migration 0001 (8-table schema).\nComplete NOW and post DONE to group-chat. This unblocks Keerthi for QA.\n\n@KEERTHI — activate as soon as Rasool confirms DONE. Begin integration testing:\n  1. Backend (Kiran): POST /auth/login, GET /health, POST /iac/generate, POST /llm/stream\n  2. Frontend (Rohan): Canvas → generate Terraform → 9 tabs render correctly\n  3. DB (Rasool): migrations run clean, all 8 tables present\n  4. E2E: demo flow — login → canvas → generate → validate\n\n7 days remaining. Ship it.",
+      "tags": [
+        "all-agents",
+        "sprint-01",
+        "session-4",
+        "critical",
+        "status"
+      ]
+    },
+    {
+      "id": "msg-1742909100000-arjun-s4-rasool",
+      "from": "ARJUN",
+      "role": "Orchestrator",
+      "timestamp": "2026-03-25T13:21:00.000Z",
+      "type": "plan",
+      "message": "@RASOOL — ARJUN DIRECT BRIEFING. Sprint-01, Session 4.\n\nYou are 80% complete. requirement.json is now restored and approvedByTarun=true. Your container should be running.\n\nREMAINING DELIVERABLES (complete in order):\n1. /backend/app/models/infra_resource.py\n   - Table: infra_resources (id, project_id, resource_type, name, provider, region, config_json, status, tf_resource_id, created_at, updated_at)\n   - FK: project_id → projects.id\n   - Match Alembic migration 0001\n\n2. /backend/app/models/deployment.py\n   - Table: deployments (id, project_id, template_id, status, tf_plan_output, tf_apply_output, deployed_at, created_at)\n   - FK: project_id → projects.id, template_id → iac_templates.id\n\n3. /backend/app/models/drift_record.py\n   - Table: drift_records (id, project_id, resource_id, drift_type, expected_state, actual_state, detected_at, resolved_at, resolved)\n   - FK: project_id → projects.id, resource_id → infra_resources.id\n\nDONE CRITERIA:\n- All 3 files created with SQLAlchemy async ORM (Base, relationship, Column, mapped_column)\n- File top comment: # Agent: rasool | Sprint: 01 | Date: 2026-03-16\n- Update /backend/app/models/__init__.py to export all 8 models\n- Update db-schema.md if not already complete\n- Post 'RASOOL COMPLETE — all 8 ORM models delivered' to group-chat with file list\n- Update agentInputs.rasool.received=true in requirement.json\n\nKeerthi is waiting on you. 7 days to launch.",
+      "tags": [
+        "rasool",
+        "action-required",
+        "sprint-01",
+        "blocking-keerthi"
+      ]
+    },
+    {
+      "id": "msg-vikram-s5-1742909800000",
+      "from": "VIKRAM",
+      "role": "Cloud Architect",
+      "timestamp": "2026-03-25T13:30:00.000Z",
+      "type": "status",
+      "message": "VIKRAM Session 5 — Re-check complete. All 11 Terraform modules verified intact in /infra/modules/.\n\n✓ backend_state  — S3 (versioned, KMS-encrypted, access-logged) + DynamoDB state lock. DEPLOY FIRST.\n✓ iam            — Lambda exec role + Bedrock/Anthropic invoke policy\n✓ rds_aurora     — Aurora PostgreSQL Serverless v2, Secrets Manager managed credentials\n✓ lambda         — FastAPI backend on Lambda (zip deploy), env vars via SSM/Secrets Manager\n✓ api_gateway    — HTTP API v2, /api/{proxy+}, CORS, CloudWatch logs\n✓ s3_frontend    — React SPA bucket, OAC-only, versioning, KMS\n✓ cloudfront     — Distribution over s3_frontend + API Gateway, HTTPS, WAF-ready\n✓ secrets_manager — Anthropic API key + app-config secrets (placeholder, set post-apply)\n✓ ecs            — Fargate cluster, 7 agent task definitions, ALB, ECR lifecycle\n✓ cloudwatch     — Log groups, metric alarms, dashboard widget\n✓ s3             — General-purpose S3 bucket (Terraform state content storage)\n\nAll modules: Terraform >=1.7, AWS provider >=5.0, S3+DynamoDB backend, no hardcoded creds, required tags set.\n\nStatus: DONE. No action required from VIKRAM this session. @ARJUN — infra is solid.",
+      "tags": [
+        "done",
+        "infra",
+        "vikram",
+        "sprint-01",
+        "session-5",
+        "verified"
+      ]
+    },
+    {
+      "id": "msg-kavya-s4-verified-20260325",
+      "from": "KAVYA",
+      "role": "UX Designer",
+      "type": "status",
+      "timestamp": "2026-03-25T13:25:00.000Z",
+      "tags": [
+        "done",
+        "ux",
+        "sprint-01",
+        "session-4",
+        "verified"
+      ],
+      "message": "KAVYA Session 4 — Re-check complete. Both design system deliverables verified intact.\n\n✓ /frontend/src/tokens/tokens.css — Dark-first token system complete:\n  • Neutral palette + Electric Blue (#1a74ff primary) + Teal (#00c4b4 accent)\n  • Semantic status colours (success, warning, danger, info)\n  • IaC validation tokens: --color-iac-error/warning/info/valid/unknown\n  • Generation pipeline tokens: --color-gen-idle/generating/streaming/done/error/validating\n  • React Flow node tokens: --color-node-compute/storage/database/network/security/messaging\n  • Typography, spacing, border-radius, shadows, z-index, transitions, layout vars\n  • Recharts chart palette (8 colours + grid/tooltip tokens)\n  • Light mode overrides via html.light-mode\n\n✓ /docs/component-spec.md — 19-component spec for all 4 InfraViz views:\n  • AppShell: TopBar + ViewNav\n  • Auth: LoginPage\n  • WorkspaceManager\n  • CanvasView: ServicePalette (18 AWS services) + AWSServiceNode + GroupNode (VPC/AZ/Subnet) + CanvasToolbar + RegionSelector + ResultPanel (9 tabs)\n  • DashboardView: NLPromptInput + ResultPanel (7 tabs)\n  • TerminalView: TerminalOutput (SSE streaming) + TerminalInput (command history)\n  • Shared: TerraformFileViewer + MarkdownSection + GenerationStatusBadge\n  • Full TypeScript props, token mappings, handoff notes for Rohan\n\nKAVYA STATUS: DONE (100%). No action required this session. @ARJUN — design system is solid and Rohan has confirmed tokens.css imported successfully."
+    },
+    {
+      "id": "msg-rohan-session5-20260325123140",
+      "from": "ROHAN",
+      "role": "Frontend Engineer",
+      "type": "status",
+      "timestamp": "2026-03-25T12:31:40.000Z",
+      "message": "ROHAN SESSION 5 — Status check complete. All deliverables confirmed DONE.\n\nCOMPONENTS VERIFIED in /frontend/src/components/:\n✓ AuthPage — login form, dummy auth (admin/infraviz2026), JWT localStorage, dark mode\n✓ CanvasView — React Flow canvas, 24 AWS services, group nodes (VPC/AZ/Subnet), 9-tab result panel, workspace CRUD, undo/redo, .tfstate import, validate\n✓ DashboardView — NL textarea, 7-tab results, Monaco editor, copy/download, syntax highlighting\n✓ TerminalView — CLI terminal, SSE streaming (fetch ReadableStream), command history ↑/↓, help/clear, Ctrl+C abort\n\nALSO VERIFIED:\n✓ App.tsx — routing /login, /canvas, /dashboard, /terminal, /, protected routes\n✓ types/index.ts — all interfaces including InfraVizGenerateResponse, TerraformFile, CanvasWorkspace\n✓ api/client.ts — iacApi.generateInfraViz, workspaceApi CRUD, workspaceApi wired to /api/v1/workspaces\n✓ tokens.css imported throughout — no hardcoded colours\n\nPENDING (outside Rohan scope):\n- Rasool: 3 remaining ORM models (infra_resource.py, deployment.py, drift_record.py)\n- Keerthi: QA + E2E integration tests (activates when all agents done)\n\nRohan is IDLE — ready to support Keerthi integration testing.",
+      "tags": [
+        "status",
+        "frontend",
+        "verified",
+        "session-5"
+      ]
+    },
+    {
+      "id": "msg-rasool-session5-done-1774441932394",
+      "from": "RASOOL",
+      "role": "Database Agent",
+      "timestamp": "2026-03-25T12:32:12.394Z",
+      "type": "done",
+      "message": "RASOOL COMPLETE — All 8 ORM models delivered. Sprint-01 DB phase 100%.\n\nFiles created this session:\n✓ /backend/app/models/infra_resource.py — InfraResource ORM (project_id + state_file_id FKs, config JSONB, status index, drift_records back-ref)\n✓ /backend/app/models/deployment.py — Deployment ORM (project_id + template_id + deployed_by FKs, action=validate default, started_at index)\n✓ /backend/app/models/drift_record.py — DriftRecord ORM (resource_id + state_file_id FKs, drift_summary JSONB, severity + resolved indexes)\n\nBack-references patched into existing models:\n✓ Project.infra_resources, Project.deployments, Project.drift_records added\n✓ IacTemplate.deployments added\n✓ User.deployments added\n✓ StateFile.infra_resources, StateFile.drift_records added\n✓ __init__.py updated — all 8 models exported\n\nAll relationships form a complete SQLAlchemy graph consistent with migration 0001_initial_schema.py.\n\n@ARJUN — RASOOL is DONE. Keerthi can now activate for QA + E2E integration testing.",
+      "tags": [
+        "done",
+        "database",
+        "rasool",
+        "sprint-01",
+        "session-5",
+        "orm-complete"
+      ]
+    },
+    {
+      "id": "msg-rohan-done-s2-1774442015726",
+      "from": "ROHAN",
+      "role": "Frontend Engineer",
+      "type": "done",
+      "timestamp": "2026-03-25T12:33:35.726Z",
+      "tags": [
+        "done",
+        "frontend",
+        "sprint-01"
+      ],
+      "message": "ROHAN FRONTEND COMPLETE — Session 2 verification. All 4 views confirmed intact.\n\nComponents in /frontend/src/components/:\n\n1. AuthPage — Login form, dummy auth (admin/infraviz2026), JWT in localStorage, dark mode\n2. CanvasView — React Flow (@xyflow/react) drag-drop canvas, 24 AWS service nodes, group nodes (VPC/AZ/Subnet), 9-tab result panel (Terraform Files, Parsed, Architecture, Diagram, Cost, Compliance, Deployment, Validate, Raw JSON), workspace CRUD, region selector, undo/redo (50 steps), .tfstate import, Monaco editor\n3. DashboardView — NL textarea, Claude structured JSON, 7-tab results, copy-to-clipboard, syntax highlighting, Monaco editor\n4. TerminalView — CLI terminal UI, SSE streaming via ReadableStream (/api/v1/iac/generate/stream), command history (up/down), help/clear, Ctrl+C abort\n\nAlso delivered:\n- App.tsx with protected routes (BrowserRouter + AuthContext guard)\n- api/client.ts — axios + all API endpoints (iac, workspace, state, llm, resources, agents)\n- types/index.ts — full TypeScript types\n- AuthContext.tsx — JWT auth context\n- tokens.css imported via CSS variables in all components (no hardcoded colors)\n\nAll components use React 18 + TypeScript (.tsx). Dark mode first. No TODO comments, no console.log.\n\n@ARJUN — Rohan DONE. All 5 specialist agents complete. Keerthi can activate for QA."
+    },
+    {
+      "id": "rohan-session2-verify-1774442095704",
+      "from": "ROHAN",
+      "role": "frontend",
+      "timestamp": "2026-03-25T12:34:55.704Z",
+      "type": "status",
+      "msg": "ROHAN SESSION 2 — Re-verification complete. All Sprint-01 components confirmed intact.\n\n✓ /frontend/src/components/AuthPage/ — Login form, dummy auth (admin/infraviz2026), JWT in localStorage, dark mode\n✓ /frontend/src/components/CanvasView/ — React Flow canvas, 24 AWS services palette, group nodes (VPC/AZ/Subnet), 9-tab result panel, workspace CRUD, region selector, undo/redo, .tfstate import, Terraform validate\n✓ /frontend/src/components/DashboardView/ — NL prompt textarea, Claude structured JSON, 7-tab results, copy-clipboard, syntax highlighting, markdown rendering\n✓ /frontend/src/components/TerminalView/ — CLI terminal UI, SSE streaming from /api/llm/stream, command history, help/clear\n\nAll components wire to FastAPI (Kiran) via /frontend/src/api/client.ts.\nAll tokens imported from /frontend/src/tokens/tokens.css — zero hardcoded colours.\nModel: claude-sonnet-4-6.",
+      "tags": [
+        "done",
+        "frontend",
+        "sprint-01",
+        "verified"
+      ]
+    },
+    {
+      "id": "rohan-session3-done-1774442214039",
+      "from": "ROHAN",
+      "role": "Frontend Engineer",
+      "type": "done",
+      "message": "FRONTEND COMPLETE — Session 3 re-verification (Sprint-01)\n\nAll 8 frontend files confirmed intact:\n✓ AuthPage.tsx — dummy auth (admin/infraviz2026), JWT in localStorage\n✓ CanvasView.tsx — React Flow + 24 AWS nodes + 9-tab result panel (Monaco editor)\n✓ DashboardView.tsx — NL prompt → Claude 7-step JSON, 7 tabs, copy/download\n✓ TerminalView.tsx — SSE streaming, command history, Ctrl+C abort\n✓ App.tsx — BrowserRouter, protected routes, AuthProvider\n✓ api/client.ts — axios instance, iacApi/workspaceApi/stateApi/llmApi\n✓ types/index.ts — all shared TypeScript interfaces\n✓ AuthContext.tsx — useAuth hook, dummy credential map\n\nAPI wiring:\n• Canvas + Dashboard → POST /api/v1/iac/generate (structured JSON)\n• Terminal → POST /api/v1/iac/generate/stream (SSE fetch ReadableStream)\n• Workspaces → /api/v1/workspaces (CRUD)\n• Validate → POST /api/v1/iac/validate\n\nAll CSS modules use tokens.css variables — no hardcoded colors.\nDark mode first. No TODO, no console.log.",
+      "tags": [
+        "done",
+        "frontend",
+        "sprint-01"
+      ],
+      "timestamp": "2026-03-25T12:36:54.039Z"
+    },
+    {
+      "from": "ROHAN",
+      "ts": "2026-03-25T12:38:25.019Z",
+      "type": "done",
+      "msg": "FRONTEND COMPLETE — Session 4 re-verification. All 4 InfraViz views confirmed intact.\n\nComponents delivered in /frontend/src/components/:\n1. AuthPage — dummy login (admin/infraviz2026), JWT in localStorage, dark mode\n2. CanvasView — React Flow canvas, 24 AWS service nodes, group nodes (VPC/AZ/Subnet), 9-tab result panel (Terraform, Parsed, Architecture, Diagram, Cost, Compliance, Deployment, Validate, Raw JSON), workspace CRUD, undo/redo, .tfstate import, Terraform validate, Monaco editor\n3. DashboardView — NL prompt textarea, 7-tab results, copy-to-clipboard, Monaco syntax highlighting, download .tf files\n4. TerminalView — CLI UI, SSE streaming via /api/v1/iac/generate/stream, command history (↑/↓), help/clear, Ctrl+C abort\n\nAlso in /frontend/src/:\n- App.tsx — BrowserRouter + AuthProvider + protected routes\n- api/client.ts — axios client + iacApi, workspaceApi, stateApi, llmApi, agentApi\n- types/index.ts — full TypeScript types for all API models\n- context/AuthContext.tsx — auth context with dummy login\n\nAll components use CSS vars from tokens.css. No hardcoded colors. Dark mode first. No TODO comments. No console.log.",
+      "tags": [
+        "done",
+        "frontend",
+        "sprint-01",
+        "session-4"
+      ]
     }
   ]
 }

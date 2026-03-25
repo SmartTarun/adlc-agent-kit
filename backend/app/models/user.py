@@ -33,3 +33,6 @@ class User(Base):
     projects: Mapped[list["Project"]] = relationship(  # noqa: F821
         "Project", back_populates="owner", lazy="select"
     )
+    deployments: Mapped[list["Deployment"]] = relationship(  # noqa: F821
+        "Deployment", back_populates="deployer", lazy="select"
+    )

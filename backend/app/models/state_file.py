@@ -58,3 +58,9 @@ class StateFile(Base):
     project: Mapped["Project"] = relationship(  # noqa: F821
         "Project", back_populates="state_files", lazy="select"
     )
+    infra_resources: Mapped[list["InfraResource"]] = relationship(  # noqa: F821
+        "InfraResource", back_populates="state_file", lazy="select"
+    )
+    drift_records: Mapped[list["DriftRecord"]] = relationship(  # noqa: F821
+        "DriftRecord", back_populates="state_file", lazy="select"
+    )
