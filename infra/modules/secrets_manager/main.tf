@@ -40,8 +40,8 @@ resource "aws_secretsmanager_secret" "llm_api_key" {
     Name        = "${local.name_prefix}-llm-api-key"
     Environment = var.environment
     Owner       = "TeamPanchayat"
-    CostCenter  = "ADLC-Sprint01"
-    Project     = "CostAnomalyPlatform"
+    CostCenter  = "ADLC-01"
+    Project     = "INFRAVIZ"
   }
 }
 
@@ -67,8 +67,8 @@ resource "aws_secretsmanager_secret" "app_config" {
     Name        = "${local.name_prefix}-app-config"
     Environment = var.environment
     Owner       = "TeamPanchayat"
-    CostCenter  = "ADLC-Sprint01"
-    Project     = "CostAnomalyPlatform"
+    CostCenter  = "ADLC-01"
+    Project     = "INFRAVIZ"
   }
 }
 

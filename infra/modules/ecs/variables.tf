@@ -21,7 +21,7 @@ variable "environment" {
 variable "project" {
   description = "Project name (used in all resource names and tags)"
   type        = string
-  default     = "CostAnomalyPlatform"
+  default     = "INFRAVIZ"
 }
 
 variable "cluster_name" {
@@ -149,7 +149,7 @@ variable "tags" {
   type        = map(string)
   default = {
     Owner      = "TeamPanchayat"
-    CostCenter = "ADLC-Sprint01"
-    Project    = "CostAnomalyPlatform"
+    CostCenter = "ADLC-01"
+    Project    = "INFRAVIZ"
   }
 }

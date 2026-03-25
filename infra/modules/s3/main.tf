@@ -25,8 +25,8 @@ provider "aws" {
     tags = {
       Environment = var.environment
       Owner       = "TeamPanchayat"
-      CostCenter  = "ADLC-Sprint01"
-      Project     = "CostAnomalyPlatform"
+      CostCenter  = "ADLC-01"
+      Project     = "INFRAVIZ"
       ManagedBy   = "Terraform"
     }
   }

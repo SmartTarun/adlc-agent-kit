@@ -34,8 +34,8 @@ resource "aws_s3_bucket" "frontend" {
     Purpose     = "react-frontend-static"
     Environment = var.environment
     Owner       = "TeamPanchayat"
-    CostCenter  = "ADLC-Sprint01"
-    Project     = "CostAnomalyPlatform"
+    CostCenter  = "ADLC-01"
+    Project     = "INFRAVIZ"
   }
 }
 

@@ -83,8 +83,8 @@ resource "aws_cloudfront_distribution" "frontend" {
     Name        = "${local.name_prefix}-cf"
     Environment = var.environment
     Owner       = "TeamPanchayat"
-    CostCenter  = "ADLC-Sprint01"
-    Project     = "CostAnomalyPlatform"
+    CostCenter  = "ADLC-01"
+    Project     = "INFRAVIZ"
   }
 }
 

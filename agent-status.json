@@ -12,16 +12,16 @@
     "vikram": {
       "status": "done",
       "progress": 100,
-      "task": "Session 5 re-check: All 11 Terraform modules verified intact (backend_state, iam, rds_aurora, lambda, api_gateway, s3_frontend, cloudfront, secrets_manager, ecs, cloudwatch, s3).",
+      "task": "Session 7 re-check: All 11 Terraform modules verified intact at /workspace/infra/. Fixed incorrect project tags (CostAnomalyPlatform→INFRAVIZ, ADLC-Sprint01→ADLC-01) across all modules. Standing by to support Keerthi QA.",
       "blocker": "",
-      "updated": "2026-03-25T13:30:00.000Z"
+      "updated": "2026-03-25T15:45:00.000Z"
     },
     "rohan": {
       "status": "done",
       "progress": 100,
-      "task": "Session 4 re-verified: AuthPage, CanvasView (React Flow + 9 tabs), DashboardView (NL + 7 tabs), TerminalView (SSE streaming), App.tsx, api/client.ts, types/index.ts, AuthContext.tsx — all confirmed intact. DONE.",
+      "task": "Session 6 re-verified: AuthPage, CanvasView (React Flow, 9 tabs, CRUD), DashboardView (NL + 7 tabs, Monaco), TerminalView (SSE stream, abort) — all confirmed intact. DONE.",
       "blocker": "",
-      "updated": "2026-03-25T12:38:34.037Z"
+      "updated": "2026-03-25T16:30:00.000Z"
     },
     "kiran": {
       "status": "done",
@@ -45,59 +45,65 @@
       "updated": "2026-03-25T12:15:00.000Z"
     },
     "keerthi": {
-      "status": "queue",
-      "progress": 0,
-      "task": "Waiting — activates only after all 5 agents confirm DONE",
-      "blocker": "Arjun must confirm all 5 agents complete",
-      "updated": "2026-03-16T08:28:00.000Z"
+      "status": "wip",
+      "progress": 10,
+      "task": "ACTIVATED by Arjun 2026-03-25T15:19:00Z. All 5 build agents DONE. Begin: integration test plan, E2E tests, demo script, final sign-off.",
+      "blocker": "",
+      "updated": "2026-03-25T15:19:00.000Z"
     }
   },
   "arjun": {
     "status": "wip",
-    "progress": 95,
-    "task": "Session 4: requirement.json restored from context. approvedByTarun=true set. Monitoring Rasool completion. Keerthi on standby.",
+    "role": "pm",
+    "progress": 97,
+    "task": "Session 7: QA orchestration. All 5 build agents DONE. Keerthi at 10% — nudged with prioritised QA briefing. Monitoring qa-plan.md, e2e_integration.py, demo-script.md.",
     "blocker": "",
     "container": true,
-    "updated": "2026-03-25T13:20:00.000Z"
+    "updated": "2026-03-25T16:02:00.000Z"
   },
   "rohan": {
     "status": "starting",
+    "role": "builder",
     "progress": 0,
     "task": "Container initialising",
     "blocker": "",
     "container": true,
-    "updated": "2026-03-25T12:38:45.068Z"
+    "updated": "2026-03-25T15:46:29.414Z"
   },
   "kavya": {
-    "status": "done",
-    "progress": 100,
-    "task": "Session 3 complete. component-spec.md rewritten for InfraViz. tokens.css revised.",
+    "status": "wip",
+    "role": "team-lead",
+    "progress": 10,
+    "task": "Session re-boot: discoveryComplete+approvedByTarun confirmed. Rebuilding tokens.css + component-spec.md for InfraViz.",
     "blocker": "",
     "container": true,
-    "updated": "2026-03-25T12:15:00.000Z"
+    "updated": "2026-03-25T15:55:00.000Z"
   },
   "rasool": {
     "status": "done",
+    "role": "team-lead",
     "progress": 100,
-    "task": "DB phase COMPLETE. 8 tables migrated, 8 ORM models, db-schema.md. All back-references wired.",
+    "task": "Session re-boot complete. All migration files rebuilt: alembic.ini, env.py, script.py.mako, versions/0001_initial_schema.py (8 tables, 20 indexes). db-schema.md delivered.",
     "blocker": "",
     "container": true,
-    "updated": "2026-03-25T12:32:24.630Z"
+    "updated": "2026-03-25T16:10:00.000Z"
   },
   "vikram": {
     "status": "done",
+    "role": "team-lead",
     "progress": 100,
-    "task": "Session 5 re-check complete. All 11 Terraform modules verified intact. Sprint-01 infra DONE.",
+    "task": "Session 7: All 11 Terraform modules verified at /workspace/infra/. Tags corrected (CostAnomalyPlatform→INFRAVIZ, ADLC-Sprint01→ADLC-01). Infra DONE. Supporting Keerthi QA.",
     "blocker": "",
     "container": true,
-    "updated": "2026-03-25T13:30:00.000Z"
+    "updated": "2026-03-25T15:45:00.000Z"
   },
   "kiran": {
     "status": "done",
+    "role": "builder",
     "progress": 100,
-    "task": "FastAPI backend COMPLETE. 6 routers (19 endpoints), Claude SSE + structured JSON, 30+ tests.",
+    "task": "Session 2 re-verified: all 6 routers + 5 schemas + 6 test files confirmed intact. FastAPI backend DONE.",
     "blocker": "",
     "container": true,
-    "updated": "2026-03-25T13:20:00.000Z"
+    "updated": "2026-03-25T15:45:00.000Z"
   }
 }

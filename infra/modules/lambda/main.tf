@@ -33,8 +33,8 @@ resource "aws_cloudwatch_log_group" "lambda" {
     Name        = "/aws/lambda/${local.function_name}"
     Environment = var.environment
     Owner       = "TeamPanchayat"
-    CostCenter  = "ADLC-Sprint01"
-    Project     = "CostAnomalyPlatform"
+    CostCenter  = "ADLC-01"
+    Project     = "INFRAVIZ"
   }
 }
 
@@ -58,8 +58,8 @@ resource "aws_security_group" "lambda" {
     Name        = "${local.function_name}-sg"
     Environment = var.environment
     Owner       = "TeamPanchayat"
-    CostCenter  = "ADLC-Sprint01"
-    Project     = "CostAnomalyPlatform"
+    CostCenter  = "ADLC-01"
+    Project     = "INFRAVIZ"
   }
 }
 
@@ -110,8 +110,8 @@ resource "aws_lambda_function" "api" {
     Name        = local.function_name
     Environment = var.environment
     Owner       = "TeamPanchayat"
-    CostCenter  = "ADLC-Sprint01"
-    Project     = "CostAnomalyPlatform"
+    CostCenter  = "ADLC-01"
+    Project     = "INFRAVIZ"
   }
 }
 

@@ -42,8 +42,8 @@ resource "aws_iam_role" "lambda_exec" {
     Name        = "${local.name_prefix}-lambda-exec"
     Environment = var.environment
     Owner       = "TeamPanchayat"
-    CostCenter  = "ADLC-Sprint01"
-    Project     = "CostAnomalyPlatform"
+    CostCenter  = "ADLC-01"
+    Project     = "INFRAVIZ"
   }
 }
 

@@ -35,8 +35,8 @@ resource "aws_db_subnet_group" "aurora" {
     Name        = "${local.cluster_id}-subnet-group"
     Environment = var.environment
     Owner       = "TeamPanchayat"
-    CostCenter  = "ADLC-Sprint01"
-    Project     = "CostAnomalyPlatform"
+    CostCenter  = "ADLC-01"
+    Project     = "INFRAVIZ"
   }
 }
 
@@ -66,8 +66,8 @@ resource "aws_security_group" "aurora" {
     Name        = "${local.cluster_id}-sg"
     Environment = var.environment
     Owner       = "TeamPanchayat"
-    CostCenter  = "ADLC-Sprint01"
-    Project     = "CostAnomalyPlatform"
+    CostCenter  = "ADLC-01"
+    Project     = "INFRAVIZ"
   }
 }
 
@@ -104,8 +104,8 @@ resource "aws_rds_cluster" "aurora" {
     Name        = local.cluster_id
     Environment = var.environment
     Owner       = "TeamPanchayat"
-    CostCenter  = "ADLC-Sprint01"
-    Project     = "CostAnomalyPlatform"
+    CostCenter  = "ADLC-01"
+    Project     = "INFRAVIZ"
   }
 }
 
@@ -125,7 +125,7 @@ resource "aws_rds_cluster_instance" "writer" {
     Name        = "${local.cluster_id}-writer"
     Environment = var.environment
     Owner       = "TeamPanchayat"
-    CostCenter  = "ADLC-Sprint01"
-    Project     = "CostAnomalyPlatform"
+    CostCenter  = "ADLC-01"
+    Project     = "INFRAVIZ"
   }
 }

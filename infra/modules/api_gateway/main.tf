@@ -32,8 +32,8 @@ resource "aws_cloudwatch_log_group" "api_access" {
     Name        = "/aws/apigateway/${local.api_name}"
     Environment = var.environment
     Owner       = "TeamPanchayat"
-    CostCenter  = "ADLC-Sprint01"
-    Project     = "CostAnomalyPlatform"
+    CostCenter  = "ADLC-01"
+    Project     = "INFRAVIZ"
   }
 }
 
@@ -54,8 +54,8 @@ resource "aws_apigatewayv2_api" "infraviz" {
     Name        = local.api_name
     Environment = var.environment
     Owner       = "TeamPanchayat"
-    CostCenter  = "ADLC-Sprint01"
-    Project     = "CostAnomalyPlatform"
+    CostCenter  = "ADLC-01"
+    Project     = "INFRAVIZ"
   }
 }
 
@@ -101,7 +101,7 @@ resource "aws_apigatewayv2_stage" "default" {
     Name        = "${local.api_name}-stage"
     Environment = var.environment
     Owner       = "TeamPanchayat"
-    CostCenter  = "ADLC-Sprint01"
-    Project     = "CostAnomalyPlatform"
+    CostCenter  = "ADLC-01"
+    Project     = "INFRAVIZ"
   }
 }
