@@ -1152,6 +1152,399 @@ body {
 
 /* ── Chat sender colours (kept for JS class assignment) ──────────────── */
 .chat-msg.chat-type-question .chat-bubble { background: var(--blue-dim); border-left: 3px solid var(--blue); }
+
+/* ══════════════════════════════════════════════════════════════════════
+   UX DESIGN REVIEW SCREEN
+   Full-screen overlay: left 1/4 chat | right 3/4 design canvas
+   ══════════════════════════════════════════════════════════════════════ */
+#ux-screen {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  z-index: 200;
+  flex-direction: column;
+  font-family: var(--font);
+}
+#ux-screen.open { display: flex; }
+
+#ux-topbar {
+  background: linear-gradient(135deg, #6d28d9 0%, var(--primary) 100%);
+  height: 52px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 10px rgba(109,40,217,.35);
+}
+.ux-title { font-size: 15px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px; }
+#ux-project-name { opacity: .7; font-size: 13px; font-weight: 400; }
+.ux-topbtn {
+  background: rgba(255,255,255,.12);
+  border: 1px solid rgba(255,255,255,.25);
+  color: #fff;
+  padding: 5px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: var(--font);
+  transition: all .15s;
+  white-space: nowrap;
+}
+.ux-topbtn:hover { background: rgba(255,255,255,.22); }
+.ux-topbtn.back { font-weight: 700; }
+.ux-topbtn.phase-tag { cursor: default; pointer-events: none; font-size: 11px; border-radius: 20px; }
+.ux-topbtn.approve-ux { background: #16a34a; border-color: #16a34a; font-weight: 700; }
+.ux-topbtn.approve-ux:hover { background: #15803d; }
+.ux-topbtn.changes-ux { border-color: #fbbf24; color: #fbbf24; }
+.ux-topbtn.changes-ux:hover { background: rgba(251,191,36,.15); }
+
+#ux-body { flex: 1; display: flex; min-height: 0; overflow: hidden; }
+
+/* ── Left: Chat (1/4) ── */
+#ux-chat-panel {
+  width: 25%;
+  min-width: 240px;
+  max-width: 360px;
+  border-right: 2px solid #e8e4ff;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  box-shadow: 2px 0 8px rgba(91,91,214,.06);
+  flex-shrink: 0;
+}
+#ux-chat-header {
+  padding: 12px 14px 10px;
+  background: linear-gradient(135deg, #f5f3ff, #ede9fe);
+  border-bottom: 1px solid #ddd6fe;
+  flex-shrink: 0;
+}
+#ux-chat-header h3 { font-size: 13px; font-weight: 700; color: var(--purple); margin: 0 0 2px 0; }
+#ux-chat-header small { font-size: 10px; color: var(--text-dim); }
+#ux-chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: #fafbff;
+}
+.ux-chat-bubble {
+  max-width: 92%;
+  padding: 8px 11px;
+  border-radius: 10px;
+  font-size: 12px;
+  line-height: 1.5;
+  word-break: break-word;
+}
+.ux-chat-bubble.from-kavya  { background: #f5f3ff; border: 1px solid #ddd6fe; color: var(--text); align-self: flex-start; border-radius: 2px 10px 10px 10px; }
+.ux-chat-bubble.from-tarun  { background: var(--primary); color: #fff; align-self: flex-end; border-radius: 10px 10px 2px 10px; }
+.ux-chat-bubble.from-other  { background: var(--surface2); border: 1px solid var(--border); color: var(--text-dim); align-self: flex-start; font-size: 11px; }
+.ux-bubble-sender { font-size: 10px; font-weight: 700; margin-bottom: 3px; opacity: .65; text-transform: uppercase; letter-spacing: .04em; }
+.ux-bubble-time   { font-size: 9px; opacity: .45; text-align: right; margin-top: 3px; }
+.ux-empty-chat    { text-align: center; padding: 28px 12px; color: var(--text-dim); font-size: 11px; line-height: 1.6; }
+
+#ux-chat-input-area { padding: 10px; border-top: 1px solid #e8e4ff; background: #fff; flex-shrink: 0; }
+#ux-chat-to { font-size: 10px; color: var(--text-dim); margin-bottom: 6px; }
+#ux-chat-to strong { color: var(--purple); }
+#ux-feedback-input {
+  width: 100%;
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  color: var(--text);
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-family: var(--font);
+  outline: none;
+  resize: none;
+  min-height: 60px;
+  max-height: 120px;
+  box-sizing: border-box;
+}
+#ux-feedback-input:focus { border-color: var(--purple); box-shadow: 0 0 0 3px rgba(124,58,237,.12); }
+#ux-send-feedback {
+  width: 100%;
+  margin-top: 6px;
+  background: var(--purple);
+  border: none;
+  color: #fff;
+  padding: 8px 0;
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: var(--font);
+  font-weight: 600;
+  transition: background .15s;
+}
+#ux-send-feedback:hover { background: #5b21b6; }
+
+/* ── Right: Design Canvas (3/4) ── */
+#ux-canvas { flex: 1; overflow-y: auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 14px; }
+
+#ux-status-card {
+  background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 50%, #fff 100%);
+  border: 2px solid #c4b5fd;
+  border-radius: 14px;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: var(--shadow-sm);
+  flex-shrink: 0;
+}
+.ux-avatar {
+  width: 52px; height: 52px; border-radius: 50%;
+  background: linear-gradient(135deg, #7c3aed, #db2777);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; flex-shrink: 0;
+  box-shadow: 0 3px 10px rgba(124,58,237,.3);
+}
+.ux-agent-info { flex-shrink: 0; }
+.ux-agent-info h2 { font-size: 14px; font-weight: 700; color: var(--purple); margin: 0 0 3px; }
+.ux-agent-info p  { font-size: 11px; color: var(--text-dim); margin: 0; max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ux-progress-wrap { flex: 1; }
+.ux-progress-label { font-size: 11px; color: var(--text-dim); margin-bottom: 5px; display: flex; justify-content: space-between; }
+.ux-progress-bar  { height: 8px; background: #ede9fe; border-radius: 4px; overflow: hidden; }
+.ux-progress-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, #7c3aed, #db2777); transition: width .5s ease; }
+
+.ux-section { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow-sm); }
+.ux-section-header {
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--border-soft);
+  display: flex; align-items: center; gap: 10px;
+  background: linear-gradient(135deg, #f9f7ff 0%, #fff 100%);
+}
+.ux-section-icon  { font-size: 16px; }
+.ux-section-title { font-weight: 700; font-size: 13px; color: var(--text-bright); flex: 1; }
+.ux-section-badge { font-size: 10px; font-weight: 600; padding: 2px 9px; border-radius: 10px; background: var(--purple-dim); color: var(--purple); }
+.ux-section-body  { padding: 14px 16px; }
+
+.ux-flow { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; padding: 4px 0; }
+.ux-flow-step {
+  background: var(--primary-dim); border: 2px solid var(--primary);
+  border-radius: 8px; padding: 9px 14px;
+  font-size: 12px; font-weight: 600; color: var(--primary);
+  text-align: center; min-width: 100px; flex-shrink: 0;
+}
+.ux-flow-step small { display: block; font-size: 9px; font-weight: 400; margin-top: 2px; opacity: .75; }
+.ux-flow-step.active {
+  background: var(--primary); color: #fff;
+  box-shadow: 0 2px 8px rgba(91,91,214,.3);
+  animation: pulse-step 2s infinite;
+}
+@keyframes pulse-step { 0%,100%{box-shadow:0 0 0 0 rgba(91,91,214,.4)} 50%{box-shadow:0 0 0 6px rgba(91,91,214,0)} }
+.ux-flow-step.done   { background: var(--green-dim); border-color: var(--green); color: var(--green); }
+.ux-flow-step.future { background: var(--surface2); border-color: var(--border); color: var(--text-dim); opacity: .55; }
+.ux-flow-arrow { font-size: 16px; color: var(--text-dim); flex-shrink: 0; }
+
+.ux-qa-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.ux-qa-item { background: var(--surface2); border: 1px solid var(--border-soft); border-radius: 8px; padding: 11px 12px; }
+.ux-qa-item.answered { border-left: 3px solid var(--purple); }
+.ux-qa-item.pending  { border-left: 3px solid var(--border); opacity: .7; }
+.ux-qa-q { font-size: 10px; font-weight: 700; color: var(--purple); margin-bottom: 5px; text-transform: uppercase; letter-spacing: .05em; }
+.ux-qa-a { font-size: 12px; color: var(--text); line-height: 1.5; }
+.ux-qa-a.empty { color: var(--text-dim); font-style: italic; }
+
+.ux-token-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px,1fr)); gap: 10px; }
+.ux-swatch { border-radius: 8px; overflow: hidden; border: 1px solid var(--border); box-shadow: var(--shadow-sm); }
+.ux-swatch-color { height: 44px; width: 100%; }
+.ux-swatch-label { padding: 5px 8px 0; font-size: 10px; font-weight: 600; color: var(--text-dim); background: var(--surface); }
+.ux-swatch-value { font-size: 9px; color: var(--text-dim); font-family: var(--mono); padding: 2px 8px 6px; background: var(--surface); }
+
+.ux-comp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(175px,1fr)); gap: 10px; }
+.ux-comp-card { background: var(--surface2); border: 1px solid var(--border-soft); border-radius: 8px; padding: 11px 12px; transition: box-shadow .15s; }
+.ux-comp-card:hover { box-shadow: var(--shadow-sm); }
+.ux-comp-name { font-size: 12px; font-weight: 700; color: var(--text-bright); margin-bottom: 5px; display: flex; align-items: center; gap: 6px; }
+.ux-comp-desc { font-size: 11px; color: var(--text-dim); line-height: 1.5; }
+
+.ux-approval-bar { border-radius: 10px; padding: 14px 18px; display: flex; align-items: center; gap: 12px; border: 2px solid var(--green); background: linear-gradient(135deg,#f0fdf4,#dcfce7); }
+.ux-approval-bar.waiting { border-color: var(--border); background: var(--surface2); }
+.ux-approval-bar.pending-approval { border-color: var(--yellow); background: linear-gradient(135deg,#fffbeb,#fef3c7); }
+.ux-approval-text { flex: 1; }
+.ux-approval-text h4 { font-size: 13px; font-weight: 700; margin: 0 0 3px; color: var(--green); }
+.ux-approval-bar.waiting .ux-approval-text h4 { color: var(--text-dim); }
+.ux-approval-bar.pending-approval .ux-approval-text h4 { color: var(--yellow); }
+.ux-approval-text p { font-size: 11px; color: var(--text-dim); margin: 0; }
+.ux-approve-btn { background: var(--green); border: none; color: #fff; padding: 8px 18px; border-radius: 8px; cursor: pointer; font-size: 13px; font-family: var(--font); font-weight: 700; transition: background .15s; white-space: nowrap; }
+.ux-approve-btn:hover { background: #15803d; }
+.ux-req-changes-btn { background: #fff; border: 1.5px solid var(--yellow); color: var(--yellow); padding: 7px 14px; border-radius: 8px; cursor: pointer; font-size: 12px; font-family: var(--font); font-weight: 600; transition: all .15s; white-space: nowrap; }
+.ux-req-changes-btn:hover { background: var(--yellow-dim); }
+
+/* ══════════════════════════════════════════════════════════════════════
+   NEW PROJECT SCREEN  — full-page welcome & project launcher
+   ══════════════════════════════════════════════════════════════════════ */
+#new-project-screen {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #1e40af 100%);
+  z-index: 300;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow-y: auto;
+  padding: 40px 20px;
+}
+#new-project-screen.open { display: flex; }
+
+#np-card {
+  background: #fff;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 680px;
+  box-shadow: 0 25px 60px rgba(0,0,0,.4);
+  overflow: hidden;
+}
+#np-card-header {
+  padding: 28px 32px 20px;
+  background: linear-gradient(135deg, #f5f3ff, #ede9fe);
+  border-bottom: 1px solid #ddd6fe;
+  text-align: center;
+}
+#np-card-header .np-logo { font-size: 36px; margin-bottom: 8px; }
+#np-card-header h1 { font-size: 20px; font-weight: 800; color: #1e1b4b; margin: 0 0 4px; }
+#np-card-header p  { font-size: 12px; color: var(--text-dim); margin: 0; }
+
+#np-existing { padding: 16px 28px; border-bottom: 1px solid var(--border-soft); display: none; }
+#np-existing h3 { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--text-dim); margin: 0 0 10px; }
+.np-existing-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border-soft);
+  margin-bottom: 8px; cursor: pointer; transition: all .15s;
+  background: var(--surface2);
+}
+.np-existing-item:hover { background: var(--primary-dim); border-color: var(--primary); }
+.np-existing-item .np-ei-icon { font-size: 20px; }
+.np-existing-item .np-ei-info { flex: 1; }
+.np-existing-item .np-ei-name { font-size: 13px; font-weight: 600; color: var(--text-bright); }
+.np-existing-item .np-ei-meta { font-size: 10px; color: var(--text-dim); margin-top: 2px; }
+.np-existing-item .np-ei-status {
+  font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px;
+  background: var(--blue-dim); color: var(--blue);
+}
+.np-existing-item .np-ei-status.done { background: var(--green-dim); color: var(--green); }
+.np-existing-item .np-ei-status.in_sprint { background: var(--purple-dim); color: var(--purple); }
+
+#np-form { padding: 24px 28px; }
+#np-form h3 { font-size: 13px; font-weight: 700; color: var(--text-bright); margin: 0 0 16px; display: flex; align-items: center; gap: 8px; }
+.np-field { margin-bottom: 16px; }
+.np-field label { display: block; font-size: 11px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
+.np-field input, .np-field textarea {
+  width: 100%; background: var(--surface2); border: 1.5px solid var(--border);
+  color: var(--text); padding: 10px 12px; border-radius: 8px; font-size: 13px;
+  font-family: var(--font); outline: none; box-sizing: border-box; transition: border-color .15s;
+}
+.np-field input:focus, .np-field textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(91,91,214,.1); }
+.np-field textarea { resize: vertical; min-height: 72px; }
+.np-field small { font-size: 10px; color: var(--text-dim); margin-top: 4px; display: block; }
+.np-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+#np-footer {
+  padding: 16px 28px 24px;
+  display: flex; align-items: center; gap: 10px;
+  border-top: 1px solid var(--border-soft);
+}
+#np-footer small { flex: 1; font-size: 10px; color: var(--text-dim); }
+#np-cancel-btn { background: none; border: 1.5px solid var(--border); color: var(--text-dim); padding: 9px 18px; border-radius: 8px; cursor: pointer; font-size: 13px; font-family: var(--font); transition: all .15s; }
+#np-cancel-btn:hover { background: var(--surface3); }
+#np-launch-btn {
+  background: linear-gradient(135deg, var(--primary), #7c3aed);
+  border: none; color: #fff; padding: 10px 24px; border-radius: 8px; cursor: pointer;
+  font-size: 13px; font-family: var(--font); font-weight: 700; transition: opacity .15s;
+  display: flex; align-items: center; gap: 8px;
+}
+#np-launch-btn:hover { opacity: .9; }
+#np-msg { font-size: 11px; color: var(--green); font-weight: 600; display: none; }
+
+/* ══════════════════════════════════════════════════════════════════════
+   TEAM DISCOVERY PANEL  — Kavya / Vikram / Rasool ask their questions
+   ══════════════════════════════════════════════════════════════════════ */
+#team-disc-panel {
+  display: none;
+  background: linear-gradient(135deg, #fffbeb 0%, #fff 100%);
+  border-bottom: 2px solid var(--yellow);
+  padding: 14px 18px;
+  flex-shrink: 0;
+  z-index: 5;
+}
+#team-disc-panel.visible { display: block; }
+
+#tdp-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+#tdp-badge {
+  background: var(--yellow); color: #fff;
+  font-size: 10px; font-weight: 700; padding: 2px 9px; border-radius: 10px; text-transform: uppercase;
+}
+#tdp-title { font-size: 13px; font-weight: 700; color: #92400e; flex: 1; }
+#tdp-subtitle { font-size: 11px; color: var(--text-dim); }
+
+/* Agent tabs */
+#tdp-tabs { display: flex; gap: 4px; margin-bottom: 12px; }
+.tdp-tab {
+  padding: 6px 16px; border-radius: 8px 8px 0 0; border: 1px solid var(--border);
+  border-bottom: none; cursor: pointer; font-size: 12px; font-weight: 600;
+  color: var(--text-dim); background: var(--surface2); transition: all .15s;
+  display: flex; align-items: center; gap: 6px;
+}
+.tdp-tab.active { background: #fff; color: var(--text-bright); border-color: var(--yellow); border-bottom: 1px solid #fff; margin-bottom: -1px; z-index: 1; }
+.tdp-tab .tdp-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--border); }
+.tdp-tab.active .tdp-dot { background: var(--yellow); }
+.tdp-tab.done   .tdp-dot { background: var(--green); }
+
+/* Tab content */
+.tdp-content { display: none; }
+.tdp-content.active {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  background: #fff;
+  border: 1px solid var(--yellow);
+  border-radius: 0 10px 10px 10px;
+  padding: 14px 16px;
+}
+.tdp-agent-profile {
+  grid-column: 1 / -1;
+  display: flex; align-items: center; gap: 12px;
+  padding-bottom: 12px; border-bottom: 1px solid var(--border-soft); margin-bottom: 2px;
+}
+.tdp-avatar {
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0;
+}
+.tdp-agent-name { font-size: 14px; font-weight: 700; color: var(--text-bright); }
+.tdp-agent-role { font-size: 11px; color: var(--text-dim); }
+.tdp-agent-desc { font-size: 11px; color: var(--text-dim); flex: 1; line-height: 1.5; }
+
+.tdp-q-block { background: var(--surface2); border: 1px solid var(--border-soft); border-radius: 8px; padding: 10px 12px; }
+.tdp-q-label { font-size: 10px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 4px; }
+.tdp-q-text  { font-size: 12px; color: var(--text); margin-bottom: 6px; line-height: 1.5; }
+.tdp-q-input {
+  width: 100%; background: #fff; border: 1px solid var(--border); color: var(--text);
+  padding: 6px 10px; border-radius: 6px; font-size: 12px; font-family: var(--font);
+  outline: none; box-sizing: border-box; resize: none; min-height: 40px;
+}
+.tdp-q-input:focus { border-color: var(--yellow); }
+
+.tdp-submit-row {
+  grid-column: 1 / -1;
+  display: flex; align-items: center; justify-content: flex-end;
+  gap: 10px; margin-top: 4px;
+  padding-top: 12px; border-top: 1px solid var(--border-soft);
+}
+.tdp-submit-row small { flex: 1; font-size: 10px; color: var(--text-dim); }
+.tdp-submit-btn {
+  background: var(--yellow); border: none; color: #fff;
+  padding: 8px 20px; border-radius: 8px; cursor: pointer;
+  font-size: 12px; font-family: var(--font); font-weight: 700; transition: opacity .15s;
+}
+.tdp-submit-btn:hover { opacity: .85; }
+.tdp-done-badge {
+  background: var(--green-dim); color: var(--green);
+  font-size: 11px; font-weight: 700; padding: 6px 16px; border-radius: 8px;
+}
 </style>
 </head>
 <body>
@@ -1177,10 +1570,172 @@ body {
   <div class="divider"></div>
   <div id="sse-status">● Connecting...</div>
   <button id="btn-approve-next" class="topbtn approve" onclick="approveAndStartNext()" style="display:none" title="Mark this project done and start the next requirement">✅ Approve &amp; Start Next</button>
-  <button class="topbtn primary" onclick="openReqWizard()">+ New Requirement</button>
+  <button class="topbtn primary" onclick="openNewProjectScreen()">+ New Project</button>
+  <button class="topbtn" onclick="openUXScreen()" title="Open UX Design Review screen" style="border-color:#c4b5fd;color:#e9d5ff">🎨 UX Design</button>
   <button class="topbtn" onclick="openPermModal()" title="Manage agent tool permissions">🔐 Permissions</button>
   <button class="topbtn success" onclick="activateKeerthi()">🟢 Activate QA</button>
   <button class="topbtn danger"  onclick="stopAll()">⏹ Stop All</button>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     TEAM DISCOVERY PANEL  (shown after Arjun discovery, before approval)
+     Kavya asks UX Qs | Vikram asks Cloud Qs | Rasool asks DB Qs
+     ══════════════════════════════════════════════════════════════════════ -->
+<div id="team-disc-panel">
+  <div id="tdp-header">
+    <span id="tdp-badge">Team Discovery</span>
+    <span id="tdp-title">Your team leads need answers before the sprint starts</span>
+    <span id="tdp-subtitle">Answer each agent's questions — they'll build their proposal based on your input</span>
+  </div>
+  <div id="tdp-tabs">
+    <div class="tdp-tab active" onclick="switchTdpTab('kavya')" id="tdp-tab-kavya">
+      <span class="tdp-dot"></span>🎨 Kavya (UX)
+    </div>
+    <div class="tdp-tab" onclick="switchTdpTab('vikram')" id="tdp-tab-vikram">
+      <span class="tdp-dot"></span>☁️ Vikram (Cloud)
+    </div>
+    <div class="tdp-tab" onclick="switchTdpTab('rasool')" id="tdp-tab-rasool">
+      <span class="tdp-dot"></span>🗄️ Rasool (DB)
+    </div>
+  </div>
+
+  <!-- Kavya Tab -->
+  <div class="tdp-content active" id="tdp-content-kavya">
+    <div class="tdp-agent-profile">
+      <div class="tdp-avatar" style="background:linear-gradient(135deg,#7c3aed,#db2777)">🎨</div>
+      <div>
+        <div class="tdp-agent-name">Kavya — UX Designer</div>
+        <div class="tdp-agent-role">Frontend Design &amp; Tokens</div>
+      </div>
+      <div class="tdp-agent-desc">Kavya will design your colour palette, typography, component library and user flows based on your answers.</div>
+    </div>
+    <div class="tdp-q-block">
+      <div class="tdp-q-label">Visual Style</div>
+      <div class="tdp-q-text">What visual style should this product have? (minimal, bold, corporate, playful, dark-tech…)</div>
+      <textarea class="tdp-q-input" id="kavya-q1" placeholder="e.g. Minimal and clean, like Linear or Notion"></textarea>
+    </div>
+    <div class="tdp-q-block">
+      <div class="tdp-q-label">Colour Mode</div>
+      <div class="tdp-q-text">Dark mode first, light mode first, or both toggle?</div>
+      <textarea class="tdp-q-input" id="kavya-q2" placeholder="e.g. Dark mode primary, light mode toggle"></textarea>
+    </div>
+    <div class="tdp-q-block">
+      <div class="tdp-q-label">Brand Colours</div>
+      <div class="tdp-q-text">Any preferred primary / accent / background colours? (hex codes or descriptions)</div>
+      <textarea class="tdp-q-input" id="kavya-q3" placeholder="e.g. #5b5bd6 primary, teal accent, dark navy bg"></textarea>
+    </div>
+    <div class="tdp-q-block">
+      <div class="tdp-q-label">Priority Actions</div>
+      <div class="tdp-q-text">What are the 3 most important actions a user takes in this product?</div>
+      <textarea class="tdp-q-input" id="kavya-q4" placeholder="e.g. 1. View cost anomalies  2. Set alert thresholds  3. Export reports"></textarea>
+    </div>
+    <div class="tdp-q-block">
+      <div class="tdp-q-label">Reference UI</div>
+      <div class="tdp-q-text">Any existing products or screenshots to draw design inspiration from?</div>
+      <textarea class="tdp-q-input" id="kavya-q5" placeholder="e.g. AWS Cost Explorer, Datadog, Grafana"></textarea>
+    </div>
+    <div class="tdp-q-block">
+      <div class="tdp-q-label">Accessibility</div>
+      <div class="tdp-q-text">WCAG level, minimum font size, contrast requirements?</div>
+      <textarea class="tdp-q-input" id="kavya-q6" placeholder="e.g. WCAG AA, 14px minimum, high contrast mode optional"></textarea>
+    </div>
+    <div class="tdp-submit-row" id="tdp-submit-kavya">
+      <small>Answers are sent to Kavya via team chat. She will reply with a design proposal.</small>
+      <button class="tdp-submit-btn" onclick="submitTdpAnswers('kavya')">Send to Kavya →</button>
+    </div>
+  </div>
+
+  <!-- Vikram Tab -->
+  <div class="tdp-content" id="tdp-content-vikram">
+    <div class="tdp-agent-profile">
+      <div class="tdp-avatar" style="background:linear-gradient(135deg,#dc2626,#ea580c)">☁️</div>
+      <div>
+        <div class="tdp-agent-name">Vikram — Cloud Architect</div>
+        <div class="tdp-agent-role">Infrastructure &amp; Terraform</div>
+      </div>
+      <div class="tdp-agent-desc">Vikram will design your AWS infrastructure, write Terraform modules, and estimate costs based on your answers.</div>
+    </div>
+    <div class="tdp-q-block">
+      <div class="tdp-q-label">Cloud &amp; Region</div>
+      <div class="tdp-q-text">Which cloud provider and region should infrastructure be deployed to?</div>
+      <textarea class="tdp-q-input" id="vikram-q1" placeholder="e.g. AWS us-east-1, or AWS + GCP multi-cloud"></textarea>
+    </div>
+    <div class="tdp-q-block">
+      <div class="tdp-q-label">Scale &amp; Traffic</div>
+      <div class="tdp-q-text">Expected users, requests per second, and data volume?</div>
+      <textarea class="tdp-q-input" id="vikram-q2" placeholder="e.g. 100 users, ~50 RPS, 10GB data/month"></textarea>
+    </div>
+    <div class="tdp-q-block">
+      <div class="tdp-q-label">Compute Type</div>
+      <div class="tdp-q-text">Containers (ECS/Fargate), serverless (Lambda), or EC2 VMs?</div>
+      <textarea class="tdp-q-input" id="vikram-q3" placeholder="e.g. ECS Fargate for backend, Lambda for triggers"></textarea>
+    </div>
+    <div class="tdp-q-block">
+      <div class="tdp-q-label">Existing Infra</div>
+      <div class="tdp-q-text">Any existing AWS resources or VPCs to integrate with?</div>
+      <textarea class="tdp-q-input" id="vikram-q4" placeholder="e.g. Fresh account, no existing infra"></textarea>
+    </div>
+    <div class="tdp-q-block">
+      <div class="tdp-q-label">Cost Priority</div>
+      <div class="tdp-q-text">Monthly budget ceiling and cost optimisation priority?</div>
+      <textarea class="tdp-q-input" id="vikram-q5" placeholder="e.g. Under $200/month, optimise for cost over performance"></textarea>
+    </div>
+    <div class="tdp-q-block">
+      <div class="tdp-q-label">Compliance &amp; Security</div>
+      <div class="tdp-q-text">Any compliance requirements? (SOC2, HIPAA, GDPR, PCI-DSS…)</div>
+      <textarea class="tdp-q-input" id="vikram-q6" placeholder="e.g. No strict compliance, basic IAM least-privilege"></textarea>
+    </div>
+    <div class="tdp-submit-row" id="tdp-submit-vikram">
+      <small>Answers are sent to Vikram via team chat. He will reply with an architecture proposal and cost estimate.</small>
+      <button class="tdp-submit-btn" style="background:var(--red)" onclick="submitTdpAnswers('vikram')">Send to Vikram →</button>
+    </div>
+  </div>
+
+  <!-- Rasool Tab -->
+  <div class="tdp-content" id="tdp-content-rasool">
+    <div class="tdp-agent-profile">
+      <div class="tdp-avatar" style="background:linear-gradient(135deg,#d97706,#b45309)">🗄️</div>
+      <div>
+        <div class="tdp-agent-name">Rasool — Database Agent</div>
+        <div class="tdp-agent-role">Schema Design &amp; Migrations</div>
+      </div>
+      <div class="tdp-agent-desc">Rasool will design your PostgreSQL schema, write Alembic migrations, and create the db-schema.md documentation.</div>
+    </div>
+    <div class="tdp-q-block">
+      <div class="tdp-q-label">Multi-Tenancy</div>
+      <div class="tdp-q-text">Single-tenant or multi-tenant? If multi, row-level or schema-per-tenant?</div>
+      <textarea class="tdp-q-input" id="rasool-q1" placeholder="e.g. Single tenant for now, row-level isolation later"></textarea>
+    </div>
+    <div class="tdp-q-block">
+      <div class="tdp-q-label">Data Scale</div>
+      <div class="tdp-q-text">Expected row counts for the largest tables and write frequency?</div>
+      <textarea class="tdp-q-input" id="rasool-q2" placeholder="e.g. 1M cost records/month, 10K alerts, mostly reads"></textarea>
+    </div>
+    <div class="tdp-q-block">
+      <div class="tdp-q-label">Soft Delete</div>
+      <div class="tdp-q-text">Should records be soft-deleted (deleted_at) or hard-deleted?</div>
+      <textarea class="tdp-q-input" id="rasool-q3" placeholder="e.g. Soft delete for cost records, hard delete for sessions"></textarea>
+    </div>
+    <div class="tdp-q-block">
+      <div class="tdp-q-label">Real-Time</div>
+      <div class="tdp-q-text">Any real-time or streaming data requirements? (WebSockets, polling, CDC)</div>
+      <textarea class="tdp-q-input" id="rasool-q4" placeholder="e.g. Cost anomaly alerts should push in real-time via SSE"></textarea>
+    </div>
+    <div class="tdp-q-block">
+      <div class="tdp-q-label">File / Blob Storage</div>
+      <div class="tdp-q-text">Any file uploads, exports, or blob data to store? (S3 or in DB?)</div>
+      <textarea class="tdp-q-input" id="rasool-q5" placeholder="e.g. CSV export to S3, no file uploads in DB"></textarea>
+    </div>
+    <div class="tdp-q-block">
+      <div class="tdp-q-label">Audit Log</div>
+      <div class="tdp-q-text">Do you need an audit trail of who changed what and when?</div>
+      <textarea class="tdp-q-input" id="rasool-q6" placeholder="e.g. Yes — track cost threshold changes and alert dismissals"></textarea>
+    </div>
+    <div class="tdp-submit-row" id="tdp-submit-rasool">
+      <small>Answers are sent to Rasool via team chat. He will reply with a schema proposal and ERD.</small>
+      <button class="tdp-submit-btn" style="background:var(--yellow)" onclick="submitTdpAnswers('rasool')">Send to Rasool →</button>
+    </div>
+  </div>
 </div>
 
 <!-- ── PM Discovery Panel (shown when Arjun is in discovery mode) ──────── -->
@@ -1554,6 +2109,11 @@ window.addEventListener('panchayat-state', e => {
   currentState = e.detail;
   renderBoard(currentState);
   renderProjectSwitcher(currentState);
+  renderTeamDiscovery(currentState);
+  maybeShowNewProjectScreen(currentState);
+  if (document.getElementById('ux-screen').classList.contains('open')) {
+    renderUXScreen(currentState);
+  }
 });
 
 // ── Render Kanban board ───────────────────────────────────────────────────────
@@ -1672,6 +2232,10 @@ function buildCard(name, agentStatus, containerInfo) {
       <div class="card-actions">
         ${isKeerthi && status === 'standby'
           ? `<button class="card-btn" onclick="activateKeerthi()" title="Activate QA">🟢 Activate</button>`
+          : ''
+        }
+        ${name === 'kavya'
+          ? `<button class="card-btn" onclick="openUXScreen()" title="Open UX Design Review" style="border-color:#c4b5fd;color:#7c3aed">🎨 Design</button>`
           : ''
         }
         ${canScale
@@ -2450,11 +3014,675 @@ function sendTeamMessage(message, type = 'broadcast') {
   }).catch(console.error);
 }
 
+// ══════════════════════════════════════════════════════════════════════════════
+// NEW PROJECT SCREEN
+// ══════════════════════════════════════════════════════════════════════════════
+
+function openNewProjectScreen() {
+  renderNPExisting(currentState);
+  document.getElementById('new-project-screen').classList.add('open');
+}
+
+function closeNewProjectScreen() {
+  document.getElementById('new-project-screen').classList.remove('open');
+}
+
+function renderNPExisting(state) {
+  const projects = (state.projects || []).filter(p => p.name && p.name !== 'Unnamed');
+  const wrap = document.getElementById('np-existing');
+  const list = document.getElementById('np-existing-list');
+  if (!projects.length) { wrap.style.display = 'none'; return; }
+
+  wrap.style.display = 'block';
+  list.innerHTML = '';
+  projects.forEach(p => {
+    const div = document.createElement('div');
+    div.className = 'np-existing-item';
+    div.onclick = () => { switchToProject(p.path); closeNewProjectScreen(); };
+    const statusCls = p.status === 'done' ? 'done' : p.status === 'in_sprint' ? 'in_sprint' : '';
+    div.innerHTML =
+      `<div class="np-ei-icon">📁</div>
+       <div class="np-ei-info">
+         <div class="np-ei-name">${escHtml(p.name)}</div>
+         <div class="np-ei-meta">Sprint ${escHtml(p.sprint || '?')} · ${escHtml(p.path)}</div>
+       </div>
+       <span class="np-ei-status ${statusCls}">${escHtml((p.status || 'pending').replace(/_/g,' '))}</span>`;
+    list.appendChild(div);
+  });
+}
+
+function switchToProject(path) {
+  fetch('/api/switch-project', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path }) }).catch(console.error);
+}
+
+function submitNewProject() {
+  const title       = document.getElementById('np-title').value.trim();
+  const description = document.getElementById('np-desc').value.trim();
+  if (!title || !description) { alert('Project name and description are required.'); return; }
+
+  const payload = {
+    title,
+    description,
+    businessGoal:    document.getElementById('np-goal').value.trim(),
+    targetUsers:     document.getElementById('np-users').value.trim(),
+    techConstraints: document.getElementById('np-constraints').value.trim()
+      ? document.getElementById('np-constraints').value.split(',').map(s => s.trim()) : [],
+    deadline:        document.getElementById('np-deadline').value || null,
+    priority: 'high',
+    type: 'new_project',
+    sprint: '',
+  };
+
+  fetch('/api/requirement', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+  })
+  .then(r => r.json())
+  .then(d => {
+    if (d.ok || d.requirementId) {
+      const msg = document.getElementById('np-msg');
+      msg.style.display = 'block';
+      setTimeout(closeNewProjectScreen, 1800);
+    } else { alert('Error: ' + (d.error || 'unknown')); }
+  })
+  .catch(e => alert('Network error: ' + e.message));
+}
+
+// Auto-show New Project screen when there is no active requirement
+function maybeShowNewProjectScreen(state) {
+  const req  = state.req || {};
+  const isOpen = document.getElementById('new-project-screen').classList.contains('open');
+  const uxOpen = document.getElementById('ux-screen').classList.contains('open');
+  if (uxOpen) return;
+  if (!req.title && !isOpen) {
+    renderNPExisting(state);
+    document.getElementById('new-project-screen').classList.add('open');
+  } else if (req.title && isOpen) {
+    closeNewProjectScreen();
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// TEAM DISCOVERY PANEL  — Kavya / Vikram / Rasool discovery tabs
+// ══════════════════════════════════════════════════════════════════════════════
+
+const TDP_AGENTS = {
+  kavya:  { label: 'Kavya (UX)',   qs: ['kavya-q1','kavya-q2','kavya-q3','kavya-q4','kavya-q5','kavya-q6'],
+            keys: ['visualStyle','colourMode','brandColours','priorityActions','referenceUI','accessibility'] },
+  vikram: { label: 'Vikram (Cloud)', qs: ['vikram-q1','vikram-q2','vikram-q3','vikram-q4','vikram-q5','vikram-q6'],
+            keys: ['cloudRegion','scaleTraffic','computeType','existingInfra','costPriority','compliance'] },
+  rasool: { label: 'Rasool (DB)',  qs: ['rasool-q1','rasool-q2','rasool-q3','rasool-q4','rasool-q5','rasool-q6'],
+            keys: ['multiTenancy','dataScale','softDelete','realTime','fileStorage','auditLog'] },
+};
+let tdpSubmitted = { kavya: false, vikram: false, rasool: false };
+
+function renderTeamDiscovery(state) {
+  const req  = state.req || {};
+  const panel = document.getElementById('team-disc-panel');
+
+  // Show only when PM discovery done but sprint not yet approved
+  if (req.discoveryComplete && !req.approvedByTarun) {
+    panel.classList.add('visible');
+  } else {
+    panel.classList.remove('visible');
+    return;
+  }
+
+  // Pre-fill any existing answers and mark done tabs
+  const disc = req.teamDiscovery || {};
+  ['kavya','vikram','rasool'].forEach(agent => {
+    const existing = disc[agent];
+    const tab = document.getElementById('tdp-tab-' + agent);
+    const submitRow = document.getElementById('tdp-submit-' + agent);
+
+    if (existing || tdpSubmitted[agent]) {
+      if (tab) { tab.classList.add('done'); }
+      if (submitRow) {
+        submitRow.innerHTML = '<div class="tdp-done-badge">✓ Answers sent — waiting for ' + agent + '\'s proposal</div>';
+      }
+    }
+  });
+}
+
+function switchTdpTab(agent) {
+  ['kavya','vikram','rasool'].forEach(a => {
+    document.getElementById('tdp-tab-' + a).classList.toggle('active', a === agent);
+    document.getElementById('tdp-content-' + a).classList.toggle('active', a === agent);
+  });
+}
+
+function submitTdpAnswers(agent) {
+  const cfg = TDP_AGENTS[agent];
+  if (!cfg) return;
+
+  const answers = {};
+  let anyFilled = false;
+  cfg.qs.forEach((id, i) => {
+    const val = (document.getElementById(id) || {}).value || '';
+    answers[cfg.keys[i]] = val.trim();
+    if (val.trim()) anyFilled = true;
+  });
+
+  if (!anyFilled) { alert('Please answer at least one question before submitting.'); return; }
+
+  const names = { kavya: 'Kavya (UX Designer)', vikram: 'Vikram (Cloud Architect)', rasool: 'Rasool (DB Agent)' };
+  const lines = cfg.keys.map((k, i) => {
+    const qEl = document.getElementById(cfg.qs[i]);
+    const labelEl = qEl ? qEl.closest('.tdp-q-block').querySelector('.tdp-q-label') : null;
+    const label = labelEl ? labelEl.textContent : k;
+    return `${label}: ${answers[k] || '(skipped)'}`;
+  });
+
+  const msg = `📋 Discovery Answers for ${names[agent]}:\n\n${lines.join('\n')}`;
+
+  fetch('/api/chat', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ from: 'TARUN', role: 'Product Owner', message: msg, type: 'discovery',
+      tags: [agent, 'team-discovery', 'discovery'] }),
+  })
+  .then(() => {
+    tdpSubmitted[agent] = true;
+    renderTeamDiscovery(currentState);
+    // Auto-switch to next unanswered tab
+    const order = ['kavya','vikram','rasool'];
+    const next  = order.find(a => !tdpSubmitted[a] && a !== agent);
+    if (next) switchTdpTab(next);
+  })
+  .catch(e => alert('Network error: ' + e.message));
+}
+
 // ── Initial load ──────────────────────────────────────────────────────────────
 fetch('/api/state')
   .then(r => r.json())
-  .then(state => { currentState = state; renderBoard(state); })
+  .then(state => {
+    currentState = state;
+    renderBoard(state);
+    renderProjectSwitcher(state);
+    renderTeamDiscovery(state);
+    maybeShowNewProjectScreen(state);
+  })
   .catch(console.error);
+
+// ══════════════════════════════════════════════════════════════════════════════
+// UX DESIGN REVIEW SCREEN
+// ══════════════════════════════════════════════════════════════════════════════
+
+const UX_FLOW_STEPS = [
+  { id: 'discovery', label: 'PM Discovery',    sub: 'Arjun gathers brief' },
+  { id: 'questions', label: 'UX Questions',    sub: 'Kavya asks 6 questions' },
+  { id: 'proposal',  label: 'Design Proposal', sub: 'Kavya presents concept' },
+  { id: 'feedback',  label: 'Tarun Feedback',  sub: 'Review & iterate' },
+  { id: 'approval',  label: 'Approved',        sub: 'approvedByTarun = true' },
+  { id: 'build',     label: 'Build Tokens',    sub: 'tokens.css + comp-spec' },
+];
+
+const UX_QUESTIONS = [
+  { key: 'visualStyle',     label: 'Visual Style',       q: 'What visual style? (minimal, bold, corporate, playful…)' },
+  { key: 'colourMode',      label: 'Colour Mode',        q: 'Dark mode first, light, or both?' },
+  { key: 'brandColours',    label: 'Brand Colours',      q: 'Preferred primary / accent / background colours?' },
+  { key: 'priorityActions', label: 'Priority Actions',   q: 'What are the 3 most important user actions?' },
+  { key: 'referenceUI',     label: 'Reference UI',       q: 'Any reference products or designs to draw from?' },
+  { key: 'accessibility',   label: 'Accessibility',      q: 'WCAG level, font sizes, contrast requirements?' },
+];
+
+const DEFAULT_TOKENS = [
+  { name: 'Primary',    value: '#5b5bd6' },
+  { name: 'Background', value: '#f0f2fa' },
+  { name: 'Surface',    value: '#ffffff' },
+  { name: 'Text',       value: '#2e2e50' },
+  { name: 'Success',    value: '#16a34a' },
+  { name: 'Warning',    value: '#d97706' },
+  { name: 'Danger',     value: '#dc2626' },
+  { name: 'Purple',     value: '#7c3aed' },
+];
+
+const DEFAULT_COMPONENTS = [
+  { icon: '🖱️', name: 'Button',       desc: 'Primary, secondary, danger variants. 36px default height.' },
+  { icon: '🃏', name: 'Card',         desc: 'Surface + shadow, border-radius 12px, padding 16px.' },
+  { icon: '📝', name: 'Input / Form', desc: 'Label, error state, helper text, focus ring.' },
+  { icon: '🔔', name: 'Toast',        desc: 'Non-blocking notification — 4 semantic variants.' },
+  { icon: '📊', name: 'Data Table',   desc: 'Sortable columns, pagination, row actions.' },
+  { icon: '🧭', name: 'Nav / Sidebar',desc: 'Collapsible, icon + label, active highlight.' },
+  { icon: '📈', name: 'Chart',        desc: 'Recharts: area, bar, pie. Fully responsive.' },
+  { icon: '🏷️', name: 'Badge / Tag',  desc: 'Status pills, dismissible tags, count chips.' },
+];
+
+function openUXScreen() {
+  document.getElementById('ux-screen').classList.add('open');
+  renderUXScreen(currentState);
+}
+
+function closeUXScreen() {
+  document.getElementById('ux-screen').classList.remove('open');
+}
+
+function renderUXScreen(state) {
+  if (!document.getElementById('ux-screen').classList.contains('open')) return;
+
+  const req    = state.req || {};
+  const agents = state.agents || {};
+  const msgs   = (state.chat && state.chat.messages) ? state.chat.messages : [];
+  const kavya  = agents.kavya  || {};
+  const disc   = (req.teamDiscovery && req.teamDiscovery.kavya) || {};
+
+  // Project name in header
+  document.getElementById('ux-project-name').textContent = req.title ? '— ' + req.title : '';
+
+  // Kavya status card
+  const pct  = kavya.progress || 0;
+  const task = kavya.task || 'Waiting for project brief…';
+  document.getElementById('ux-kavya-task').textContent = task;
+  document.getElementById('ux-kavya-pct').textContent  = pct + '%';
+  document.getElementById('ux-kavya-bar').style.width  = pct + '%';
+
+  // Phase tag in topbar
+  let phase = 'Phase 1: PM Discovery';
+  if (req.discoveryComplete && !req.approvedByTarun) phase = 'Phase 2: Team Discovery';
+  else if (req.approvedByTarun && pct < 100)         phase = 'Phase 3: Building';
+  else if (pct === 100)                               phase = 'Phase 4: Done';
+  document.getElementById('ux-phase-tag').textContent = phase;
+
+  renderUXFlow(req, kavya);
+  renderUXQA(disc);
+  renderUXTokens(disc);
+  renderUXComponents(kavya);
+  renderUXApproval(req);
+  renderUXChat(msgs);
+}
+
+function renderUXFlow(req, kavya) {
+  const steps = document.getElementById('ux-flow-steps');
+  steps.innerHTML = '';
+
+  const discDone  = !!req.discoveryComplete;
+  const kavyaQs   = !!(req.teamDiscovery && req.teamDiscovery.kavya);
+  const approved  = !!req.approvedByTarun;
+  const built     = kavya.status === 'done';
+
+  UX_FLOW_STEPS.forEach((step, i) => {
+    let s = 'future';
+    if (step.id === 'discovery') s = discDone  ? 'done' : 'active';
+    if (step.id === 'questions') s = kavyaQs   ? 'done' : (discDone  ? 'active' : 'future');
+    if (step.id === 'proposal')  s = approved  ? 'done' : (kavyaQs   ? 'active' : 'future');
+    if (step.id === 'feedback')  s = approved  ? 'done' : (kavyaQs   ? 'active' : 'future');
+    if (step.id === 'approval')  s = approved  ? 'done' : (kavyaQs   ? 'active' : 'future');
+    if (step.id === 'build')     s = built     ? 'done' : (approved   ? 'active' : 'future');
+
+    const el = document.createElement('div');
+    el.className = `ux-flow-step ${s}`;
+    el.innerHTML = (s === 'done' ? '✓ ' : '') + escHtml(step.label) + `<small>${escHtml(step.sub)}</small>`;
+    steps.appendChild(el);
+
+    if (i < UX_FLOW_STEPS.length - 1) {
+      const arr = document.createElement('span');
+      arr.className = 'ux-flow-arrow';
+      arr.textContent = '→';
+      steps.appendChild(arr);
+    }
+  });
+}
+
+function renderUXQA(disc) {
+  const grid = document.getElementById('ux-qa-grid');
+  grid.innerHTML = '';
+  let answered = 0;
+
+  UX_QUESTIONS.forEach(q => {
+    const ans = disc[q.key];
+    if (ans) answered++;
+    const div = document.createElement('div');
+    div.className = `ux-qa-item ${ans ? 'answered' : 'pending'}`;
+    div.innerHTML =
+      `<div class="ux-qa-q">${escHtml(q.label)}</div>` +
+      `<div class="ux-qa-a${ans ? '' : ' empty'}">${ans ? escHtml(String(ans)) : 'Not answered — Kavya will ask via chat'}</div>`;
+    grid.appendChild(div);
+  });
+
+  document.getElementById('ux-qa-badge').textContent = answered + ' / ' + UX_QUESTIONS.length + ' answered';
+}
+
+function renderUXTokens(disc) {
+  const grid = document.getElementById('ux-token-grid');
+  grid.innerHTML = '';
+
+  let tokens = [...DEFAULT_TOKENS];
+  if (disc.brandColours) {
+    const hexMatches = String(disc.brandColours).match(/#[0-9a-fA-F]{3,6}/g) || [];
+    hexMatches.slice(0, 4).forEach((hex, i) => {
+      tokens[i] = { name: 'Brand ' + (i + 1), value: hex };
+    });
+  }
+  if (disc.colourMode && disc.colourMode.toLowerCase().includes('dark')) {
+    tokens[0] = { name: 'Primary', value: '#818cf8' };
+    tokens[1] = { name: 'Background', value: '#0f172a' };
+    tokens[2] = { name: 'Surface', value: '#1e293b' };
+    tokens[3] = { name: 'Text', value: '#f1f5f9' };
+  }
+
+  tokens.forEach(t => {
+    const div = document.createElement('div');
+    div.className = 'ux-swatch';
+    div.innerHTML =
+      `<div class="ux-swatch-color" style="background:${escHtml(t.value)}"></div>` +
+      `<div class="ux-swatch-label">${escHtml(t.name)}</div>` +
+      `<div class="ux-swatch-value">${escHtml(t.value)}</div>`;
+    grid.appendChild(div);
+  });
+}
+
+function renderUXComponents(kavya) {
+  const grid    = document.getElementById('ux-comp-grid');
+  const badge   = document.getElementById('ux-comp-badge');
+  const isDone  = kavya.status === 'done';
+  grid.innerHTML = '';
+  badge.textContent = isDone ? 'Delivered' : 'Pending';
+  badge.style.background = isDone ? 'var(--green-dim)' : '';
+  badge.style.color       = isDone ? 'var(--green)' : '';
+
+  DEFAULT_COMPONENTS.forEach(c => {
+    const div = document.createElement('div');
+    div.className = 'ux-comp-card';
+    div.innerHTML =
+      `<div class="ux-comp-name">${c.icon} ${escHtml(c.name)}${isDone ? ' <span style="color:var(--green);font-size:11px">✓</span>' : ''}</div>` +
+      `<div class="ux-comp-desc">${escHtml(c.desc)}</div>`;
+    grid.appendChild(div);
+  });
+}
+
+function renderUXApproval(req) {
+  const section  = document.getElementById('ux-approval-section');
+  const approved = req.approvedByTarun;
+  const hasDisc  = !!(req.teamDiscovery && req.teamDiscovery.kavya);
+
+  if (approved) {
+    section.innerHTML =
+      `<div class="ux-approval-bar">
+        <div class="ux-approval-text"><h4>✅ UX Design Approved</h4>
+          <p>Design tokens locked. Kavya is building tokens.css and component-spec.md.</p></div>
+      </div>`;
+    return;
+  }
+
+  if (!hasDisc) {
+    section.innerHTML =
+      `<div class="ux-approval-bar waiting">
+        <div class="ux-approval-text"><h4>Waiting for UX Discovery</h4>
+          <p>Kavya will ask 6 design questions once Arjun completes the PM discovery phase.</p></div>
+      </div>`;
+    return;
+  }
+
+  section.innerHTML =
+    `<div class="ux-approval-bar pending-approval">
+      <div class="ux-approval-text"><h4>Design Proposal Ready for Review</h4>
+        <p>Review Kavya's answers above. Approve to lock tokens, or request changes via chat.</p></div>
+      <button class="ux-req-changes-btn" onclick="requestUXChanges()">✏️ Request Changes</button>
+      <button class="ux-approve-btn"     onclick="approveUXDesign()">✅ Approve Design</button>
+    </div>`;
+}
+
+function renderUXChat(messages) {
+  const box = document.getElementById('ux-chat-messages');
+
+  const uxMsgs = (messages || []).filter(m =>
+    (m.from && m.from.toLowerCase() === 'kavya') ||
+    (m.tags && (m.tags.includes('ux-feedback') || m.tags.includes('kavya')))
+  );
+
+  if (!uxMsgs.length) {
+    box.innerHTML = '<div class="ux-empty-chat">💬 No UX messages yet.<br>Send feedback to Kavya using the input below.</div>';
+    return;
+  }
+
+  const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 40;
+  box.innerHTML  = '';
+
+  uxMsgs.slice(-50).forEach(msg => {
+    const from    = (msg.from || '').toLowerCase();
+    const isKavya = from === 'kavya';
+    const isTarun = from === 'tarun';
+    const cls     = isKavya ? 'from-kavya' : isTarun ? 'from-tarun' : 'from-other';
+    const time    = msg.timestamp
+      ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      : '';
+
+    const el = document.createElement('div');
+    el.className = `ux-chat-bubble ${cls}`;
+    el.innerHTML =
+      `<div class="ux-bubble-sender">${escHtml(msg.from || 'unknown')}</div>` +
+      escHtml(msg.message || '').replace(/\n/g, '<br>') +
+      `<div class="ux-bubble-time">${time}</div>`;
+    box.appendChild(el);
+  });
+
+  if (atBottom) box.scrollTop = box.scrollHeight;
+}
+
+function sendUXFeedback() {
+  const input = document.getElementById('ux-feedback-input');
+  const msg   = input.value.trim();
+  if (!msg) return;
+
+  fetch('/api/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      from: 'TARUN',
+      role: 'Product Owner',
+      message: msg,
+      type: 'ux-feedback',
+      tags: ['ux-feedback', 'kavya'],
+    }),
+  }).then(() => { input.value = ''; }).catch(console.error);
+}
+
+document.getElementById('ux-feedback-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendUXFeedback(); }
+});
+
+function approveUXDesign() {
+  if (!confirm('Approve the UX design? Kavya will proceed to build tokens.css and component-spec.md.')) return;
+  fetch('/api/requirement/approve', { method: 'POST' })
+    .then(r => r.json())
+    .then(d => {
+      if (!d.ok) { alert('Error: ' + (d.error || 'unknown')); return; }
+      const t = document.createElement('div');
+      t.style.cssText = 'position:fixed;top:72px;right:20px;background:#16a34a;color:#fff;padding:12px 20px;border-radius:8px;font-weight:700;z-index:9999;font-size:14px;box-shadow:0 4px 12px rgba(0,0,0,.3)';
+      t.textContent = '✅ UX Design Approved — Kavya is building tokens.css';
+      document.body.appendChild(t);
+      setTimeout(() => t.remove(), 3500);
+    })
+    .catch(e => alert('Network error: ' + e.message));
+}
+
+function requestUXChanges() {
+  const msg = prompt('Describe the design changes you want:\n(Kavya will receive this in the team chat)');
+  if (!msg || !msg.trim()) return;
+  fetch('/api/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      from: 'TARUN',
+      role: 'Product Owner',
+      message: '🔄 Change Request: ' + msg,
+      type: 'ux-feedback',
+      tags: ['ux-feedback', 'kavya', 'change-request'],
+    }),
+  }).then(() => alert('Change request sent to Kavya.')).catch(console.error);
+}
 </script>
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     UX DESIGN REVIEW SCREEN OVERLAY
+     Left 1/4 = feedback chat  |  Right 3/4 = design canvas
+     ══════════════════════════════════════════════════════════════════════ -->
+<div id="ux-screen">
+
+  <!-- ── Header ── -->
+  <div id="ux-topbar">
+    <button class="ux-topbtn back" onclick="closeUXScreen()">← Dashboard</button>
+    <div class="divider"></div>
+    <div class="ux-title">🎨 UX Design Review <span id="ux-project-name"></span></div>
+    <div class="spacer"></div>
+    <span id="ux-phase-tag" class="ux-topbtn phase-tag">Phase 1: PM Discovery</span>
+    <button class="ux-topbtn changes-ux" onclick="requestUXChanges()">✏️ Request Changes</button>
+    <button class="ux-topbtn approve-ux" onclick="approveUXDesign()">✅ Approve Design</button>
+  </div>
+
+  <!-- ── Body ── -->
+  <div id="ux-body">
+
+    <!-- ── Left: Chat Panel (1/4) ── -->
+    <div id="ux-chat-panel">
+      <div id="ux-chat-header">
+        <h3>💬 Design Feedback</h3>
+        <small>UX messages between you and Kavya</small>
+      </div>
+      <div id="ux-chat-messages">
+        <div class="ux-empty-chat">💬 No UX messages yet.<br>Send feedback to Kavya below.</div>
+      </div>
+      <div id="ux-chat-input-area">
+        <div id="ux-chat-to">To: <strong>Kavya (UX Designer)</strong> + team</div>
+        <textarea id="ux-feedback-input" placeholder="Type design feedback, approve colours, request changes… (Enter to send)"></textarea>
+        <button id="ux-send-feedback" onclick="sendUXFeedback()">Send to Kavya</button>
+      </div>
+    </div>
+
+    <!-- ── Right: Design Canvas (3/4) ── -->
+    <div id="ux-canvas">
+
+      <!-- Kavya Status Hero -->
+      <div id="ux-status-card">
+        <div class="ux-avatar">🎨</div>
+        <div class="ux-agent-info">
+          <h2>Kavya — UX Designer</h2>
+          <p id="ux-kavya-task">Waiting for project brief…</p>
+        </div>
+        <div class="ux-progress-wrap">
+          <div class="ux-progress-label">
+            <span>Design Progress</span>
+            <span id="ux-kavya-pct">0%</span>
+          </div>
+          <div class="ux-progress-bar">
+            <div class="ux-progress-fill" id="ux-kavya-bar" style="width:0%"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- UX Workflow / Action Flow -->
+      <div class="ux-section">
+        <div class="ux-section-header">
+          <span class="ux-section-icon">🗺️</span>
+          <span class="ux-section-title">UX Workflow</span>
+          <span class="ux-section-badge">Kavya's Design Process</span>
+        </div>
+        <div class="ux-section-body">
+          <div class="ux-flow" id="ux-flow-steps"><!-- rendered by JS --></div>
+        </div>
+      </div>
+
+      <!-- Discovery Q&A -->
+      <div class="ux-section">
+        <div class="ux-section-header">
+          <span class="ux-section-icon">❓</span>
+          <span class="ux-section-title">UX Discovery Questions</span>
+          <span class="ux-section-badge" id="ux-qa-badge">0 / 6 answered</span>
+        </div>
+        <div class="ux-section-body">
+          <div class="ux-qa-grid" id="ux-qa-grid"><!-- rendered by JS --></div>
+        </div>
+      </div>
+
+      <!-- Design Tokens & Palette -->
+      <div class="ux-section">
+        <div class="ux-section-header">
+          <span class="ux-section-icon">🎨</span>
+          <span class="ux-section-title">Design Tokens &amp; Palette</span>
+          <span class="ux-section-badge">Live preview from discovery answers</span>
+        </div>
+        <div class="ux-section-body">
+          <div class="ux-token-grid" id="ux-token-grid"><!-- rendered by JS --></div>
+        </div>
+      </div>
+
+      <!-- Component Spec -->
+      <div class="ux-section">
+        <div class="ux-section-header">
+          <span class="ux-section-icon">🧩</span>
+          <span class="ux-section-title">Component Spec</span>
+          <span class="ux-section-badge" id="ux-comp-badge">Pending</span>
+        </div>
+        <div class="ux-section-body">
+          <div class="ux-comp-grid" id="ux-comp-grid"><!-- rendered by JS --></div>
+        </div>
+      </div>
+
+      <!-- Approval Bar -->
+      <div id="ux-approval-section"><!-- rendered by JS --></div>
+
+    </div><!-- /#ux-canvas -->
+  </div><!-- /#ux-body -->
+</div><!-- /#ux-screen -->
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     NEW PROJECT SCREEN  — first-run & project launcher
+     ══════════════════════════════════════════════════════════════════════ -->
+<div id="new-project-screen">
+  <div id="np-card">
+
+    <div id="np-card-header">
+      <div class="np-logo">🚀</div>
+      <h1>What would you like to build?</h1>
+      <p>Tell Arjun about your project — he'll lead the team through discovery and kick off the sprint.</p>
+    </div>
+
+    <!-- Existing projects list (shown if any exist) -->
+    <div id="np-existing">
+      <h3>or continue an existing project</h3>
+      <div id="np-existing-list"><!-- rendered by JS --></div>
+    </div>
+
+    <div id="np-form">
+      <h3>✦ New Project</h3>
+      <div class="np-field">
+        <label>Project Name *</label>
+        <input id="np-title" type="text" placeholder="e.g. Cost Anomaly Detection Platform">
+      </div>
+      <div class="np-field">
+        <label>What do you want to build? *</label>
+        <textarea id="np-desc" placeholder="Describe the product — what it does, who uses it, key features…"></textarea>
+        <small>Be specific. The more detail you give, the better Arjun can guide the team.</small>
+      </div>
+      <div class="np-row">
+        <div class="np-field">
+          <label>Business Goal</label>
+          <input id="np-goal" type="text" placeholder="e.g. Reduce cloud spend by 30%">
+        </div>
+        <div class="np-field">
+          <label>Target Users</label>
+          <input id="np-users" type="text" placeholder="e.g. DevOps, Finance team">
+        </div>
+      </div>
+      <div class="np-row">
+        <div class="np-field">
+          <label>Tech Constraints</label>
+          <input id="np-constraints" type="text" placeholder="e.g. AWS, Python 3.11+, PostgreSQL">
+        </div>
+        <div class="np-field">
+          <label>Deadline</label>
+          <input id="np-deadline" type="date">
+        </div>
+      </div>
+      <div id="np-msg">Project posted! Arjun is starting discovery...</div>
+    </div>
+
+    <div id="np-footer">
+      <small>Arjun (PM) starts first. Kavya, Vikram and Rasool activate after discovery.</small>
+      <button id="np-cancel-btn" onclick="closeNewProjectScreen()">Cancel</button>
+      <button id="np-launch-btn" onclick="submitNewProject()">🚀 Start Project →</button>
+    </div>
+
+  </div>
+</div>
 </body>
 </html>

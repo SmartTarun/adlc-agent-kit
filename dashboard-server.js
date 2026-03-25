@@ -61,7 +61,7 @@ function getProjects() {
     projects.push({
       id:       rootReq.requirementId,
       name:     rootReq.title  || 'Unnamed',
-      sprint:   rootReq.sprint || '01',
+      sprint:   rootReq.sprint || '',
       status:   rootReq.status || 'pending',
       path:     '.',
       isActive: activeRoot === ROOT,
@@ -78,7 +78,7 @@ function getProjects() {
       projects.push({
         id:       req.requirementId,
         name:     req.title  || folder,
-        sprint:   req.sprint || '01',
+        sprint:   req.sprint || '',
         status:   req.status || 'pending',
         path:     'projects/' + folder,
         isActive: activeRoot === folderAbs,
@@ -427,7 +427,7 @@ const server = http.createServer(async (req, res) => {
 
       // Reset agent statuses
       const statusData = readJSON(path.join(pr, 'agent-status.json')) || { agents: {} };
-      statusData.sprint = data.sprint || statusData.sprint || '01';
+      statusData.sprint = data.sprint || statusData.sprint || '';
       AGENTS.forEach(a => {
         statusData.agents[a] = {
           status: 'queue', progress: 0,
@@ -514,7 +514,7 @@ const server = http.createServer(async (req, res) => {
       switchActiveProject(data.path, {
         id:          req2.requirementId || '',
         name:        req2.title         || data.path,
-        sprint:      req2.sprint        || '01',
+        sprint:      req2.sprint        || '',
         status:      req2.status        || 'pending',
         description: req2.description   || '',
       });

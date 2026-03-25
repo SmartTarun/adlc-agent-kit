@@ -49,5 +49,13 @@ build/
 connections.json
 .connections.backup.json
 
-# Project workspaces — generated code lives here, pushed to their own repos
+# Agent-generated project code — lives in projects/ not in the kit repo
 projects/
+infra/modules/
+frontend/src/
+backend/app/
+backend/migrations/
+agent-memory/
+context/*.json
+group-chat.json
+chat-uploads/

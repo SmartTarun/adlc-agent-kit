@@ -62,7 +62,7 @@ async function getContainerStats() {
     if (!Array.isArray(containers)) return result;
 
     const ours = containers.filter(c =>
-      c.Labels && c.Labels['com.panchayat.sprint'] === '01'
+      c.Labels && c.Labels['com.panchayat.sprint'] === 'dynamic'
     );
 
     await Promise.all(ours.map(async c => {

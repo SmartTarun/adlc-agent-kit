@@ -1,9 +1,8 @@
 # Team Panchayat — ADLC Project Standards
 > All agents MUST read this file before starting any task.
-> Project name, sprint number, and scope are set dynamically in active-project.json and requirement.json — do NOT rely on hardcoded values here.
 
-## Project: Read from active-project.json → name
-**Sprint**: Read from active-project.json → sprint
+## Project: {read from active-project.json}
+**Sprint**: {read from active-project.json}
 **Author**: Tarun Vangari (tarun.vangari@gmail.com)
 **Role**: DevOps & Cloud Architect
 **Owner**: Tarun Vangari
@@ -12,17 +11,15 @@
 ---
 
 ## Folder Ownership — DO NOT CROSS BOUNDARIES
-> All code is written to /projects/{project_id}/ — read project_id from active-project.json → current
 
-| Agent   | Owns                                                                  | Must NOT touch                        |
-|---------|-----------------------------------------------------------------------|---------------------------------------|
-| Vikram  | /projects/{id}/infra/                                                 | /backend, /frontend, /docs            |
-| Rasool  | /projects/{id}/backend/migrations/, /projects/{id}/docs/db-schema.md | /infra, /frontend                     |
-| Kiran   | /projects/{id}/backend/app/routers/, /schemas/, /tests/               | /infra, /frontend, /migrations        |
-| Kavya   | /projects/{id}/frontend/src/tokens/, /projects/{id}/docs/component-spec.md | /infra, /backend             |
-| Rohan   | /projects/{id}/frontend/src/components/                               | /infra, /backend, /migrations         |
-| Keerthi | READ-ONLY everywhere + /projects/{id}/docs/qa-report.md               | No code changes allowed               |
-| Arjun   | /workspace/requirement.json, /workspace/active-project.json, /workspace/agent-status.json, /workspace/group-chat.json, /projects/{id}/PROJECT-MEMORY.md | No code files |
+| Agent   | Owns                                      | Must NOT touch               |
+|---------|-------------------------------------------|------------------------------|
+| Vikram  | /infra/modules/                           | /backend, /frontend, /docs   |
+| Rasool  | /backend/migrations/, /docs/db-schema.md  | /infra, /frontend            |
+| Kiran   | /backend/app/routers/, /backend/app/schemas/, /backend/tests/ | /infra, /frontend, /migrations |
+| Kavya   | /frontend/src/tokens/, /docs/component-spec.md | /infra, /backend        |
+| Rohan   | /frontend/src/components/                 | /infra, /backend, /migrations|
+| Keerthi | READ-ONLY everywhere + /docs/qa-report.md | No code changes allowed      |
 
 ---
 
@@ -31,10 +28,9 @@ Every AWS resource must have these tags:
 ```
 Environment = dev | staging | prod
 Owner       = TeamPanchayat
-CostCenter  = ADLC-{Sprint}        ← read sprint from active-project.json
-Project     = {project name}       ← read name from active-project.json
+CostCenter  = ADLC-Sprint01
+Project     = CostAnomalyPlatform
 ```
-Do NOT hardcode the sprint number or project name — always read from active-project.json.
 
 ## Terraform Standards (Vikram)
 - Terraform version: >= 1.7
@@ -82,7 +78,7 @@ After completing each major step, update `/agent-status.json`:
 ## Quality Gates
 - No TODO comments left in final code
 - No console.log or print debug statements
-- All files must have a top comment: `# Agent: {name} | Sprint: 01 | Date: {date}`
+- All files must have a top comment: `# Agent: {name} | Sprint: {sprint} | Date: {date}`
 
 ---
 
@@ -97,7 +93,7 @@ agent-memory/{agentname}-memory.json
 ```json
 {
   "agent": "name",
-  "sprint": "01",
+  "sprint": "{read from active-project.json}",
   "lastActive": "ISO timestamp",
   "sessionCount": 0,
   "currentTask": {

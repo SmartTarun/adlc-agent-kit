@@ -112,7 +112,7 @@ services:
       retries: 3
     labels:
       - "com.panchayat.role=dashboard"
-      - "com.panchayat.sprint=01"
+      - "com.panchayat.sprint=dynamic"
 
   # ── Arjun — Orchestrator (Claude Opus) ───────────────────────────────────────
   arjun:
@@ -126,7 +126,7 @@ services:
     labels:
       - "com.panchayat.agent=arjun"
       - "com.panchayat.role=orchestrator"
-      - "com.panchayat.sprint=01"
+      - "com.panchayat.sprint=dynamic"
 
   # ── Vikram — Cloud Architect ──────────────────────────────────────────────────
   vikram:
@@ -140,7 +140,7 @@ services:
     labels:
       - "com.panchayat.agent=vikram"
       - "com.panchayat.role=infra"
-      - "com.panchayat.sprint=01"
+      - "com.panchayat.sprint=dynamic"
 
   # ── Rasool — Database Agent ───────────────────────────────────────────────────
   rasool:
@@ -164,7 +164,7 @@ services:
     labels:
       - "com.panchayat.agent=rasool"
       - "com.panchayat.role=database"
-      - "com.panchayat.sprint=01"
+      - "com.panchayat.sprint=dynamic"
 
   # ── Kavya — UX Designer ───────────────────────────────────────────────────────
   kavya:
@@ -178,7 +178,7 @@ services:
     labels:
       - "com.panchayat.agent=kavya"
       - "com.panchayat.role=ux"
-      - "com.panchayat.sprint=01"
+      - "com.panchayat.sprint=dynamic"
 
   # ── Kiran — Backend Engineer ──────────────────────────────────────────────────
   kiran:
@@ -192,7 +192,7 @@ services:
     labels:
       - "com.panchayat.agent=kiran"
       - "com.panchayat.role=backend"
-      - "com.panchayat.sprint=01"
+      - "com.panchayat.sprint=dynamic"
 
   # ── Rohan — Frontend Engineer ─────────────────────────────────────────────────
   rohan:
@@ -206,7 +206,7 @@ services:
     labels:
       - "com.panchayat.agent=rohan"
       - "com.panchayat.role=frontend"
-      - "com.panchayat.sprint=01"
+      - "com.panchayat.sprint=dynamic"
 
   # ── Keerthi — QA Agent (starts in standby, activated by Arjun) ───────────────
   keerthi:
@@ -223,4 +223,4 @@ services:
     labels:
       - "com.panchayat.agent=keerthi"
       - "com.panchayat.role=qa"
-      - "com.panchayat.sprint=01"
+      - "com.panchayat.sprint=dynamic"
