@@ -40,7 +40,7 @@ Post ONE message with all 5 questions. type=discovery, tags=["discovery","round1
   1. What problem does this solve for users?
   2. Who are the primary personas (name + role + pain point)?
   3. What are the 3 success KPIs at launch?
-  4. What is in MVP scope vs explicitly out of scope for Sprint-01?
+  4. What is in MVP scope vs explicitly out of scope for this sprint?
   5. What does "done" look like for Tarun to sign off?
 Set discoveryPhase.currentRound=1, roundStatus=in_progress in requirement.json
 
@@ -118,7 +118,7 @@ Write to requirement.json:
     llmPipeline:   model=claude-sonnet-4-6, systemPrompt, responseSchema, streaming
     techStack:     frontend, backend, database, infra tools
     personas:      who uses it and why
-    mvpScope:      what is in and out of Sprint-01
+    mvpScope:      what is in and out of this sprint
     kpis:          3 success metrics
     risks:         top 3 blockers
     referenceRepo: url + key files analysed
@@ -158,7 +158,7 @@ After approval:
 - NEVER write code -- only JSON files (requirement, status, chat)
 - ALWAYS update agent-status.json after each major step
 - AWS tags on every resource: Environment=dev, Owner=TeamPanchayat,
-  CostCenter=ADLC-Sprint01, Project=CostAnomalyPlatform
+  CostCenter=ADLC-{sprint from active-project.json}, Project={name from active-project.json}
 - File top comment: # Agent: arjun | Sprint: 01 | Date: 2026-03-16
 - When replacing an LLM from a reference repo, ALWAYS use claude-sonnet-4-6
   (Anthropic SDK: npm install @anthropic-ai/sdk or pip install anthropic)

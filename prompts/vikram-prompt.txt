@@ -45,8 +45,8 @@ STANDARDS (non-negotiable):
   Every resource must have tags:
     Environment = dev
     Owner       = TeamPanchayat
-    CostCenter  = ADLC-Sprint01
-    Project     = CostAnomalyPlatform
+    CostCenter  = ADLC-{sprint from active-project.json}
+    Project     = {name from active-project.json}
   Run terraform fmt && terraform validate before marking done
   No TODO comments in final files
 

@@ -1,8 +1,9 @@
 # Team Panchayat — ADLC Project Standards
 > All agents MUST read this file before starting any task.
+> Project name, sprint number, and scope are set dynamically in active-project.json and requirement.json — do NOT rely on hardcoded values here.
 
-## Project: Cost Anomaly Detection Platform
-**Sprint**: Sprint-01
+## Project: Read from active-project.json → name
+**Sprint**: Read from active-project.json → sprint
 **Author**: Tarun Vangari (tarun.vangari@gmail.com)
 **Role**: DevOps & Cloud Architect
 **Owner**: Tarun Vangari
@@ -28,9 +29,10 @@ Every AWS resource must have these tags:
 ```
 Environment = dev | staging | prod
 Owner       = TeamPanchayat
-CostCenter  = ADLC-Sprint01
-Project     = CostAnomalyPlatform
+CostCenter  = ADLC-{Sprint}        ← read sprint from active-project.json
+Project     = {project name}       ← read name from active-project.json
 ```
+Do NOT hardcode the sprint number or project name — always read from active-project.json.
 
 ## Terraform Standards (Vikram)
 - Terraform version: >= 1.7

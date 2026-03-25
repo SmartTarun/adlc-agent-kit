@@ -27,7 +27,7 @@ function Write-Info   { param($msg) Write-Host "  >>  $msg" -ForegroundColor Gra
 Write-Host ""
 Write-Host "  ============================================" -ForegroundColor Cyan
 Write-Host "  TEAM PANCHAYAT -- DOCKER CLUSTER" -ForegroundColor Cyan
-Write-Host "  Sprint-01 | Cost Anomaly Detection Platform" -ForegroundColor Gray
+Write-Host "  ADLC Agent Kit — Multi-Project AI Dev Team" -ForegroundColor Gray
 Write-Host "  ============================================" -ForegroundColor Cyan
 Write-Host ""
 
