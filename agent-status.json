@@ -51,5 +51,13 @@
       "blocker": "Arjun must confirm all 5 agents complete",
       "updated": "2026-03-16T08:28:00.000Z"
     }
+  },
+  "arjun": {
+    "status": "starting",
+    "progress": 0,
+    "task": "Container initialising",
+    "blocker": "",
+    "container": true,
+    "updated": "2026-03-25T11:48:55.652Z"
   }
 }

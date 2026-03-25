@@ -6,7 +6,7 @@ set -e
 
 AGENT_NAME="${AGENT_NAME:-arjun}"
 WORKSPACE="${WORKSPACE:-/workspace}"
-PROMPT_FILE="${WORKSPACE}/prompts/${AGENT_NAME}.txt"
+PROMPT_FILE="${WORKSPACE}/prompts/${AGENT_NAME}-prompt.txt"
 LOG_FILE="${WORKSPACE}/agent-logs/${AGENT_NAME}.log"
 MEMORY_FILE="${WORKSPACE}/agent-memory/${AGENT_NAME}-memory.json"
 STATUS_FILE="${WORKSPACE}/agent-status.json"
