@@ -71,10 +71,6 @@ There are TWO launch modes. Choose one:
 ```cmd
 start-agents.bat autorun
 ```
-Or from PowerShell:
-```powershell
-.\start-agents.ps1 -AutoRun
-```
 
 Each agent window opens, reads its prompt file automatically, and begins working.
 **No manual pasting required.** This is the mode to use when you have a requirement ready.

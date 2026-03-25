@@ -38,8 +38,8 @@ ADLC-Agent-Kit\
 +-- authorize-agents.ps1           <- STEP 2 (PowerShell version -- run by the .bat)
 |
 +-- == STARTUP =======================================================
-+-- start-agents.bat               <- STEP 3: Launcher (opens all windows via PS)
-+-- start-agents.ps1               <- STEP 3 alt: Run directly from PowerShell
++-- start-agents.bat               <- STEP 3: Launcher (opens all agent windows)
++-- _run-agent.bat                 <- Internal helper used by start-agents.bat
 |
 +-- == LIVE DASHBOARD ================================================
 +-- dashboard-server.js            <- HTTP server -> http://localhost:3000
@@ -143,8 +143,6 @@ node connect-tools.js
 
 # 5. Launch all agent windows + live dashboard
 #    AUTO-RUN mode: agents read their prompts and start immediately (recommended)
-.\start-agents.ps1 -AutoRun
-#    -- OR --
 start-agents.bat autorun
 #
 #    INTERACTIVE mode: windows open but you paste prompts manually
@@ -445,7 +443,7 @@ node memory-manager.js --reset all
 node new-project.js
 
 # 3. Launch agents
-.\start-agents.ps1
+start-agents.bat autorun
 ```
 
 ---
