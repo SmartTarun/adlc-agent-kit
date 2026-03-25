@@ -1,5 +1,5 @@
 #!/bin/sh
-# Agent: Arjun | Sprint: 01 | Date: 2026-03-14
+# Agent: Arjun | Sprint: 01 | Date: 2026-03-25
 # Entrypoint for all agent containers
 
 set -e
@@ -10,6 +10,7 @@ PROMPT_FILE="${WORKSPACE}/prompts/${AGENT_NAME}-prompt.txt"
 LOG_FILE="${WORKSPACE}/agent-logs/${AGENT_NAME}.log"
 MEMORY_FILE="${WORKSPACE}/agent-memory/${AGENT_NAME}-memory.json"
 STATUS_FILE="${WORKSPACE}/agent-status.json"
+REQUIREMENT_FILE="${WORKSPACE}/requirement.json"
 
 echo "============================================================"
 echo " ADLC Agent Kit — Container Starting"
@@ -20,7 +21,6 @@ echo "============================================================"
 # ── Ensure workspace directories exist ───────────────────────────────────
 mkdir -p "${WORKSPACE}/agent-logs"
 mkdir -p "${WORKSPACE}/agent-memory"
-mkdir -p "${WORKSPACE}/agent-logs"
 
 # ── Guard: prompt file must exist ────────────────────────────────────────
 if [ ! -f "${PROMPT_FILE}" ]; then
@@ -29,12 +29,59 @@ if [ ! -f "${PROMPT_FILE}" ]; then
   exit 1
 fi
 
+# ── Specialist agents wait for sprint approval (Arjun runs immediately) ──
+if [ "${AGENT_NAME}" != "arjun" ]; then
+  echo "[gate] Specialist agent — waiting for Arjun to complete discovery and get sprint approved..."
+
+  node -e "
+  const fs = require('fs');
+  let s = {};
+  try { s = JSON.parse(fs.readFileSync('${STATUS_FILE}', 'utf8')); } catch(e) {}
+  s['${AGENT_NAME}'] = {
+    status: 'standby',
+    progress: 0,
+    task: 'Waiting for PM discovery and sprint approval',
+    blocker: 'approvedByTarun not yet true in requirement.json',
+    container: true,
+    updated: new Date().toISOString()
+  };
+  fs.writeFileSync('${STATUS_FILE}', JSON.stringify(s, null, 2));
+  console.log('[status] Set ${AGENT_NAME} -> standby');
+  "
+
+  WAITED=0
+  MAX_WAIT=3600
+  while [ "${WAITED}" -lt "${MAX_WAIT}" ]; do
+    APPROVED=$(node -e "
+      try {
+        const r = JSON.parse(require('fs').readFileSync('${REQUIREMENT_FILE}', 'utf8'));
+        process.stdout.write(r.approvedByTarun === true ? 'true' : 'false');
+      } catch(e) { process.stdout.write('false'); }
+    " 2>/dev/null)
+
+    if [ "${APPROVED}" = "true" ]; then
+      echo "[gate] Sprint approved! ${AGENT_NAME} activating..."
+      break
+    fi
+
+    sleep 15
+    WAITED=$((WAITED + 15))
+    if [ $((WAITED % 60)) -eq 0 ]; then
+      echo "[gate] Still waiting for sprint approval... (${WAITED}s elapsed)"
+    fi
+  done
+
+  if [ "${APPROVED}" != "true" ]; then
+    echo "[gate] Timed out waiting for sprint approval after ${MAX_WAIT}s. Exiting."
+    exit 1
+  fi
+fi
+
 # ── Update agent-status.json to 'starting' ───────────────────────────────
 node -e "
 const fs = require('fs');
-const path = '${STATUS_FILE}';
 let s = {};
-try { s = JSON.parse(fs.readFileSync(path, 'utf8')); } catch(e) {}
+try { s = JSON.parse(fs.readFileSync('${STATUS_FILE}', 'utf8')); } catch(e) {}
 s['${AGENT_NAME}'] = {
   status: 'starting',
   progress: 0,
@@ -43,7 +90,7 @@ s['${AGENT_NAME}'] = {
   container: true,
   updated: new Date().toISOString()
 };
-fs.writeFileSync(path, JSON.stringify(s, null, 2));
+fs.writeFileSync('${STATUS_FILE}', JSON.stringify(s, null, 2));
 console.log('[status] Set ${AGENT_NAME} -> starting');
 "
 

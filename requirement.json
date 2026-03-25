@@ -1,216 +1,38 @@
 {
-  "requirementId": "REQ-1773649680589",
-  "postedBy": "Tarun Vangari",
-  "postedAt": "2026-03-16T08:28:00.589Z",
+  "requirementId": "",
+  "postedBy": "",
+  "postedAt": "",
   "sprint": "01",
   "type": "new_project",
-  "title": "INFRAVIZ",
-  "description": "InfraViz is an AI-powered multi-cloud infrastructure visualization and Infrastructure-as-Code (IaC) generation platform. Users describe infrastructure in natural language or drag-drop cloud services onto a visual canvas, and the AI (Claude) generates production-ready Terraform code, architecture diagrams, cost estimates, compliance checklists, and deployment guides. Reference: https://github.com/SmartTarun/Infra_viz_by_google.git",
-  "businessGoal": "Showcase the power of Claude Anthropic by building a full-stack AI-enabled IaC platform",
-  "targetUsers": "cloud architect",
-  "techConstraints": ["Python 3.11+ backend (FastAPI)", "React 18 + TypeScript frontend", "Claude claude-sonnet-4-6 via Anthropic SDK", "PostgreSQL", "Terraform-only Sprint-01", "AWS-only Sprint-01"],
-  "deadline": "2026-04-01",
-  "priority": "critical",
-  "status": "in_sprint",
-  "discoveryComplete": true,
+  "title": "",
+  "description": "",
+  "businessGoal": "",
+  "targetUsers": "",
+  "techConstraints": [],
+  "deadline": "",
+  "priority": "",
+  "status": "pending_discovery",
+  "discoveryComplete": false,
   "discoveryPhase": {
-    "currentRound": 3,
-    "roundStatus": "complete",
-    "fastTrack": true,
-    "startedAt": "2026-03-16T09:20:30.000Z",
-    "completedAt": "2026-03-16T13:30:00.000Z"
+    "currentRound": 0,
+    "roundStatus": "not_started",
+    "fastTrack": false,
+    "startedAt": "",
+    "completedAt": ""
   },
-  "discoveryAnswers": {
-    "round1": {
-      "auth": "dummy username/password for Sprint-01, OAuth deferred — CONFIRMED by Tarun 2026-03-16T08:30:02Z",
-      "githubLink": "https://github.com/SmartTarun/Infra_viz_by_google.git — CONFIRMED and CLONED successfully 2026-03-16T13:15:00Z",
-      "iacExecution": "Generate + Validate ONLY (option 1) — CONFIRMED by Tarun answer '1' on 2026-03-16T08:37:36Z. No apply/destroy in Sprint-01.",
-      "uiScreens": "Extracted from repo — 3 main views: Canvas, Dashboard, Terminal. Plus Login page.",
-      "repoAnalysis": {
-        "appName": "InfraViz",
-        "appDescription": "AI-powered multi-cloud infrastructure visualization and IaC generation platform",
-        "originalLLM": "Google Gemini (@google/genai, models: gemini-3-flash-preview, gemini-3.1-pro-preview)",
-        "replacementLLM": "Claude claude-sonnet-4-6 via @anthropic-ai/sdk",
-        "originalBackend": "Express.js (server.ts) with SQLite (better-sqlite3)",
-        "replacementBackend": "FastAPI (Python 3.11+) with PostgreSQL via SQLAlchemy + Alembic",
-        "originalFrontend": "React 19 + TypeScript + Vite + TailwindCSS v4 + React Flow",
-        "replacementFrontend": "React 18 + TypeScript + Vite + CSS Variables (tokens.css) + React Flow",
-        "filesAnalysed": ["README.md", "metadata.json", "package.json", "server.ts", ".env.example", "src/App.tsx", "src/components/CanvasView.tsx", "src/components/DashboardView.tsx", "src/components/TerminalView.tsx", "src/index.css", "replace.ts", "vite.config.ts", "tsconfig.json"],
-        "database": {
-          "original": "SQLite (better-sqlite3) — 2 tables: workspaces, github_tokens",
-          "replacement": "PostgreSQL — expanded schema per Rasool analysis"
-        }
-      },
-      "techStack": {
-        "frontend": ["React 18", "TypeScript", "Vite", "React Flow (@xyflow/react)", "Recharts", "react-syntax-highlighter", "react-markdown", "lucide-react", "uuid"],
-        "backend": ["FastAPI", "Python 3.11+", "Anthropic SDK", "SQLAlchemy", "Alembic", "Pydantic v2"],
-        "database": "PostgreSQL via SQLAlchemy",
-        "infra": ["Terraform >= 1.7", "AWS (S3, DynamoDB, Lambda, API Gateway, Aurora, CloudFront, Secrets Manager, IAM)"],
-        "llm": "Claude claude-sonnet-4-6 via Anthropic API"
-      },
-      "views": [
-        {
-          "name": "CanvasView",
-          "description": "Visual drag-and-drop infrastructure designer with React Flow canvas",
-          "features": ["Multi-cloud service palette (AWS-only Sprint-01)", "Drag-drop cloud service nodes onto canvas", "Group nodes: VPC, AZ, Subnets", "Service nodes: 18 AWS services", "Connect services with edges", "AI Generate → Claude 7-step response", "Result panel (9 tabs)", "Workspace CRUD", "Provider + region selector", "Undo/redo (50 steps)", "Import .tfstate", "Terraform validate", "Show/hide containers"]
-        },
-        {
-          "name": "DashboardView",
-          "description": "Natural language prompt to IaC generation",
-          "features": ["NL textarea input", "Generate → Claude structured JSON", "7-tab results panel", "Copy-to-clipboard", "Syntax highlighting", "Markdown rendering"]
-        },
-        {
-          "name": "TerminalView",
-          "description": "CLI-style chat interface with streaming",
-          "features": ["Terminal UI", "NL → Claude streaming SSE", "Command history", "help/clear commands", "Markdown output", "Streaming indicator"]
-        },
-        {
-          "name": "AuthPage",
-          "description": "Dummy login page",
-          "features": ["Username/password form", "Dummy auth", "JWT in localStorage"]
-        }
-      ],
-      "llmReplacement": "Gemini → Claude claude-sonnet-4-6. Streaming: generateContentStream → Anthropic messages.stream with SSE."
-    },
-    "round2": {
-      "cloudInfra": "AWS-only Sprint-01, us-east-1, no VPC for dev",
-      "performance": "Demo scale — no hard RPS targets",
-      "integrations": "Anthropic API for Claude. GitHub OAuth deferred Sprint-02.",
-      "security": "No SOC2/HIPAA. Basic dummy auth.",
-      "dataModel": "7 tables: projects, iac_templates, state_files, infra_resources, llm_conversations, deployments, drift_records"
-    },
-    "round3": {
-      "deadline": "2026-04-01 (hard)",
-      "risks": ["LLM response quality for complex Terraform", "React Flow canvas performance", "Anthropic SDK migration from Gemini"],
-      "acceptanceCriteria": "User can: (1) drag AWS services onto canvas and generate Terraform via Claude, (2) type NL prompt and get Terraform + docs, (3) use Terminal CLI with streaming, (4) save/load workspaces, (5) validate Terraform",
-      "constraints": "Terraform-only, AWS-only, desktop-only, generate+validate only"
-    }
-  },
-  "arjunDecisions": {
-    "llm": "Claude claude-sonnet-4-6 via Anthropic API direct. NOT Bedrock Sprint-01.",
-    "stateStorage": "S3 for Terraform state content, metadata-only in PostgreSQL",
-    "streaming": "SSE ENABLED — TerminalView streams. Canvas/Dashboard use structured JSON.",
-    "topologyCanvas": "React Flow (@xyflow/react) APPROVED Sprint-01 must-have",
-    "multiCloud": "AWS-only Sprint-01. GCP/Azure deferred.",
-    "auth": "Dummy username/password. JWT in localStorage.",
-    "backend": "FastAPI + Python 3.11 + SQLAlchemy async + Alembic",
-    "region": "us-east-1",
-    "iacScope": "Generate + Validate only. No apply/destroy.",
-    "githubPush": "DEFERRED Sprint-02",
-    "generationModes": "Single mode with Claude claude-sonnet-4-6",
-    "aiPipeline": "7-step: Requirements → Architecture → Terraform → Diagram → Cost → Compliance → Deployment",
-    "frontendStyling": "CSS Variables from tokens.css. NO TailwindCSS. Dark mode first."
-  },
-  "productBrief": {
-    "summary": "InfraViz is an AI-powered IaC generation platform for cloud architects. Users design infrastructure visually on a React Flow canvas or describe it in natural language, and Claude (claude-sonnet-4-6) generates production-ready Terraform code along with architecture documentation, cost estimates, compliance checklists, and deployment guides. Includes workspace management, Terraform validation, and a CLI terminal with streaming responses.",
-    "views": [
-      {
-        "name": "AuthPage",
-        "owner": "Rohan",
-        "features": ["Login form (username/password)", "Dummy auth", "JWT in localStorage", "Dark mode"]
-      },
-      {
-        "name": "CanvasView",
-        "owner": "Rohan",
-        "features": ["React Flow canvas with drag-drop AWS services", "Service palette sidebar", "Group nodes (VPC, AZ, subnets)", "Edge connections", "Generate IaC → Claude API", "Result panel (9 tabs)", "Workspace CRUD", "Region selector", "Undo/redo", "Import .tfstate", "Terraform validate", "Show/hide containers"]
-      },
-      {
-        "name": "DashboardView",
-        "owner": "Rohan",
-        "features": ["NL prompt textarea", "Generate → Claude structured JSON", "7-tab results", "Copy-to-clipboard", "Syntax highlighting", "Markdown rendering"]
-      },
-      {
-        "name": "TerminalView",
-        "owner": "Rohan",
-        "features": ["CLI terminal UI", "NL → Claude SSE streaming", "Command history", "help/clear", "Markdown output"]
-      }
-    ],
-    "llmPipeline": {
-      "model": "claude-sonnet-4-6",
-      "sdk": "@anthropic-ai/sdk (frontend) + anthropic (Python backend)",
-      "systemPrompt": "You are InfraViz, an expert Cloud Architect and DevOps Engineer. Generate high-quality, production-ready Terraform (HCL) code. Follow the 7-step process: 1. Parse requirements, 2. Design architecture, 3. Generate Terraform (multi-file), 4. Create ASCII diagram, 5. Estimate costs, 6. Compliance checklist, 7. Deployment guide.",
-      "responseSchema": {
-        "parsedRequirements": "string",
-        "architectureDesign": "string (markdown)",
-        "terraformFiles": "array of {filename, content}",
-        "architectureDiagram": "string (ASCII)",
-        "costEstimate": "string (markdown)",
-        "complianceChecklist": "string (markdown)",
-        "deploymentGuide": "string (markdown)"
-      },
-      "streaming": "SSE for TerminalView. Structured JSON for Canvas/Dashboard."
-    },
-    "techStack": {
-      "frontend": "React 18 + TypeScript + Vite + React Flow + Recharts + react-syntax-highlighter + react-markdown + lucide-react + CSS Variables",
-      "backend": "FastAPI + Python 3.11 + Anthropic SDK + SQLAlchemy async + Alembic + Pydantic v2",
-      "database": "PostgreSQL",
-      "infra": "Terraform on AWS (S3, DynamoDB, Lambda, API Gateway, Aurora, CloudFront, Secrets Manager)"
-    },
-    "personas": [{"name": "Cloud Architect", "painPoint": "Manual Terraform writing is slow and error-prone", "useCase": "Visual design → AI generates Terraform + docs"}],
-    "mvpScope": {
-      "in": ["3 views (Canvas, Dashboard, Terminal)", "Claude AI 7-step pipeline", "Workspace CRUD", "Terraform validate", "State file import", "Dark/light mode", "Auth page"],
-      "out": ["GitHub OAuth + push", "GCP/Azure", "Terraform apply/destroy", "Mobile", "Multi-user", "Real auth"]
-    },
-    "kpis": ["Generate valid Terraform from canvas in < 30s", "All 3 views functional E2E with Claude", "Demo-ready: dark mode, streaming, professional UI"],
-    "risks": ["Anthropic SDK migration from Gemini", "React Flow performance with 20+ nodes", "Claude structured output quality"],
-    "referenceRepo": {
-      "url": "https://github.com/SmartTarun/Infra_viz_by_google.git",
-      "keyFiles": ["server.ts", "src/App.tsx", "src/components/CanvasView.tsx", "src/components/DashboardView.tsx", "src/components/TerminalView.tsx"]
-    }
-  },
+  "discoveryAnswers": {},
+  "arjunDecisions": {},
+  "productBrief": {},
   "agentInputs": {
-    "arjun": {
-      "received": true,
-      "summary": "Repo analysed, product brief compiled, all architecture decisions made.",
-      "questions": [],
-      "estimate": "DONE"
-    },
-    "vikram": {
-      "received": true,
-      "summary": "8 Terraform modules delivered. DONE.",
-      "questions": [],
-      "estimate": "DONE"
-    },
-    "rasool": {
-      "received": false,
-      "summary": "",
-      "questions": [],
-      "estimate": ""
-    },
-    "kavya": {
-      "received": true,
-      "summary": "Design tokens + component spec delivered. DONE.",
-      "questions": [],
-      "estimate": "DONE"
-    },
-    "kiran": {
-      "received": false,
-      "summary": "",
-      "questions": [],
-      "estimate": ""
-    },
-    "rohan": {
-      "received": false,
-      "summary": "",
-      "questions": [],
-      "estimate": ""
-    },
-    "keerthi": {
-      "received": false,
-      "summary": "",
-      "questions": [],
-      "estimate": ""
-    }
+    "arjun":   { "received": false, "summary": "", "questions": [], "estimate": "" },
+    "vikram":  { "received": false, "summary": "", "questions": [], "estimate": "" },
+    "rasool":  { "received": false, "summary": "", "questions": [], "estimate": "" },
+    "kavya":   { "received": false, "summary": "", "questions": [], "estimate": "" },
+    "kiran":   { "received": false, "summary": "", "questions": [], "estimate": "" },
+    "rohan":   { "received": false, "summary": "", "questions": [], "estimate": "" },
+    "keerthi": { "received": false, "summary": "", "questions": [], "estimate": "" }
   },
-  "sprintPlan": {
-    "sprintGoal": "Deliver functional InfraViz MVP: 3 views (Canvas, Dashboard, Terminal) + Claude AI + workspace management",
-    "phases": [
-      {"phase": 1, "name": "Foundation", "status": "done", "tasks": ["Vikram: 8 Terraform modules — DONE", "Kavya: Design tokens + component spec — DONE", "Arjun: Discovery + product brief — DONE"]},
-      {"phase": 2, "name": "Core Build", "status": "in_progress", "tasks": ["Rasool: PostgreSQL schema (7 tables) + Alembic migration + db-schema.md", "Kiran: FastAPI routers + Pydantic schemas + Claude integration + SSE streaming + tests", "Rohan: React components (AuthPage, CanvasView, DashboardView, TerminalView) + workspace CRUD"]},
-      {"phase": 3, "name": "Integration + QA", "status": "not_started", "tasks": ["Rohan + Kiran: Frontend-backend integration", "Keerthi: Full QA + qa-report.md"]}
-    ],
-    "dependencies": ["Rasool → Kiran: migration must be ready before integration tests", "Kavya → Rohan: tokens.css (DONE)", "Vikram → All: infra modules (DONE)", "Kiran → Rohan: API schemas for frontend wiring"]
-  },
-  "approvedByTarun": true,
-  "approvedAt": "2026-03-16T14:05:00.000Z"
+  "sprintPlan": {},
+  "approvedByTarun": false,
+  "approvedAt": ""
 }

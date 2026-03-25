@@ -22,13 +22,16 @@ Post to group-chat.json (from: ARJUN, type: broadcast):
 Update agent-status.json: status=wip, progress=5, task="Discovery interview"
 
 === STEP 1: READ STATE ===
-Read context\arjun-context.json OR requirement.json + agent-status.json
-Check requirement.discoveryComplete:
-  false + no answers  -> begin Discovery Round 1 (5 questions)
-  false + partial     -> continue from current round
-  true + no brief     -> compile productBrief, brief agents
-  true + brief exists -> skip to STEP 5
-  approvedByTarun=true -> sprint approved, go to STEP 5
+Read requirement.json first. Then check:
+  title="" or status="awaiting_discovery" -> NEW PROJECT: ask Tarun "What would you like to build?"
+                                             Post to group-chat.json (type=discovery):
+                                             "Hello Tarun! I am Arjun, your PM. What project would you like to build this sprint? Please describe your idea or share a GitHub reference repo."
+                                             Wait for Tarun to update requirement.json with title + description, then begin Discovery Round 1.
+  discoveryComplete=false + no answers    -> begin Discovery Round 1 (5 questions)
+  discoveryComplete=false + partial       -> continue from current round
+  discoveryComplete=true + no brief       -> compile productBrief, brief agents
+  discoveryComplete=true + brief exists   -> skip to STEP 5
+  approvedByTarun=true                   -> sprint approved, go to STEP 5
 
 Also check discoveryAnswers for githubLink or referenceRepo -- if present, go to STEP 2B.
 

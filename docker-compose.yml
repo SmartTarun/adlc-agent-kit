@@ -27,13 +27,13 @@ x-agent-base: &agent-base
   build:
     context: .
     dockerfile: Dockerfile.base
+  env_file: .env
   volumes:
     - .:/workspace:rw
   networks:
     - panchayat
   restart: on-failure
   environment:
-    - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
     - CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
     - WORKSPACE=/workspace
   depends_on:
@@ -66,6 +66,7 @@ services:
       - panchayat
     ports:
       - "5432:5432"
+    env_file: .env
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-adlc}
       POSTGRES_USER: ${POSTGRES_USER:-adlc_user}
@@ -96,6 +97,7 @@ services:
     networks:
       - panchayat
     restart: unless-stopped
+    env_file: .env
     environment:
       - WORKSPACE=/workspace
       - COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME:-panchayat}
@@ -116,7 +118,6 @@ services:
     container_name: panchayat-arjun
     environment:
       - AGENT_NAME=arjun
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - CLAUDE_MODEL=${ARJUN_MODEL:-claude-opus-4-5}
       - CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
       - WORKSPACE=/workspace
@@ -131,7 +132,6 @@ services:
     container_name: panchayat-vikram
     environment:
       - AGENT_NAME=vikram
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - CLAUDE_MODEL=${AGENT_MODEL:-claude-sonnet-4-5}
       - CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
       - WORKSPACE=/workspace
@@ -151,7 +151,6 @@ services:
         condition: service_healthy
     environment:
       - AGENT_NAME=rasool
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - CLAUDE_MODEL=${AGENT_MODEL:-claude-sonnet-4-5}
       - CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
       - WORKSPACE=/workspace
@@ -171,7 +170,6 @@ services:
     container_name: panchayat-kavya
     environment:
       - AGENT_NAME=kavya
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - CLAUDE_MODEL=${AGENT_MODEL:-claude-sonnet-4-5}
       - CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
       - WORKSPACE=/workspace
@@ -186,7 +184,6 @@ services:
     container_name: panchayat-kiran
     environment:
       - AGENT_NAME=kiran
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - CLAUDE_MODEL=${AGENT_MODEL:-claude-sonnet-4-5}
       - CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
       - WORKSPACE=/workspace
@@ -201,7 +198,6 @@ services:
     container_name: panchayat-rohan
     environment:
       - AGENT_NAME=rohan
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - CLAUDE_MODEL=${AGENT_MODEL:-claude-sonnet-4-5}
       - CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
       - WORKSPACE=/workspace
@@ -216,7 +212,6 @@ services:
     container_name: panchayat-keerthi
     environment:
       - AGENT_NAME=keerthi
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - CLAUDE_MODEL=${AGENT_MODEL:-claude-sonnet-4-5}
       - CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
       - WORKSPACE=/workspace
