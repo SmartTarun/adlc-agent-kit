@@ -12,6 +12,8 @@ volumes:
       type: none
       o: bind
       device: ${PWD}
+  postgres_data:
+    driver: local
 
 networks:
   panchayat:
@@ -50,10 +52,35 @@ x-agent-base: &agent-base
       \""
     interval: 30s
     timeout: 10s
-    start-period: 120s
+    start_period: 120s
     retries: 3
 
 services:
+
+  # ── PostgreSQL ────────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: panchayat-postgres
+    restart: unless-stopped
+    networks:
+      - panchayat
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-adlc}
+      POSTGRES_USER: ${POSTGRES_USER:-adlc_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-adlc_dev_pass}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-adlc_user} -d ${POSTGRES_DB:-adlc}"]
+      interval: 10s
+      timeout: 5s
+      start_period: 20s
+      retries: 5
+    labels:
+      - "com.panchayat.role=database"
+      - "com.panchayat.sprint=01"
 
   # ── Dashboard ────────────────────────────────────────────────────────────────
   dashboard:
@@ -77,7 +104,7 @@ services:
       test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
       interval: 15s
       timeout: 5s
-      start-period: 10s
+      start_period: 10s
       retries: 3
     labels:
       - "com.panchayat.role=dashboard"
@@ -117,17 +144,22 @@ services:
   rasool:
     <<: *agent-base
     container_name: panchayat-rasool
+    depends_on:
+      dashboard:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
     environment:
       - AGENT_NAME=rasool
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - CLAUDE_MODEL=${AGENT_MODEL:-claude-sonnet-4-5}
       - CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
       - WORKSPACE=/workspace
-      - POSTGRES_HOST=${POSTGRES_HOST:-postgres}
+      - POSTGRES_HOST=postgres
       - POSTGRES_PORT=${POSTGRES_PORT:-5432}
       - POSTGRES_DB=${POSTGRES_DB:-adlc}
       - POSTGRES_USER=${POSTGRES_USER:-adlc_user}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-adlc_dev_pass}
     labels:
       - "com.panchayat.agent=rasool"
       - "com.panchayat.role=database"
