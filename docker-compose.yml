@@ -29,13 +29,15 @@ x-agent-base: &agent-base
     dockerfile: Dockerfile.base
   env_file: .env
   volumes:
-    - .:/workspace:rw
+    - .:/workspace:rw           # kit files — rw needed for agent-status, group-chat, requirement
+    - ./projects:/projects:rw   # generated project code — writable, gitignored
   networks:
     - panchayat
   restart: on-failure
   environment:
     - CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
     - WORKSPACE=/workspace
+    - PROJECTS_DIR=/projects
   depends_on:
     dashboard:
       condition: service_healthy

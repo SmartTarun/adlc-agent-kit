@@ -48,3 +48,6 @@ build/
 # Tool connections — NEVER commit credentials
 connections.json
 .connections.backup.json
+
+# Project workspaces — generated code lives here, pushed to their own repos
+projects/

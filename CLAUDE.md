@@ -12,15 +12,17 @@
 ---
 
 ## Folder Ownership — DO NOT CROSS BOUNDARIES
+> All code is written to /projects/{project_id}/ — read project_id from active-project.json → current
 
-| Agent   | Owns                                      | Must NOT touch               |
-|---------|-------------------------------------------|------------------------------|
-| Vikram  | /infra/modules/                           | /backend, /frontend, /docs   |
-| Rasool  | /backend/migrations/, /docs/db-schema.md  | /infra, /frontend            |
-| Kiran   | /backend/app/routers/, /backend/app/schemas/, /backend/tests/ | /infra, /frontend, /migrations |
-| Kavya   | /frontend/src/tokens/, /docs/component-spec.md | /infra, /backend        |
-| Rohan   | /frontend/src/components/                 | /infra, /backend, /migrations|
-| Keerthi | READ-ONLY everywhere + /docs/qa-report.md | No code changes allowed      |
+| Agent   | Owns                                                                  | Must NOT touch                        |
+|---------|-----------------------------------------------------------------------|---------------------------------------|
+| Vikram  | /projects/{id}/infra/                                                 | /backend, /frontend, /docs            |
+| Rasool  | /projects/{id}/backend/migrations/, /projects/{id}/docs/db-schema.md | /infra, /frontend                     |
+| Kiran   | /projects/{id}/backend/app/routers/, /schemas/, /tests/               | /infra, /frontend, /migrations        |
+| Kavya   | /projects/{id}/frontend/src/tokens/, /projects/{id}/docs/component-spec.md | /infra, /backend             |
+| Rohan   | /projects/{id}/frontend/src/components/                               | /infra, /backend, /migrations         |
+| Keerthi | READ-ONLY everywhere + /projects/{id}/docs/qa-report.md               | No code changes allowed               |
+| Arjun   | /workspace/requirement.json, /workspace/active-project.json, /workspace/agent-status.json, /workspace/group-chat.json, /projects/{id}/PROJECT-MEMORY.md | No code files |
 
 ---
 
