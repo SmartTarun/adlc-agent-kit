@@ -4,6 +4,9 @@ import type {
   Project,
   IaCGenerateRequest,
   IaCGenerateResponse,
+  InfraVizGenerateResponse,
+  ValidateResponse,
+  CanvasWorkspace,
   IaCTemplate,
   StateFile,
   StateDiff,
@@ -43,14 +46,28 @@ export const projectsApi = {
 export const iacApi = {
   generate: (data: IaCGenerateRequest) =>
     http.post<IaCGenerateResponse>('/iac/generate', data).then((r) => r.data),
+  /** Full 7-step InfraViz pipeline — returns structured JSON from Claude */
+  generateInfraViz: (data: IaCGenerateRequest) =>
+    http.post<InfraVizGenerateResponse>('/iac/generate', data).then((r) => r.data),
   templates: (projectId: string) =>
     http.get<IaCTemplate[]>(`/iac/templates?project_id=${projectId}`).then((r) => r.data),
   saveTemplate: (data: Omit<IaCTemplate, 'id' | 'created_at'>) =>
     http.post<IaCTemplate>('/iac/templates', data).then((r) => r.data),
   validate: (code: string, provider: string) =>
-    http.post<{ valid: boolean; errors: string[] }>('/iac/validate', { code, provider }).then((r) => r.data),
+    http.post<ValidateResponse>('/iac/validate', { code, provider }).then((r) => r.data),
   /** Returns SSE stream URL — caller uses EventSource directly */
   generateStreamUrl: () => '/api/v1/iac/generate/stream',
+}
+
+// ─── Workspaces ───────────────────────────────────────
+export const workspaceApi = {
+  list: () => http.get<CanvasWorkspace[]>('/workspaces').then((r) => r.data),
+  get: (id: string) => http.get<CanvasWorkspace>(`/workspaces/${id}`).then((r) => r.data),
+  create: (data: Omit<CanvasWorkspace, 'id' | 'updated_at'>) =>
+    http.post<CanvasWorkspace>('/workspaces', data).then((r) => r.data),
+  update: (id: string, data: Partial<CanvasWorkspace>) =>
+    http.put<CanvasWorkspace>(`/workspaces/${id}`, data).then((r) => r.data),
+  delete: (id: string) => http.delete(`/workspaces/${id}`),
 }
 
 // ─── State ────────────────────────────────────────────

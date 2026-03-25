@@ -1,25 +1,21 @@
-// Agent: Rohan | Sprint: 01 | Date: 2026-03-16
+// Agent: rohan | Sprint: 01 | Date: 2026-03-16
 import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard,
   Network,
-  AlertTriangle,
-  Bot,
-  Brain,
-  Code2,
+  Terminal,
+  MessageSquareCode,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react'
 import styles from './Sidebar.module.css'
 
 const NAV_ITEMS = [
-  { icon: LayoutDashboard, label: 'Overview', to: '/' },
-  { icon: Code2,           label: 'IaC Generator', to: '/iac' },
-  { icon: Network,         label: 'Infrastructure', to: '/infra' },
-  { icon: AlertTriangle,   label: 'Cost Anomalies', to: '/anomalies' },
-  { icon: Bot,             label: 'Agent Activity', to: '/agents' },
-  { icon: Brain,           label: 'Memory Explorer', to: '/memory' },
+  { icon: LayoutDashboard,  label: 'Overview',   to: '/' },
+  { icon: Network,          label: 'Canvas',     to: '/canvas' },
+  { icon: MessageSquareCode, label: 'Dashboard', to: '/dashboard' },
+  { icon: Terminal,         label: 'Terminal',   to: '/terminal' },
 ] as const
 
 export default function Sidebar() {

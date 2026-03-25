@@ -28,7 +28,7 @@
     "vikram":  { "received": false, "summary": "", "questions": [], "estimate": "" },
     "rasool":  { "received": false, "summary": "", "questions": [], "estimate": "" },
     "kavya":   { "received": false, "summary": "", "questions": [], "estimate": "" },
-    "kiran":   { "received": false, "summary": "", "questions": [], "estimate": "" },
+    "kiran":   { "received": true, "summary": "FastAPI backend COMPLETE. 6 routers (health, auth, projects, iac, state, llm), 5 ORM models, 5 Pydantic v2 schemas, 30+ pytest tests. Claude claude-sonnet-4-6 structured JSON + SSE streaming. JWT auth. All files in /backend/app/.", "questions": [], "estimate": "DONE" },
     "rohan":   { "received": false, "summary": "", "questions": [], "estimate": "" },
     "keerthi": { "received": false, "summary": "", "questions": [], "estimate": "" }
   },

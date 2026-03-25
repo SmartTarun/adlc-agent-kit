@@ -1,0 +1,185 @@
+/* Agent: rohan | Sprint: 01 | Date: 2026-03-16 */
+.page {
+  padding: var(--space-8) var(--space-8);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-10);
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+}
+
+/* ─── Hero ────────────────────────────────── */
+.hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  text-align: center;
+  padding: var(--space-8) 0;
+}
+
+.heroIcon {
+  width: 72px;
+  height: 72px;
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-primary-600);
+  border-radius: var(--radius-2xl);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-glow-primary);
+}
+
+.heroTitle {
+  font-size: var(--font-size-4xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  margin: 0;
+  letter-spacing: var(--letter-spacing-tight);
+}
+
+.heroSubtitle {
+  font-size: var(--font-size-lg);
+  color: var(--color-text-secondary);
+  max-width: 520px;
+  line-height: var(--line-height-relaxed);
+  margin: 0;
+}
+
+/* ─── View cards ──────────────────────────── */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--space-5);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-6);
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-xl);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color var(--transition-normal), box-shadow var(--transition-normal), transform var(--transition-normal);
+}
+
+.card:hover {
+  transform: translateY(-2px);
+}
+
+.card_primary:hover {
+  border-color: var(--color-primary-400);
+  box-shadow: var(--shadow-glow-primary);
+}
+
+.card_accent:hover {
+  border-color: var(--color-accent-400);
+  box-shadow: var(--shadow-glow-accent);
+}
+
+.cardIcon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon_primary {
+  background: var(--color-primary-900);
+  color: var(--color-primary-400);
+  border: 1px solid var(--color-primary-700);
+}
+
+.icon_accent {
+  background: var(--color-accent-900);
+  color: var(--color-accent-400);
+  border: 1px solid var(--color-accent-700);
+}
+
+.cardTitle {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.cardDesc {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+  margin: 0;
+  flex: 1;
+}
+
+.cardCta {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  margin-top: var(--space-2);
+}
+
+.cta_primary { color: var(--color-primary-400); }
+.cta_accent  { color: var(--color-accent-400); }
+
+/* ─── Pipeline ────────────────────────────── */
+.pipeline {
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-xl);
+  padding: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.pipelineTitle {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-caps);
+  margin: 0;
+}
+
+.steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.stepNum {
+  width: 20px;
+  height: 20px;
+  background: var(--color-primary-900);
+  border: 1px solid var(--color-primary-700);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-xs);
+  color: var(--color-primary-400);
+  font-weight: var(--font-weight-bold);
+  flex-shrink: 0;
+}
+
+.stepLabel {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}

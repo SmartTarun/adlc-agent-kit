@@ -1,39 +1,69 @@
 {
   "agent": "rohan",
   "sprint": "01",
-  "lastActive": "2026-03-16T09:10:00.000Z",
-  "sessionCount": 1,
+  "lastActive": "2026-03-25T12:22:30.234Z",
+  "sessionCount": 3,
   "currentTask": {
-    "title": "Infraviz — Frontend Components (React 18 + TypeScript)",
-    "status": "in_progress",
-    "progressPercent": 5,
+    "title": "InfraViz Frontend Components — DONE",
+    "status": "done",
+    "progressPercent": 100,
     "startedAt": "2026-03-16T09:10:00.000Z",
-    "lastStepCompleted": "Posted frontend analysis to group-chat. Memory initialised."
+    "lastStepCompleted": "All 3 views + App routing + Sidebar delivered Session 3"
   },
-  "completedTasks": [],
-  "filesCreated": [],
-  "filesModified": [],
+  "completedTasks": [
+    "Analysis + group-chat post (Session 1)",
+    "AuthPage (pre-built)",
+    "AppShell + Sidebar + TopBar (pre-built)",
+    "CanvasView — React Flow canvas, 24 AWS services, group nodes, 9-tab result panel, workspace CRUD, undo/redo, .tfstate import, validate",
+    "DashboardView — NL prompt, 7-tab results, Monaco code editor, copy/download",
+    "TerminalView — CLI terminal, SSE streaming, command history, help/clear",
+    "App.tsx routing: /canvas, /dashboard, /terminal",
+    "Sidebar: updated to InfraViz nav (Canvas, Dashboard, Terminal)",
+    "OverviewPage: InfraViz landing with view cards + pipeline steps",
+    "types/index.ts: InfraVizGenerateResponse, TerraformFile, ValidateResponse, CanvasWorkspace",
+    "api/client.ts: iacApi.generateInfraViz, workspaceApi CRUD"
+  ],
+  "filesCreated": [
+    "frontend/src/components/CanvasView/CanvasView.tsx",
+    "frontend/src/components/CanvasView/CanvasView.module.css",
+    "frontend/src/components/CanvasView/ServiceNode.tsx",
+    "frontend/src/components/CanvasView/ServiceNode.module.css",
+    "frontend/src/components/CanvasView/GroupNode.tsx",
+    "frontend/src/components/CanvasView/GroupNode.module.css",
+    "frontend/src/components/DashboardView/DashboardView.tsx",
+    "frontend/src/components/DashboardView/DashboardView.module.css",
+    "frontend/src/components/TerminalView/TerminalView.tsx",
+    "frontend/src/components/TerminalView/TerminalView.module.css",
+    "frontend/src/pages/OverviewPage.module.css"
+  ],
+  "filesModified": [
+    "frontend/src/App.tsx",
+    "frontend/src/components/Sidebar/Sidebar.tsx",
+    "frontend/src/pages/OverviewPage.tsx",
+    "frontend/src/types/index.ts",
+    "frontend/src/api/client.ts"
+  ],
   "keyDecisions": [
-    "React Flow for topology graph (not D3) — simpler, better React integration",
-    "Recharts for cost/anomaly charts (mandated by CLAUDE.md)",
-    "Monaco Editor for IAC code display (Terraform syntax highlighting)",
-    "Dark mode first using CSS variables from /frontend/src/tokens/tokens.css",
-    "Component breakdown: TopologyCanvas, CostDashboard, AnomalyPanel, LLMChatPanel, IACCodeEditor, StateFileViewer, ResourceCard"
+    "React Flow (@xyflow/react) for topology canvas — approved by Arjun",
+    "Monaco Editor for code display (installed, no extra dep needed)",
+    "CSS variables from tokens.css throughout — no hardcoded colours",
+    "SSE streaming via fetch + ReadableStream (not EventSource — more control)",
+    "workspaceApi added to client.ts for Canvas CRUD",
+    "TerminalView uses pre-wrap to display markdown-like output without extra deps",
+    "CanvasView: 9 tabs (Terraform, Parsed, Architecture, Diagram, Cost, Compliance, Deployment, Validate, Raw JSON)",
+    "DashboardView: 7 tabs as per spec",
+    "Service palette has 24 AWS services across 7 categories"
   ],
   "pendingNextSteps": [
-    "Wait for Kavya to create /frontend/src/tokens/tokens.css design tokens",
-    "Set up /frontend/src/components/ folder structure",
-    "Build TopologyCanvas component (React Flow + Dagre layout)",
-    "Build CostDashboard with Recharts line/bar charts",
-    "Build AnomalyPanel with severity badges",
-    "Build LLMChatPanel for AI assistant prompts",
-    "Build IACCodeEditor (Monaco Editor read-only display)",
-    "Wire components to Kiran's FastAPI endpoints"
+    "Wire to Kiran FastAPI endpoints once available",
+    "Validate Monaco HCL language works (may need custom tokenizer)",
+    "Integration test: CanvasView generate → result panel",
+    "Integration test: TerminalView SSE streaming end-to-end"
   ],
   "dependenciesStatus": {
-    "waitingFor": "Kavya — design tokens CSS file; Kiran — API endpoint schemas",
-    "readyToUnblock": ""
+    "waitingFor": "",
+    "readyToUnblock": "Keerthi (QA) — all 3 views ready for testing"
   },
   "blockers": [],
-  "notes": "Sprint approved. Rasool already executing DB migrations. I should scaffold component structure and start with layout shell while waiting for tokens from Kavya."
+  "notes": "Session 3 complete. All deliverables done. Keerthi can begin QA. Backend (Kiran) API endpoints must be wired for E2E testing."
 }

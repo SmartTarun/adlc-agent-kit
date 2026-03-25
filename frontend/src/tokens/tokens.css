@@ -1,5 +1,5 @@
-/* Agent: Kavya | Sprint: 01 | Date: 2026-03-16 */
-/* Infraviz — Design Token System */
+/* Agent: Kavya | Sprint: 01 | Date: 2026-03-16 (revised 2026-03-25) */
+/* InfraViz — Design Token System */
 /* Target: Cloud Architects | Mode: Dark-first */
 
 :root {
@@ -61,19 +61,28 @@
   --color-info:          #3b82f6;
   --color-info-text:     #93c5fd;
 
-  /* Cost anomaly specific */
-  --color-anomaly-critical: #ff3b3b;
-  --color-anomaly-high:     #ff8c00;
-  --color-anomaly-medium:   #f5c518;
-  --color-anomaly-low:      #4ade80;
-  --color-anomaly-none:     #5d7099;
+  /* IaC validation severity (used for inline diagnostics) */
+  --color-iac-error:    #ff3b3b;
+  --color-iac-warning:  #ff8c00;
+  --color-iac-info:     #f5c518;
+  --color-iac-valid:    #4ade80;
+  --color-iac-unknown:  #5d7099;
 
-  /* Agent status colours */
-  --color-agent-wip:      #f59e0b;
-  --color-agent-done:     #22c55e;
-  --color-agent-blocked:  #ef4444;
-  --color-agent-queue:    #5d7099;
-  --color-agent-active:   #1a74ff;
+  /* Generation / streaming status colours */
+  --color-gen-idle:       #5d7099;
+  --color-gen-generating: #1a74ff;
+  --color-gen-streaming:  #00c4b4;
+  --color-gen-done:       #22c55e;
+  --color-gen-error:      #ef4444;
+  --color-gen-validating: #f59e0b;
+
+  /* AWS node type colours (React Flow canvas) */
+  --color-node-compute:   #1a74ff;
+  --color-node-storage:   #f59e0b;
+  --color-node-database:  #a855f7;
+  --color-node-network:   #00c4b4;
+  --color-node-security:  #ef4444;
+  --color-node-messaging: #22c55e;
 
   /* ─── TYPOGRAPHY ─────────────────────────────────────────────── */
 

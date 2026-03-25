@@ -36,6 +36,57 @@ export interface IaCGenerateResponse {
   session_id: string
 }
 
+// 7-step InfraViz pipeline response from Claude
+export interface TerraformFile {
+  filename: string
+  content: string
+}
+
+export interface InfraVizGenerateResponse {
+  parsed_requirements: string
+  architecture_design: string
+  terraform_files: TerraformFile[]
+  architecture_diagram: string
+  cost_estimate: string
+  compliance_checklist: string
+  deployment_guide: string
+  model: string
+  tokens_used: number
+  session_id: string
+}
+
+export interface ValidateResponse {
+  valid: boolean
+  errors: string[]
+  warnings: string[]
+}
+
+// Canvas node/workspace types
+export type AwsServiceCategory = 'Networking' | 'Compute' | 'Storage' | 'Database' | 'Serverless' | 'Security' | 'Monitoring'
+
+export interface AwsServiceDef {
+  type: string
+  label: string
+  category: AwsServiceCategory
+  icon: string
+}
+
+export interface CanvasNodeData {
+  label: string
+  serviceType: string
+  category: AwsServiceCategory
+  config: Record<string, string>
+}
+
+export interface CanvasWorkspace {
+  id: string
+  name: string
+  nodes: unknown[]
+  edges: unknown[]
+  region: string
+  updated_at: string
+}
+
 export interface IaCTemplate {
   id: string
   project_id: string

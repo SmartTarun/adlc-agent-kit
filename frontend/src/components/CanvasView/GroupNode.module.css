@@ -1,0 +1,25 @@
+/* Agent: rohan | Sprint: 01 | Date: 2026-03-16 */
+.groupNode {
+  width: 100%;
+  height: 100%;
+  border: 2px dashed var(--color-border-default);
+  border-radius: var(--radius-lg);
+  background: rgba(26, 116, 255, 0.04);
+  position: relative;
+}
+
+.label {
+  position: absolute;
+  top: var(--space-2);
+  left: var(--space-3);
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--font-size-xs);
+  font-family: var(--font-family-mono);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+  user-select: none;
+  pointer-events: none;
+}
