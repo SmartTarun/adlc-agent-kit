@@ -92,6 +92,7 @@ function getProjects() {
 function switchActiveProject(relPath, meta) {
   const ap = { current: relPath, updatedAt: new Date().toISOString(), ...meta };
   fs.writeFileSync(path.join(ROOT, 'active-project.json'), JSON.stringify(ap, null, 2), 'utf8');
+  projectsCache = null; // bust cache on switch
   // Re-init watchers for the new project root
   startWatching();
   broadcast('project-switch', { activeProject: ap, state: getFullState() });
@@ -171,7 +172,7 @@ function getFullState() {
     });
   } catch {}
   const activeProject = readJSON(path.join(ROOT, 'active-project.json')) || { current: '.', name: 'Default' };
-  const projects = getProjects();
+  const projects = getProjectsCached();
 
   // Windowed chat: send last CHAT_DASHBOARD_WINDOW messages + totalCount for UI
   const allMessages = rawChat.messages || [];
@@ -195,6 +196,36 @@ function postToChat(from, role, type, message, tags) {
     timestamp: new Date().toISOString(),
   });
   writeJSON(chatFile, chat);
+}
+
+// Cache sprint-board.html at startup so it is not re-read on every request
+let cachedHtml = null;
+let cachedHtmlMtime = 0;
+function getHtml() {
+  const htmlPath = path.join(ROOT, 'sprint-board.html');
+  try {
+    const mtime = fs.statSync(htmlPath).mtimeMs;
+    if (!cachedHtml || mtime !== cachedHtmlMtime) {
+      cachedHtml = fs.readFileSync(htmlPath, 'utf8');
+      cachedHtmlMtime = mtime;
+    }
+  } catch {}
+  return cachedHtml || '';
+}
+// Warm the cache on startup
+getHtml();
+
+// Cache getProjects() — only invalidates on project switch or every 10s
+let projectsCache = null;
+let projectsCacheAt = 0;
+const PROJECTS_CACHE_TTL = 10000;
+function getProjectsCached() {
+  const now = Date.now();
+  if (!projectsCache || now - projectsCacheAt > PROJECTS_CACHE_TTL) {
+    projectsCache = getProjects();
+    projectsCacheAt = now;
+  }
+  return projectsCache;
 }
 
 // Start watching files for the active project
@@ -592,8 +623,7 @@ const server = http.createServer(async (req, res) => {
   // Inject SSE client into the sprint-board
   if (filePath === '/sprint-board.html' || filePath === '/sprint-dashboard.html') {
     try {
-      // Always serve sprint-board.html (the active one)
-      let html = fs.readFileSync(path.join(ROOT, 'sprint-board.html'), 'utf8');
+      let html = getHtml();
       const liveScript = `<script>
 /* ADLC Live Dashboard -- SSE auto-connect injected by dashboard-server.js */
 (function(){
