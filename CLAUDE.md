@@ -1,8 +1,8 @@
 # Team Panchayat — ADLC Project Standards
 > All agents MUST read this file before starting any task.
 
-## Project: Cost Anomaly Detection Platform
-**Sprint**: Sprint-01
+## Project: {read from active-project.json}
+**Sprint**: {read from active-project.json}
 **Author**: Tarun Vangari (tarun.vangari@gmail.com)
 **Role**: DevOps & Cloud Architect
 **Owner**: Tarun Vangari
@@ -78,7 +78,7 @@ After completing each major step, update `/agent-status.json`:
 ## Quality Gates
 - No TODO comments left in final code
 - No console.log or print debug statements
-- All files must have a top comment: `# Agent: {name} | Sprint: 01 | Date: {date}`
+- All files must have a top comment: `# Agent: {name} | Sprint: {sprint} | Date: {date}`
 
 ---
 
@@ -93,7 +93,7 @@ agent-memory/{agentname}-memory.json
 ```json
 {
   "agent": "name",
-  "sprint": "01",
+  "sprint": "{read from active-project.json}",
   "lastActive": "ISO timestamp",
   "sessionCount": 0,
   "currentTask": {

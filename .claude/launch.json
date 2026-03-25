@@ -1,0 +1,31 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Dashboard Server",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["dashboard-server.js"],
+      "port": 3000
+    },
+    {
+      "name": "Frontend (Vite + React)",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "cwd": "frontend",
+      "port": 3000
+    },
+    {
+      "name": "Backend (FastAPI)",
+      "runtimeExecutable": "uvicorn",
+      "runtimeArgs": ["app.main:app", "--reload", "--host", "0.0.0.0", "--port", "8000"],
+      "cwd": "backend",
+      "port": 8000
+    },
+    {
+      "name": "Docker Compose (Full Cluster)",
+      "runtimeExecutable": "docker",
+      "runtimeArgs": ["compose", "up", "--build"],
+      "port": 3000
+    }
+  ]
+}
