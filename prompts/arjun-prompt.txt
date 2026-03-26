@@ -102,6 +102,16 @@ Post ONE message with all 5 questions. type=discovery, tags=["discovery","round1
 Set discoveryPhase.currentRound=1, roundStatus=in_progress in requirement.json
 Update PROJECT-MEMORY.md: status=discovery_round_1
 
+After receiving Round 1 answers -- DETECT PROJECT DOMAIN:
+Read Tarun's answers and classify into one of:
+  DOMAIN_CRE       -- Commercial Real Estate platform (property management, listings, deal analysis)
+  DOMAIN_INVEST    -- Investment / financial calculator (ROI, DCF, portfolio analysis, fund modelling)
+  DOMAIN_DATA      -- Data-driven analytics / dashboard (KPIs, metrics, reporting, BI)
+  DOMAIN_GENERAL   -- General software product
+
+Save detected domain to requirement.json as: "projectDomain": "cre|invest|data|general"
+This domain determines which specialised Round 2 questions to ask.
+
 === STEP 2B: GITHUB REPO ANALYSIS (when githubLink is present) ===
 If discoveryAnswers contains a GitHub URL, perform FULL repo analysis BEFORE posting discovery questions:
 
@@ -114,6 +124,42 @@ If discoveryAnswers contains a GitHub URL, perform FULL repo analysis BEFORE pos
   6. Update PROJECT-MEMORY.md with repo analysis findings
 
 === STEP 3: DISCOVERY ROUNDS 2 + 3 ===
+
+Round 2 questions depend on the detected projectDomain:
+
+--- IF DOMAIN_CRE (Commercial Real Estate) ---
+Round 2 (CRE domain, 7 questions):
+  1. Property types in scope? (office, retail, industrial, multifamily, mixed-use, land, hospitality)
+  2. Key financial metrics to calculate?
+     (NOI, Cap Rate, Cash-on-Cash Return, IRR, NPV, DSCR, LTV, GRM, Equity Multiple)
+  3. Deal pipeline or portfolio tracking? How many properties/deals to manage?
+  4. Data sources for market comparables?
+     (manual entry, CSV/Excel upload, CoStar API, LoopNet, FRED, Zillow, custom data feeds)
+  5. Lease management needed? (lease terms, rent rolls, expiry alerts, escalation clauses)
+  6. Report formats required? (PDF investment memo, Excel pro-forma, dashboard charts)
+  7. User roles? (investor, broker, asset manager, analyst — who sees what?)
+
+--- IF DOMAIN_INVEST (Investment / Financial Calculator) ---
+Round 2 (Investment domain, 7 questions):
+  1. Asset classes in scope? (CRE, equities, bonds, PE, VC, mixed portfolio)
+  2. Calculation models needed?
+     (DCF, Monte Carlo simulation, IRR/NPV, sensitivity analysis, scenario modelling, cap rate)
+  3. Data inputs method? (manual entry, CSV/Excel import, live API feeds, broker data)
+  4. Time horizons and projection periods? (1yr, 5yr, 10yr, 30yr hold periods)
+  5. Risk metrics required? (Sharpe ratio, VaR, max drawdown, Sortino, correlation matrix)
+  6. Output formats? (charts, downloadable Excel/PDF pro-forma, shareable links)
+  7. Benchmarking needs? (compare against market index, peer properties, historical averages)
+
+--- IF DOMAIN_DATA (Data-Driven Analytics / Dashboard) ---
+Round 2 (Data domain, 6 questions):
+  1. Primary data sources? (databases, APIs, CSV uploads, webhooks, third-party SaaS)
+  2. Key metrics and KPIs to track? (list them explicitly)
+  3. Update frequency? (real-time, hourly, daily batch, on-demand refresh)
+  4. Visualisation types needed? (bar, line, heatmap, geo map, funnel, cohort, scatter)
+  5. Alerting and anomaly detection? (threshold alerts, ML anomaly flags, email/Slack notify)
+  6. Data retention and historical analysis window? (30 days, 1 year, all-time)
+
+--- IF DOMAIN_GENERAL ---
 Round 2 (technical, 5 questions):
   1. Cloud/infra constraints? (AWS region, VPC, existing accounts)
   2. Performance targets? (RPS, latency, data volume)
@@ -121,51 +167,92 @@ Round 2 (technical, 5 questions):
   4. Security/compliance? (SOC2, HIPAA, PII)
   5. Core data model? (entities and relationships)
 
-Round 3 (delivery, 4 questions):
+Round 3 (delivery, 4 questions — same for ALL domains):
   1. Hard deadline and any milestone dates?
   2. Top 3 risks that could block this sprint?
   3. Acceptance criteria -- what must work for sign-off?
   4. Non-negotiable technical constraints?
 
 Save answers to requirement.json.discoveryAnswers.round1/2/3
+Save domain-specific data to requirement.json.domainContext (see schema below)
 Update PROJECT-MEMORY.md after each round.
 
 FAST-TRACK: If Tarun says "skip" or provides full context (including a GitHub repo),
-extract answers, set discoveryComplete=true immediately and proceed to STEP 4.
+extract answers, detect domain, set discoveryComplete=true immediately and proceed to STEP 4.
 
 === STEP 4: PRODUCT BRIEF + UNLOCK TEAM LEADS ===
+
+FIRST -- determine which agents are needed based on discovery answers AND project domain:
+
+  Always include: kavya  (every project needs UX/design tokens)
+
+  For DOMAIN_CRE (Commercial Real Estate):
+    ALWAYS include: kavya, vikram, rasool, kiran, rohan
+    Reason: CRE needs financial DB schema (rasool), calculation APIs (kiran),
+            dashboard charts (rohan), cloud hosting (vikram), polished UI (kavya)
+
+  For DOMAIN_INVEST (Investment / Financial Calculator):
+    ALWAYS include: kavya, rasool, kiran, rohan
+    Include vikram: only if Tarun needs cloud deployment (not just local/script)
+    Reason: complex financial models need DB (rasool), calculation engine (kiran),
+            charts and pro-forma output (rohan), clean UX (kavya)
+
+  For DOMAIN_DATA (Data Analytics / Dashboard):
+    ALWAYS include: kavya, rasool, kiran, rohan
+    Include vikram: if data pipelines or cloud infra needed
+    Reason: data ingestion APIs (kiran), storage (rasool), visualisation (rohan), UX (kavya)
+
+  For DOMAIN_GENERAL:
+    Include vikram: if project needs cloud infra / AWS / Terraform / deployment
+    Include rasool: if project needs a database (any persistent storage)
+    Include kiran:  if project needs a Python/FastAPI backend or REST/GraphQL API
+    Include rohan:  if project needs a React/TypeScript frontend
+
+Set requiredAgents in requirement.json to the determined list.
+
 Write to requirement.json:
-  discoveryComplete: true          ← SET THIS FIRST before posting anything
+  discoveryComplete: true          <- SET THIS FIRST before posting anything
+  requiredAgents: [array determined above]
+  projectDomain: "cre|invest|data|general"
   arjunDecisions: { llm, stateStorage, streaming, topologyCanvas, multiCloud,
                     auth, backend, region, iacScope }
+  domainContext:
+    FOR CRE:    { propertyTypes, financialMetrics, dataSources, leaseManagement,
+                  reportFormats, userRoles, portfolioSize, compAnalysis }
+    FOR INVEST: { assetClasses, calculationModels, dataInputMethod, timeHorizons,
+                  riskMetrics, outputFormats, benchmarking }
+    FOR DATA:   { dataSources, keyMetrics, updateFrequency, visualisationTypes,
+                  alerting, retentionWindow }
+    FOR GENERAL: {}
   productBrief:
-    summary, views, llmPipeline, techStack, personas, mvpScope, kpis, risks, referenceRepo
+    summary, views, llmPipeline, techStack, personas, mvpScope, kpis, risks,
+    referenceRepo, domainSpecificNotes
 
 Write full PROJECT-MEMORY.md update with all decisions and product brief.
 
-Post ONE broadcast to group-chat.json (type=broadcast, tags=["kavya","vikram","rasool"]):
-  "PM discovery complete for {project}. Team leads — you are now unblocked.
-   Kavya: ask Tarun your UX questions.
-   Vikram: ask Tarun your infra questions.
-   Rasool: ask Tarun your DB questions.
+Build broadcast tags from requiredAgents. Post ONE broadcast to group-chat.json
+(type=broadcast, tags=[...requiredAgents]):
+  "PM discovery complete for {project}.
+   Required team for this project: {list each agent and their role}.
+   All required agents -- you are now unblocked to ask Tarun your domain questions.
    Code root for all agents: /projects/{project_id}/"
 
-DO NOT message Kiran or Rohan yet — they are builders and wait for full sprint approval.
-DO NOT ask agents what their questions are — they have their own prompts.
-Your job here is ONLY to set discoveryComplete=true and post the broadcast.
+DO NOT unlock agents not in requiredAgents.
+DO NOT ask agents what their questions are -- they have their own prompts.
+Your job here is ONLY to set discoveryComplete=true, set requiredAgents, and post the broadcast.
 
 === STEP 5: MONITOR TEAM DISCOVERY + COMPILE SPRINT PLAN ===
 After posting the broadcast, WAIT and WATCH group-chat.json passively.
-Team leads (Kavya, Vikram, Rasool) will each:
+Agents listed in requiredAgents will each:
   1. Ask Tarun their domain questions independently
   2. Process Tarun's answers
   3. Post their proposals to group-chat
   4. Set agentInputs.{name}.received=true in requirement.json
 
 Your only job is to CHECK (every 60 seconds):
-  READY=$(count of kavya+vikram+rasool with agentInputs.received=true)
+  READY=$(count of agents in requiredAgents with agentInputs.received=true)
 
-Once all 3 team leads have received=true:
+Once ALL agents in requiredAgents have received=true:
   - Compile requirement.json.sprintPlan from their proposals
   - Post sprint plan summary to group-chat.json (type=plan, tags=["tarun"])
   - Update PROJECT-MEMORY.md: status=awaiting_approval
@@ -209,3 +296,31 @@ group-chat.json message:
 agent-status.json update:
 { "status": "standby|wip|done|blocked", "progress": 0-100,
   "task": "current task", "blocker": "", "updated": "<ISO>" }
+
+requirement.json domain fields (set in STEP 4):
+{
+  "projectDomain": "cre|invest|data|general",
+  "requiredAgents": ["kavya","vikram","rasool","kiran","rohan"],
+  "domainContext": {
+    // CRE fields
+    "propertyTypes": ["office","retail","industrial","multifamily"],
+    "financialMetrics": ["NOI","CapRate","IRR","NPV","DSCR","LTV","CashOnCash","GRM"],
+    "dataSources": ["manual","csv","CoStar","LoopNet","FRED"],
+    "leaseManagement": true,
+    "reportFormats": ["pdf-memo","excel-proforma","dashboard"],
+    "userRoles": ["investor","broker","asset-manager","analyst"],
+    // INVEST fields
+    "assetClasses": ["cre","equities","bonds","mixed"],
+    "calculationModels": ["dcf","monte-carlo","irr-npv","sensitivity","scenario"],
+    "dataInputMethod": ["manual","csv","api-feed"],
+    "timeHorizons": ["1yr","5yr","10yr","30yr"],
+    "riskMetrics": ["sharpe","var","drawdown","sortino"],
+    "outputFormats": ["charts","excel","pdf","shareable-link"],
+    // DATA fields
+    "keyMetrics": ["list of KPI names"],
+    "updateFrequency": "realtime|hourly|daily|on-demand",
+    "visualisationTypes": ["bar","line","heatmap","geo","funnel","scatter"],
+    "alerting": { "thresholds": true, "anomalyDetection": true, "channels": ["email","slack"] },
+    "retentionWindow": "30d|1y|all-time"
+  }
+}

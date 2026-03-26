@@ -1,15 +1,4 @@
 {
-  "current": "proj-infraviz-01",
-  "projects": [
-    {
-      "id": "proj-infraviz-01",
-      "name": "INFRAVIZ",
-      "sprint": "01",
-      "status": "qa",
-      "directory": "/workspace",
-      "memoryFile": "/workspace/docs/PROJECT-MEMORY.md",
-      "createdAt": "2026-03-16T08:28:00.000Z",
-      "updatedAt": "2026-03-25T15:19:00.000Z"
-    }
-  ]
+  "current": null,
+  "projects": []
 }

@@ -1587,155 +1587,8 @@ body {
     <span id="tdp-title">Your team leads need answers before the sprint starts</span>
     <span id="tdp-subtitle">Answer each agent's questions — they'll build their proposal based on your input</span>
   </div>
-  <div id="tdp-tabs">
-    <div class="tdp-tab active" onclick="switchTdpTab('kavya')" id="tdp-tab-kavya">
-      <span class="tdp-dot"></span>🎨 Kavya (UX)
-    </div>
-    <div class="tdp-tab" onclick="switchTdpTab('vikram')" id="tdp-tab-vikram">
-      <span class="tdp-dot"></span>☁️ Vikram (Cloud)
-    </div>
-    <div class="tdp-tab" onclick="switchTdpTab('rasool')" id="tdp-tab-rasool">
-      <span class="tdp-dot"></span>🗄️ Rasool (DB)
-    </div>
-  </div>
-
-  <!-- Kavya Tab -->
-  <div class="tdp-content active" id="tdp-content-kavya">
-    <div class="tdp-agent-profile">
-      <div class="tdp-avatar" style="background:linear-gradient(135deg,#7c3aed,#db2777)">🎨</div>
-      <div>
-        <div class="tdp-agent-name">Kavya — UX Designer</div>
-        <div class="tdp-agent-role">Frontend Design &amp; Tokens</div>
-      </div>
-      <div class="tdp-agent-desc">Kavya will design your colour palette, typography, component library and user flows based on your answers.</div>
-    </div>
-    <div class="tdp-q-block">
-      <div class="tdp-q-label">Visual Style</div>
-      <div class="tdp-q-text">What visual style should this product have? (minimal, bold, corporate, playful, dark-tech…)</div>
-      <textarea class="tdp-q-input" id="kavya-q1" placeholder="e.g. Minimal and clean, like Linear or Notion"></textarea>
-    </div>
-    <div class="tdp-q-block">
-      <div class="tdp-q-label">Colour Mode</div>
-      <div class="tdp-q-text">Dark mode first, light mode first, or both toggle?</div>
-      <textarea class="tdp-q-input" id="kavya-q2" placeholder="e.g. Dark mode primary, light mode toggle"></textarea>
-    </div>
-    <div class="tdp-q-block">
-      <div class="tdp-q-label">Brand Colours</div>
-      <div class="tdp-q-text">Any preferred primary / accent / background colours? (hex codes or descriptions)</div>
-      <textarea class="tdp-q-input" id="kavya-q3" placeholder="e.g. #5b5bd6 primary, teal accent, dark navy bg"></textarea>
-    </div>
-    <div class="tdp-q-block">
-      <div class="tdp-q-label">Priority Actions</div>
-      <div class="tdp-q-text">What are the 3 most important actions a user takes in this product?</div>
-      <textarea class="tdp-q-input" id="kavya-q4" placeholder="e.g. 1. View cost anomalies  2. Set alert thresholds  3. Export reports"></textarea>
-    </div>
-    <div class="tdp-q-block">
-      <div class="tdp-q-label">Reference UI</div>
-      <div class="tdp-q-text">Any existing products or screenshots to draw design inspiration from?</div>
-      <textarea class="tdp-q-input" id="kavya-q5" placeholder="e.g. AWS Cost Explorer, Datadog, Grafana"></textarea>
-    </div>
-    <div class="tdp-q-block">
-      <div class="tdp-q-label">Accessibility</div>
-      <div class="tdp-q-text">WCAG level, minimum font size, contrast requirements?</div>
-      <textarea class="tdp-q-input" id="kavya-q6" placeholder="e.g. WCAG AA, 14px minimum, high contrast mode optional"></textarea>
-    </div>
-    <div class="tdp-submit-row" id="tdp-submit-kavya">
-      <small>Answers are sent to Kavya via team chat. She will reply with a design proposal.</small>
-      <button class="tdp-submit-btn" onclick="submitTdpAnswers('kavya')">Send to Kavya →</button>
-    </div>
-  </div>
-
-  <!-- Vikram Tab -->
-  <div class="tdp-content" id="tdp-content-vikram">
-    <div class="tdp-agent-profile">
-      <div class="tdp-avatar" style="background:linear-gradient(135deg,#dc2626,#ea580c)">☁️</div>
-      <div>
-        <div class="tdp-agent-name">Vikram — Cloud Architect</div>
-        <div class="tdp-agent-role">Infrastructure &amp; Terraform</div>
-      </div>
-      <div class="tdp-agent-desc">Vikram will design your AWS infrastructure, write Terraform modules, and estimate costs based on your answers.</div>
-    </div>
-    <div class="tdp-q-block">
-      <div class="tdp-q-label">Cloud &amp; Region</div>
-      <div class="tdp-q-text">Which cloud provider and region should infrastructure be deployed to?</div>
-      <textarea class="tdp-q-input" id="vikram-q1" placeholder="e.g. AWS us-east-1, or AWS + GCP multi-cloud"></textarea>
-    </div>
-    <div class="tdp-q-block">
-      <div class="tdp-q-label">Scale &amp; Traffic</div>
-      <div class="tdp-q-text">Expected users, requests per second, and data volume?</div>
-      <textarea class="tdp-q-input" id="vikram-q2" placeholder="e.g. 100 users, ~50 RPS, 10GB data/month"></textarea>
-    </div>
-    <div class="tdp-q-block">
-      <div class="tdp-q-label">Compute Type</div>
-      <div class="tdp-q-text">Containers (ECS/Fargate), serverless (Lambda), or EC2 VMs?</div>
-      <textarea class="tdp-q-input" id="vikram-q3" placeholder="e.g. ECS Fargate for backend, Lambda for triggers"></textarea>
-    </div>
-    <div class="tdp-q-block">
-      <div class="tdp-q-label">Existing Infra</div>
-      <div class="tdp-q-text">Any existing AWS resources or VPCs to integrate with?</div>
-      <textarea class="tdp-q-input" id="vikram-q4" placeholder="e.g. Fresh account, no existing infra"></textarea>
-    </div>
-    <div class="tdp-q-block">
-      <div class="tdp-q-label">Cost Priority</div>
-      <div class="tdp-q-text">Monthly budget ceiling and cost optimisation priority?</div>
-      <textarea class="tdp-q-input" id="vikram-q5" placeholder="e.g. Under $200/month, optimise for cost over performance"></textarea>
-    </div>
-    <div class="tdp-q-block">
-      <div class="tdp-q-label">Compliance &amp; Security</div>
-      <div class="tdp-q-text">Any compliance requirements? (SOC2, HIPAA, GDPR, PCI-DSS…)</div>
-      <textarea class="tdp-q-input" id="vikram-q6" placeholder="e.g. No strict compliance, basic IAM least-privilege"></textarea>
-    </div>
-    <div class="tdp-submit-row" id="tdp-submit-vikram">
-      <small>Answers are sent to Vikram via team chat. He will reply with an architecture proposal and cost estimate.</small>
-      <button class="tdp-submit-btn" style="background:var(--red)" onclick="submitTdpAnswers('vikram')">Send to Vikram →</button>
-    </div>
-  </div>
-
-  <!-- Rasool Tab -->
-  <div class="tdp-content" id="tdp-content-rasool">
-    <div class="tdp-agent-profile">
-      <div class="tdp-avatar" style="background:linear-gradient(135deg,#d97706,#b45309)">🗄️</div>
-      <div>
-        <div class="tdp-agent-name">Rasool — Database Agent</div>
-        <div class="tdp-agent-role">Schema Design &amp; Migrations</div>
-      </div>
-      <div class="tdp-agent-desc">Rasool will design your PostgreSQL schema, write Alembic migrations, and create the db-schema.md documentation.</div>
-    </div>
-    <div class="tdp-q-block">
-      <div class="tdp-q-label">Multi-Tenancy</div>
-      <div class="tdp-q-text">Single-tenant or multi-tenant? If multi, row-level or schema-per-tenant?</div>
-      <textarea class="tdp-q-input" id="rasool-q1" placeholder="e.g. Single tenant for now, row-level isolation later"></textarea>
-    </div>
-    <div class="tdp-q-block">
-      <div class="tdp-q-label">Data Scale</div>
-      <div class="tdp-q-text">Expected row counts for the largest tables and write frequency?</div>
-      <textarea class="tdp-q-input" id="rasool-q2" placeholder="e.g. 1M cost records/month, 10K alerts, mostly reads"></textarea>
-    </div>
-    <div class="tdp-q-block">
-      <div class="tdp-q-label">Soft Delete</div>
-      <div class="tdp-q-text">Should records be soft-deleted (deleted_at) or hard-deleted?</div>
-      <textarea class="tdp-q-input" id="rasool-q3" placeholder="e.g. Soft delete for cost records, hard delete for sessions"></textarea>
-    </div>
-    <div class="tdp-q-block">
-      <div class="tdp-q-label">Real-Time</div>
-      <div class="tdp-q-text">Any real-time or streaming data requirements? (WebSockets, polling, CDC)</div>
-      <textarea class="tdp-q-input" id="rasool-q4" placeholder="e.g. Cost anomaly alerts should push in real-time via SSE"></textarea>
-    </div>
-    <div class="tdp-q-block">
-      <div class="tdp-q-label">File / Blob Storage</div>
-      <div class="tdp-q-text">Any file uploads, exports, or blob data to store? (S3 or in DB?)</div>
-      <textarea class="tdp-q-input" id="rasool-q5" placeholder="e.g. CSV export to S3, no file uploads in DB"></textarea>
-    </div>
-    <div class="tdp-q-block">
-      <div class="tdp-q-label">Audit Log</div>
-      <div class="tdp-q-text">Do you need an audit trail of who changed what and when?</div>
-      <textarea class="tdp-q-input" id="rasool-q6" placeholder="e.g. Yes — track cost threshold changes and alert dismissals"></textarea>
-    </div>
-    <div class="tdp-submit-row" id="tdp-submit-rasool">
-      <small>Answers are sent to Rasool via team chat. He will reply with a schema proposal and ERD.</small>
-      <button class="tdp-submit-btn" style="background:var(--yellow)" onclick="submitTdpAnswers('rasool')">Send to Rasool →</button>
-    </div>
-  </div>
+  <div id="tdp-tabs"></div>
+  <div id="tdp-body"></div>
 </div>
 
 <!-- ── PM Discovery Panel (shown when Arjun is in discovery mode) ──────── -->
@@ -3107,17 +2960,67 @@ function maybeShowNewProjectScreen(state) {
 // ══════════════════════════════════════════════════════════════════════════════
 
 const TDP_AGENTS = {
-  kavya:  { label: 'Kavya (UX)',   qs: ['kavya-q1','kavya-q2','kavya-q3','kavya-q4','kavya-q5','kavya-q6'],
-            keys: ['visualStyle','colourMode','brandColours','priorityActions','referenceUI','accessibility'] },
-  vikram: { label: 'Vikram (Cloud)', qs: ['vikram-q1','vikram-q2','vikram-q3','vikram-q4','vikram-q5','vikram-q6'],
-            keys: ['cloudRegion','scaleTraffic','computeType','existingInfra','costPriority','compliance'] },
-  rasool: { label: 'Rasool (DB)',  qs: ['rasool-q1','rasool-q2','rasool-q3','rasool-q4','rasool-q5','rasool-q6'],
-            keys: ['multiTenancy','dataScale','softDelete','realTime','fileStorage','auditLog'] },
+  kavya:  { label: '🎨 Kavya (UX)',        avatarBg: 'linear-gradient(135deg,#7c3aed,#db2777)', btnColor: '',
+            role: 'UX Designer',       dept: 'Frontend Design & Tokens',
+            desc: 'Kavya will design your colour palette, typography, component library and user flows.',
+            questions: [
+              { key: 'visualStyle',     label: 'Visual Style',          text: 'What visual style should this product have? (minimal, bold, corporate, playful, dark-tech)', placeholder: 'e.g. Minimal and clean, like Linear or Notion' },
+              { key: 'colourMode',      label: 'Colour Mode',           text: 'Dark mode first, light mode first, or both toggle?', placeholder: 'e.g. Dark mode primary, light mode toggle' },
+              { key: 'brandColours',    label: 'Brand Colours',         text: 'Any preferred primary / accent / background colours? (hex codes or descriptions)', placeholder: 'e.g. #5b5bd6 primary, teal accent, dark navy bg' },
+              { key: 'priorityActions', label: 'Priority Actions',      text: 'What are the 3 most important actions a user takes in this product?', placeholder: 'e.g. 1. View anomalies  2. Set thresholds  3. Export reports' },
+              { key: 'referenceUI',     label: 'Reference UI',          text: 'Any existing products or screenshots to draw design inspiration from?', placeholder: 'e.g. AWS Cost Explorer, Datadog, Grafana' },
+              { key: 'accessibility',   label: 'Accessibility',         text: 'WCAG level, minimum font size, contrast requirements?', placeholder: 'e.g. WCAG AA, 14px minimum, high contrast optional' },
+            ]},
+  vikram: { label: '☁️ Vikram (Cloud)',     avatarBg: 'linear-gradient(135deg,#dc2626,#ea580c)', btnColor: 'var(--red)',
+            role: 'Cloud Architect',   dept: 'Infrastructure & Terraform',
+            desc: 'Vikram will design your AWS infrastructure, write Terraform modules, and estimate costs.',
+            questions: [
+              { key: 'cloudRegion',     label: 'Cloud & Region',        text: 'Which cloud provider and region should infrastructure be deployed to?', placeholder: 'e.g. AWS us-east-1, or AWS + GCP multi-cloud' },
+              { key: 'scaleTraffic',    label: 'Scale & Traffic',       text: 'Expected users, requests per second, and data volume?', placeholder: 'e.g. 100 users, ~50 RPS, 10GB data/month' },
+              { key: 'computeType',     label: 'Compute Type',          text: 'Containers (ECS/Fargate), serverless (Lambda), or EC2 VMs?', placeholder: 'e.g. ECS Fargate for backend, Lambda for triggers' },
+              { key: 'existingInfra',   label: 'Existing Infra',        text: 'Any existing AWS resources or VPCs to integrate with?', placeholder: 'e.g. Fresh account, no existing infra' },
+              { key: 'costPriority',    label: 'Cost Priority',         text: 'Monthly budget ceiling and cost optimisation priority?', placeholder: 'e.g. Under $200/month, optimise for cost over performance' },
+              { key: 'compliance',      label: 'Compliance & Security', text: 'Any compliance requirements? (SOC2, HIPAA, GDPR, PCI-DSS)', placeholder: 'e.g. No strict compliance, basic IAM least-privilege' },
+            ]},
+  rasool: { label: '🗄️ Rasool (DB)',        avatarBg: 'linear-gradient(135deg,#d97706,#b45309)', btnColor: 'var(--yellow)',
+            role: 'Database Agent',    dept: 'Schema Design & Migrations',
+            desc: 'Rasool will design your PostgreSQL schema, write Alembic migrations, and create db-schema.md.',
+            questions: [
+              { key: 'multiTenancy',    label: 'Multi-Tenancy',         text: 'Single-tenant or multi-tenant? If multi, row-level or schema-per-tenant?', placeholder: 'e.g. Single tenant for now, row-level isolation later' },
+              { key: 'dataScale',       label: 'Data Scale',            text: 'Expected row counts for the largest tables and write frequency?', placeholder: 'e.g. 1M cost records/month, 10K alerts, mostly reads' },
+              { key: 'softDelete',      label: 'Soft Delete',           text: 'Should records be soft-deleted (deleted_at) or hard-deleted?', placeholder: 'e.g. Soft delete for cost records, hard delete for sessions' },
+              { key: 'realTime',        label: 'Real-Time',             text: 'Any real-time or streaming data requirements? (WebSockets, polling, CDC)', placeholder: 'e.g. Anomaly alerts push in real-time via SSE' },
+              { key: 'fileStorage',     label: 'File / Blob Storage',   text: 'Any file uploads, exports, or blob data to store? (S3 or in DB?)', placeholder: 'e.g. CSV export to S3, no file uploads in DB' },
+              { key: 'auditLog',        label: 'Audit Log',             text: 'Do you need an audit trail of who changed what and when?', placeholder: 'e.g. Yes -- track threshold changes and alert dismissals' },
+            ]},
+  kiran:  { label: '⚙️ Kiran (API)',         avatarBg: 'linear-gradient(135deg,#0891b2,#0e7490)', btnColor: '#0891b2',
+            role: 'Backend Developer', dept: 'FastAPI Routers & Schemas',
+            desc: 'Kiran will design your API endpoints, Pydantic schemas, and write pytest tests.',
+            questions: [
+              { key: 'apiStyle',        label: 'API Style',             text: 'REST or GraphQL? Versioned (v1/v2) or unversioned?', placeholder: 'e.g. REST, versioned under /api/v1/' },
+              { key: 'authMethod',      label: 'Auth Method',           text: 'How should users authenticate? (JWT, OAuth2, API keys, sessions)', placeholder: 'e.g. JWT bearer tokens, OAuth2 via Google' },
+              { key: 'rateLimiting',    label: 'Rate Limiting',         text: 'Any rate limiting or throttling requirements?', placeholder: 'e.g. 100 req/min per user, 1000/min per API key' },
+              { key: 'backgroundTasks', label: 'Background Tasks',      text: 'Any async jobs, scheduled tasks, or queue workers needed?', placeholder: 'e.g. Celery for anomaly detection, cron for cost sync' },
+              { key: 'errorHandling',   label: 'Error Handling',        text: 'Preferred error response format and logging approach?', placeholder: 'e.g. RFC 7807 problem+json, structured JSON logs' },
+              { key: 'testCoverage',    label: 'Test Coverage',         text: 'Minimum test coverage target and preferred test approach?', placeholder: 'e.g. 80% coverage, integration tests over unit mocks' },
+            ]},
+  rohan:  { label: '🖥️ Rohan (Frontend)',    avatarBg: 'linear-gradient(135deg,#059669,#047857)', btnColor: '#059669',
+            role: 'Frontend Developer', dept: 'React Components',
+            desc: 'Rohan will build your React 18 + TypeScript components, routing, and state management.',
+            questions: [
+              { key: 'componentLib',    label: 'Component Library',     text: 'Any preferred component library or UI framework alongside design tokens?', placeholder: 'e.g. Headless UI + Tailwind, or plain CSS with tokens' },
+              { key: 'stateManagement', label: 'State Management',      text: 'How should global state be managed? (Context, Zustand, Redux, React Query)', placeholder: 'e.g. Zustand for local state, React Query for server state' },
+              { key: 'routing',         label: 'Routing',               text: 'Client-side routing approach? (React Router, TanStack Router)', placeholder: 'e.g. React Router v6 with nested routes' },
+              { key: 'formHandling',    label: 'Form Handling',         text: 'How should forms be handled? (React Hook Form, Formik, native)', placeholder: 'e.g. React Hook Form with Zod validation' },
+              { key: 'apiClient',       label: 'API Client',            text: 'How should the frontend call the API? (Fetch, Axios, React Query, tRPC)', placeholder: 'e.g. Axios with React Query for caching' },
+              { key: 'performance',     label: 'Performance',           text: 'Any performance requirements? (bundle size, lazy loading, SSR)', placeholder: 'e.g. Lazy load routes, under 100KB initial bundle' },
+            ]},
 };
-let tdpSubmitted = { kavya: false, vikram: false, rasool: false };
+let tdpSubmitted = {};
+let tdpActiveAgents = [];
 
 function renderTeamDiscovery(state) {
-  const req  = state.req || {};
+  const req   = state.req || {};
   const panel = document.getElementById('team-disc-panel');
 
   // Show only when PM discovery done but sprint not yet approved
@@ -3128,26 +3031,63 @@ function renderTeamDiscovery(state) {
     return;
   }
 
-  // Pre-fill any existing answers and mark done tabs
-  const disc = req.teamDiscovery || {};
-  ['kavya','vikram','rasool'].forEach(agent => {
-    const existing = disc[agent];
-    const tab = document.getElementById('tdp-tab-' + agent);
-    const submitRow = document.getElementById('tdp-submit-' + agent);
+  // Which agents are needed — set by Arjun in requirement.json, default to 3 team leads
+  tdpActiveAgents = (req.requiredAgents && req.requiredAgents.length)
+    ? req.requiredAgents.filter(a => TDP_AGENTS[a])
+    : ['kavya', 'vikram', 'rasool'];
 
-    if (existing || tdpSubmitted[agent]) {
-      if (tab) { tab.classList.add('done'); }
-      if (submitRow) {
-        submitRow.innerHTML = '<div class="tdp-done-badge">✓ Answers sent — waiting for ' + agent + '\'s proposal</div>';
-      }
-    }
-  });
+  const disc = req.teamDiscovery || {};
+
+  // Build tabs dynamically
+  const tabsEl = document.getElementById('tdp-tabs');
+  tabsEl.innerHTML = tdpActiveAgents.map((agent, i) => {
+    const cfg  = TDP_AGENTS[agent];
+    const done = disc[agent] || tdpSubmitted[agent];
+    return `<div class="tdp-tab${i === 0 ? ' active' : ''}${done ? ' done' : ''}"
+                 onclick="switchTdpTab('${agent}')" id="tdp-tab-${agent}">
+              <span class="tdp-dot"></span>${cfg.label}
+            </div>`;
+  }).join('');
+
+  // Build content panes dynamically
+  const bodyEl = document.getElementById('tdp-body');
+  bodyEl.innerHTML = tdpActiveAgents.map((agent, i) => {
+    const cfg      = TDP_AGENTS[agent];
+    const done     = disc[agent] || tdpSubmitted[agent];
+    const existing = disc[agent] || {};
+    const qHtml    = cfg.questions.map((q, qi) => `
+      <div class="tdp-q-block">
+        <div class="tdp-q-label">${q.label}</div>
+        <div class="tdp-q-text">${q.text}</div>
+        <textarea class="tdp-q-input" id="${agent}-q${qi + 1}" placeholder="${q.placeholder}">${existing[q.key] || ''}</textarea>
+      </div>`).join('');
+    const submitHtml = done
+      ? `<div class="tdp-done-badge">&#10003; Answers sent &mdash; waiting for ${agent}'s proposal</div>`
+      : `<small>Answers are sent to ${cfg.role} via team chat. They will reply with a proposal.</small>
+         <button class="tdp-submit-btn" ${cfg.btnColor ? 'style="background:' + cfg.btnColor + '"' : ''}
+           onclick="submitTdpAnswers('${agent}')">Send to ${agent.charAt(0).toUpperCase() + agent.slice(1)} &rarr;</button>`;
+    return `
+      <div class="tdp-content${i === 0 ? ' active' : ''}" id="tdp-content-${agent}">
+        <div class="tdp-agent-profile">
+          <div class="tdp-avatar" style="background:${cfg.avatarBg}">${cfg.label.split(' ')[0]}</div>
+          <div>
+            <div class="tdp-agent-name">${cfg.role}</div>
+            <div class="tdp-agent-role">${cfg.dept}</div>
+          </div>
+          <div class="tdp-agent-desc">${cfg.desc}</div>
+        </div>
+        ${qHtml}
+        <div class="tdp-submit-row" id="tdp-submit-${agent}">${submitHtml}</div>
+      </div>`;
+  }).join('');
 }
 
 function switchTdpTab(agent) {
-  ['kavya','vikram','rasool'].forEach(a => {
-    document.getElementById('tdp-tab-' + a).classList.toggle('active', a === agent);
-    document.getElementById('tdp-content-' + a).classList.toggle('active', a === agent);
+  tdpActiveAgents.forEach(a => {
+    const tab     = document.getElementById('tdp-tab-' + a);
+    const content = document.getElementById('tdp-content-' + a);
+    if (tab)     tab.classList.toggle('active', a === agent);
+    if (content) content.classList.toggle('active', a === agent);
   });
 }
 
@@ -3155,25 +3095,20 @@ function submitTdpAnswers(agent) {
   const cfg = TDP_AGENTS[agent];
   if (!cfg) return;
 
-  const answers = {};
-  let anyFilled = false;
-  cfg.qs.forEach((id, i) => {
-    const val = (document.getElementById(id) || {}).value || '';
-    answers[cfg.keys[i]] = val.trim();
-    if (val.trim()) anyFilled = true;
+  const answers  = {};
+  let anyFilled  = false;
+  cfg.questions.forEach((q, qi) => {
+    const val = (document.getElementById(agent + '-q' + (qi + 1)) || {}).value || '';
+    if (val.trim()) { answers[q.key] = val.trim(); anyFilled = true; }
   });
 
   if (!anyFilled) { alert('Please answer at least one question before submitting.'); return; }
 
-  const names = { kavya: 'Kavya (UX Designer)', vikram: 'Vikram (Cloud Architect)', rasool: 'Rasool (DB Agent)' };
-  const lines = cfg.keys.map((k, i) => {
-    const qEl = document.getElementById(cfg.qs[i]);
-    const labelEl = qEl ? qEl.closest('.tdp-q-block').querySelector('.tdp-q-label') : null;
-    const label = labelEl ? labelEl.textContent : k;
-    return `${label}: ${answers[k] || '(skipped)'}`;
+  const lines = cfg.questions.map((q, qi) => {
+    const num = qi + 1;
+    return `${num}. ${q.label}: ${answers[q.key] || '(not answered)'}`;
   });
-
-  const msg = `📋 Discovery Answers for ${names[agent]}:\n\n${lines.join('\n')}`;
+  const msg = `[Team Discovery -- ${cfg.role}]\n` + lines.join('\n');
 
   fetch('/api/chat', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -3183,9 +3118,9 @@ function submitTdpAnswers(agent) {
   .then(() => {
     tdpSubmitted[agent] = true;
     renderTeamDiscovery(currentState);
-    // Auto-switch to next unanswered tab
-    const order = ['kavya','vikram','rasool'];
-    const next  = order.find(a => !tdpSubmitted[a] && a !== agent);
+    // Auto-advance to next unanswered tab
+    const disc = (currentState.req || {}).teamDiscovery || {};
+    const next = tdpActiveAgents.find(a => a !== agent && !tdpSubmitted[a] && !disc[a]);
     if (next) switchTdpTab(next);
   })
   .catch(e => alert('Network error: ' + e.message));

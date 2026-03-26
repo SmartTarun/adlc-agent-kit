@@ -14,10 +14,13 @@
   "discoveryComplete": false,
   "approvedByTarun": false,
   "approvedAt": null,
+  "requiredAgents": [],
   "teamDiscovery": {
     "kavya": null,
     "vikram": null,
-    "rasool": null
+    "rasool": null,
+    "kiran": null,
+    "rohan": null
   },
   "agentInputs": {
     "arjun": { "received": false, "summary": "", "questions": [], "estimate": "" },
