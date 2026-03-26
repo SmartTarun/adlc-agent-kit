@@ -59,3 +59,9 @@ agent-memory/
 context/*.json
 group-chat.json
 chat-uploads/
+
+# Local project state — never commit, stored on each machine only
+active-project.json
+requirement.json
+agent-status.json
+agent-logs/
