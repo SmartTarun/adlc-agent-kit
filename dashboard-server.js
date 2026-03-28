@@ -132,38 +132,58 @@ function getProjectRoot() {
   }
 }
 
-// Lists all projects: the root project (if requirement.json exists) + every
-// subfolder under projects/ that contains a requirement.json.
+// Lists all projects from the local projects/ folder.
+// Reads requirement.json if present, falls back to PROJECT-MEMORY.md,
+// then bare folder name — so every project directory is always shown.
 function getProjects() {
-  const projects = [];
+  const projects  = [];
   const activeRoot = getProjectRoot();
 
-  const rootReq = readJSON(path.join(ROOT, 'requirement.json'));
-  if (rootReq && rootReq.requirementId) {
-    projects.push({
-      id:       rootReq.requirementId,
-      name:     rootReq.title  || 'Unnamed',
-      sprint:   rootReq.sprint || '',
-      status:   rootReq.status || 'pending',
-      path:     '.',
-      isActive: activeRoot === ROOT,
-    });
+  // Parse PROJECT-MEMORY.md for name/sprint/status when requirement.json is absent
+  function parseMemory(folderAbs) {
+    try {
+      const md = fs.readFileSync(path.join(folderAbs, 'PROJECT-MEMORY.md'), 'utf8');
+      const nameMatch   = md.match(/^#\s+Project Memory\s*[—-]\s*(.+)$/m);
+      const sprintMatch = md.match(/\*\*Sprint\*\*:\s*(\S+)/);
+      const statusMatch = md.match(/\*\*Status\*\*:\s*(\S+)/);
+      return {
+        name:   nameMatch   ? nameMatch[1].trim()   : null,
+        sprint: sprintMatch ? sprintMatch[1].trim() : '',
+        status: statusMatch ? statusMatch[1].trim() : 'pending',
+      };
+    } catch { return null; }
   }
 
   const projectsDir = path.join(ROOT, 'projects');
   if (fs.existsSync(projectsDir)) {
-    fs.readdirSync(projectsDir).forEach(folder => {
-      const folderAbs = path.join(projectsDir, folder);
+    fs.readdirSync(projectsDir).sort().forEach(folder => {
+      const folderAbs  = path.join(projectsDir, folder);
       try { if (!fs.statSync(folderAbs).isDirectory()) return; } catch { return; }
-      const req = readJSON(path.join(folderAbs, 'requirement.json'));
-      if (!req || !req.requirementId) return;
+
+      const req    = readJSON(path.join(folderAbs, 'requirement.json'));
+      const memory = parseMemory(folderAbs);
+
+      const id     = (req && req.requirementId) || folder;
+      const name   = (req && req.title) || (memory && memory.name) || folder;
+      const sprint = (req && req.sprint) || (memory && memory.sprint) || '';
+      const status = (req && req.status) || (memory && memory.status) || 'pending';
+
+      // Read agent-status from project folder if it exists, else root
+      const agentStatusPath = fs.existsSync(path.join(folderAbs, 'agent-status.json'))
+        ? path.join(folderAbs, 'agent-status.json')
+        : path.join(ROOT, 'agent-status.json');
+      const agentStatus = readJSON(agentStatusPath) || {};
+      const agentsMap   = agentStatus.agents || agentStatus;
+
       projects.push({
-        id:       req.requirementId,
-        name:     req.title  || folder,
-        sprint:   req.sprint || '',
-        status:   req.status || 'pending',
-        path:     'projects/' + folder,
-        isActive: activeRoot === folderAbs,
+        id,
+        name,
+        sprint,
+        status,
+        path:      'projects/' + folder,
+        isActive:  activeRoot === folderAbs,
+        agents:    agentsMap,
+        createdAt: req ? req.postedAt : null,
       });
     });
   }

@@ -3093,9 +3093,9 @@ function closeNewProjectScreen() {
 }
 
 function renderNPExisting(state) {
-  const projects  = (state.projects || []).filter(p => p.name && p.name !== 'Unnamed');
-  const listEl    = document.getElementById('np-projects-list');
-  const emptyEl   = document.getElementById('np-empty-state');
+  const projects   = (state.projects || []);
+  const listEl     = document.getElementById('np-projects-list');
+  const emptyEl    = document.getElementById('np-empty-state');
   const activePath = (state.activeProject || {}).current || '';
 
   if (!projects.length) {
@@ -3105,20 +3105,37 @@ function renderNPExisting(state) {
   }
 
   const badgeCls = s => s === 'done' ? 'done' : s === 'qa' ? 'qa' : (s||'').includes('sprint') ? 'wip' : '';
-  const icon     = s => s === 'done' ? '✅' : s === 'qa' ? '🔍' : (s||'').includes('sprint') ? '⚡' : '📁';
+  const icon     = s => s === 'done' ? '✅' : s === 'qa' ? '🔍' : s === 'sprint_complete' ? '✅' : (s||'').includes('sprint') ? '⚡' : '📁';
 
   listEl.innerHTML = projects.map(p => {
-    const isActive = activePath && activePath.endsWith(p.path || p.id);
+    const isActive    = activePath && (activePath === p.path || activePath.endsWith('/' + (p.path||'').split('/').pop()));
     const statusLabel = (p.status || 'pending').replace(/_/g, ' ');
+
+    // Agent summary mini-bar from project's agent data
+    const agents    = p.agents || {};
+    const agentList = Object.entries(agents);
+    const doneCount = agentList.filter(([,a]) => a.status === 'done').length;
+    const wipCount  = agentList.filter(([,a]) => a.status === 'wip').length;
+    const agentBar  = agentList.length
+      ? `<div style="display:flex;gap:3px;margin-top:5px;flex-wrap:wrap;">
+          ${agentList.map(([name, a]) => {
+            const dot = a.status==='done' ? '#3fb950' : a.status==='wip' ? '#f0b429' : a.status==='blocked' ? '#f85149' : '#555';
+            return `<span title="${name}: ${a.status}" style="width:8px;height:8px;border-radius:50%;background:${dot};display:inline-block;"></span>`;
+          }).join('')}
+          <span style="font-size:9px;color:var(--text-dim);margin-left:4px">${doneCount}/${agentList.length} done${wipCount ? ` · ${wipCount} active` : ''}</span>
+        </div>`
+      : '';
+
     return `<div class="np-proj-card${isActive ? ' active-proj' : ''}"
                  onclick="switchToProject('${escHtml(p.path || '')}'); closeNewProjectScreen();">
       <div class="np-proj-icon">${icon(p.status)}</div>
       <div class="np-proj-info">
         <div class="np-proj-name">${escHtml(p.name)}</div>
-        <div class="np-proj-meta">Sprint ${escHtml(p.sprint || '?')} &middot; ${escHtml(p.path || p.id || '')}</div>
+        <div class="np-proj-meta">Sprint ${escHtml(p.sprint || '?')} · <span style="opacity:.6">${escHtml(p.path || p.id || '')}</span></div>
         <span class="np-proj-badge ${badgeCls(p.status)}">${escHtml(statusLabel)}</span>
+        ${agentBar}
       </div>
-      <div class="np-proj-arrow">›</div>
+      <div class="np-proj-arrow">${isActive ? '●' : '›'}</div>
     </div>`;
   }).join('');
 }
