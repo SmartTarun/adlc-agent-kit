@@ -2921,6 +2921,7 @@ function sendTeamMessage(message, type = 'broadcast') {
 function openNewProjectScreen() {
   renderNPExisting(currentState);
   document.getElementById('new-project-screen').classList.add('open');
+  loadMCPConfig();
 }
 
 function closeNewProjectScreen() {
@@ -2966,10 +2967,12 @@ function switchToProject(path) {
     body: JSON.stringify({ path }) }).catch(console.error);
 }
 
-function submitNewProject() {
+async function submitNewProject() {
   const title       = document.getElementById('np-title').value.trim();
   const description = document.getElementById('np-desc').value.trim();
   if (!title || !description) { alert('Project name and description are required.'); return; }
+
+  await saveMCPConfig();
 
   const payload = {
     title,
@@ -2979,23 +2982,26 @@ function submitNewProject() {
     techConstraints: document.getElementById('np-constraints').value.trim()
       ? document.getElementById('np-constraints').value.split(',').map(s => s.trim()) : [],
     deadline:        document.getElementById('np-deadline').value || null,
+    mcpConfig:       Object.keys(mcpConfig).length ? mcpConfig : undefined,
     priority: 'high',
     type: 'new_project',
     sprint: '',
   };
 
-  fetch('/api/requirement', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
-  })
-  .then(r => r.json())
-  .then(d => {
+  try {
+    const r = await fetch('/api/requirement', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+    });
+    const d = await r.json();
     if (d.ok || d.requirementId) {
+      if (d.projectId || d.requirementId) {
+        await npUploadContextFiles(d.projectId || d.requirementId);
+      }
       const msg = document.getElementById('np-msg');
       msg.style.display = 'block';
       setTimeout(closeNewProjectScreen, 1800);
     } else { alert('Error: ' + (d.error || 'unknown')); }
-  })
-  .catch(e => alert('Network error: ' + e.message));
+  } catch(e) { alert('Network error: ' + e.message); }
 }
 
 // Auto-show Project Hub when no active project is selected
@@ -3618,41 +3624,6 @@ async function npUploadContextFiles(projectId) {
   } catch (e) { console.error('Context upload failed', e); }
 }
 
-// Patch submitNewProject to also save MCP + upload files
-const _origSubmitNewProject = submitNewProject;
-async function submitNewProject() {
-  await saveMCPConfig();
-  // Run original (async-wrapped) then upload files
-  const titleEl = document.getElementById('np-title');
-  if (titleEl && !titleEl.value.trim()) { alert('Please enter a project title.'); return; }
-  const body = {
-    title:           document.getElementById('np-title').value.trim(),
-    description:     document.getElementById('np-desc').value.trim(),
-    businessGoal:    document.getElementById('np-goal')?.value.trim() || '',
-    targetUsers:     document.getElementById('np-users')?.value.trim() || '',
-    techConstraints: document.getElementById('np-constraints')?.value.trim()
-      ? document.getElementById('np-constraints').value.split(',').map(s => s.trim()) : [],
-    deadline:        document.getElementById('np-deadline')?.value || null,
-    mcpConfig:       Object.keys(mcpConfig).length ? mcpConfig : undefined,
-  };
-  try {
-    const r = await fetch('/api/requirement', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-    const data = await r.json();
-    if (data.projectId) await npUploadContextFiles(data.projectId);
-    const msg = document.getElementById('np-msg');
-    if (msg) { msg.style.display = 'block'; msg.textContent = 'Project created! Arjun is starting discovery...'; }
-    setTimeout(closeNewProjectScreen, 1800);
-  } catch (e) {
-    alert('Failed to create project. Is the dashboard server running?');
-  }
-}
-
-// Load MCP config when New Project screen opens
-const _origOpenNewProjectScreen = openNewProjectScreen;
-function openNewProjectScreen() {
-  _origOpenNewProjectScreen();
-  loadMCPConfig();
-}
 </script>
 
 <!-- ══════════════════════════════════════════════════════════════════════
