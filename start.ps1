@@ -66,7 +66,7 @@ Start-Process "http://localhost:3000"
 # ── Step 4: Open Arjun in a new window ────────────────────────────────────
 $arjunPrompt = Join-Path $ROOT "prompts\arjun-prompt.txt"
 Start-Process powershell -ArgumentList "-NoExit", "-Command", `
-    "cd '$ROOT'; `$env:ANTHROPIC_API_KEY='$apiKey'; Write-Host '  Arjun (PM) starting...' -ForegroundColor Magenta; Get-Content '$arjunPrompt' | claude --model claude-opus-4-6 --dangerously-skip-permissions" `
+    "cd '$ROOT'; `$env:ANTHROPIC_API_KEY='$apiKey'; Write-Host '  Arjun (PM) starting...' -ForegroundColor Magenta; `$prompt = Get-Content '$arjunPrompt' -Raw; claude --model claude-opus-4-6 --dangerously-skip-permissions `$prompt" `
     -WindowStyle Normal
 
 Write-Host "  [3/3] Arjun window opened." -ForegroundColor Green
