@@ -27,14 +27,96 @@ const http  = require('http');
 const fs    = require('fs');
 const path  = require('path');
 const url   = require('url');
+const { spawn } = require('child_process');
 
 const ROOT        = __dirname;
 const PORT        = (() => { const i = process.argv.indexOf('--port'); return i >= 0 ? parseInt(process.argv[i+1]) : 3000; })();
 const AGENTS      = ['arjun','vikram','rasool','kavya','kiran','rohan','keerthi'];
 const UPLOADS_DIR = path.join(ROOT, 'chat-uploads');
+const LOGS_DIR    = path.join(ROOT, 'agent-logs');
 
-// Ensure chat-uploads directory exists on startup
+// Ensure required directories exist on startup
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+if (!fs.existsSync(LOGS_DIR))    fs.mkdirSync(LOGS_DIR,    { recursive: true });
+
+// -- Agent process tracking --------------------------------------------------
+const agentProcesses = {}; // { agentName: { proc, pid, startedAt } }
+
+function getAgentModel(agentName) {
+  try {
+    const prompt = fs.readFileSync(path.join(ROOT, 'prompts', `${agentName}-prompt.txt`), 'utf8');
+    const m = prompt.match(/# Model:\s*(\S+)/);
+    return m ? m[1] : 'claude-sonnet-4-6';
+  } catch { return 'claude-sonnet-4-6'; }
+}
+
+function launchAgent(agentName) {
+  const existing = agentProcesses[agentName];
+  if (existing && existing.proc && existing.proc.exitCode === null) {
+    return { ok: false, error: 'already running' };
+  }
+  const promptFile = path.join(ROOT, 'prompts', `${agentName}-prompt.txt`);
+  if (!fs.existsSync(promptFile)) return { ok: false, error: 'no prompt file' };
+
+  const promptContent = fs.readFileSync(promptFile, 'utf8');
+  const model   = getAgentModel(agentName);
+  const logPath = path.join(LOGS_DIR, `${agentName}.log`);
+
+  const proc = spawn('claude', [
+    '--print',
+    '--model', model,
+    '--allowedTools', 'Bash,Read,Write,Edit,Glob,Grep,WebFetch',
+  ], { cwd: ROOT, shell: true, stdio: ['pipe', 'pipe', 'pipe'] });
+
+  proc.stdin.write(promptContent);
+  proc.stdin.end();
+
+  agentProcesses[agentName] = { proc, pid: proc.pid, startedAt: new Date().toISOString() };
+
+  // Mark agent as wip immediately — write flat format so getFullState() normalises cleanly
+  const pr = getProjectRoot();
+  const statusData = readJSON(path.join(pr, 'agent-status.json')) || {};
+  const agentsMap = statusData.agents || statusData;
+  agentsMap[agentName] = { status: 'wip', progress: 5, task: 'Agent starting…', blocker: '', updated: new Date().toISOString() };
+  if (statusData.agents) statusData.agents = agentsMap; else Object.assign(statusData, agentsMap);
+  writeJSON(path.join(pr, 'agent-status.json'), statusData);
+
+  proc.stdout.on('data', chunk => {
+    fs.appendFileSync(logPath, chunk.toString());
+    broadcast('agent-log', { agent: agentName, text: chunk.toString() });
+  });
+  proc.stderr.on('data', chunk => {
+    fs.appendFileSync(logPath, '[ERR] ' + chunk.toString());
+  });
+  proc.on('exit', code => {
+    const pr2 = getProjectRoot();
+    const sd = readJSON(path.join(pr2, 'agent-status.json')) || {};
+    const am = sd.agents || sd;
+    if (am[agentName]) {
+      am[agentName].status  = code === 0 ? 'done' : 'blocked';
+      am[agentName].blocker = code !== 0 ? `Exited with code ${code}` : '';
+      am[agentName].updated = new Date().toISOString();
+    }
+    if (sd.agents) sd.agents = am; else Object.assign(sd, am);
+    writeJSON(path.join(pr2, 'agent-status.json'), sd);
+    broadcast('update', getFullState());
+    postToChat('SYSTEM', 'System', 'system',
+      `Agent ${agentName.toUpperCase()} ${code === 0 ? 'completed ✅' : `exited with code ${code} ❌`}`,
+      [agentName]);
+  });
+
+  return { ok: true, pid: proc.pid };
+}
+
+function stopAllAgents() {
+  let stopped = 0;
+  for (const [, info] of Object.entries(agentProcesses)) {
+    if (info.proc && info.proc.exitCode === null) {
+      try { info.proc.kill(); stopped++; } catch {}
+    }
+  }
+  return stopped;
+}
 
 // -- Multi-project support -----------------------------------------------
 
@@ -116,23 +198,11 @@ function startWatching() {
     try { fs.readdirSync(memDir).forEach(f => targets.push('agent-memory/' + f)); } catch {}
   }
 
-  // Ensure core files exist so the watcher can attach
-  const defaults = {
-    'group-chat.json':  { channel: 'team-panchayat-general', messages: [] },
-    'agent-status.json': {},
-    'requirement.json':  {},
-  };
-  Object.entries(defaults).forEach(([rel, blank]) => {
-    const abs = path.join(pr, rel);
-    if (!fs.existsSync(abs)) {
-      try { fs.writeFileSync(abs, JSON.stringify(blank, null, 2), 'utf8'); } catch {}
-    }
-  });
-
   targets.forEach(rel => {
     const abs = path.join(pr, rel);
     if (!fs.existsSync(abs)) return;
     try {
+      const debounceMs = rel === 'group-chat.json' ? 50 : 300;
       const w = fs.watch(abs, () => {
         setTimeout(() => {
           try {
@@ -143,7 +213,7 @@ function startWatching() {
               console.log(`[${new Date().toLocaleTimeString()}] Changed: ${rel} -> pushed to ${clients.length} client(s)`);
             }
           } catch {}
-        }, 300);
+        }, debounceMs);
       });
       watchers.push(w);
     } catch {}
@@ -173,11 +243,13 @@ function broadcast(event, data) {
 const CHAT_DASHBOARD_WINDOW = 50;
 
 function getFullState() {
-  const pr      = getProjectRoot();
-  const status  = readJSON(path.join(pr, 'agent-status.json'))  || {};
-  const rawChat = readJSON(path.join(pr, 'group-chat.json'))     || { channel: 'team-panchayat-general', messages: [] };
-  const req     = readJSON(path.join(pr, 'requirement.json'))    || {};
-  const memory  = {};
+  const pr         = getProjectRoot();
+  const rawStatus  = readJSON(path.join(pr, 'agent-status.json')) || {};
+  // Normalise: support both { agents: {...} } (new format) and flat { arjun: {...} } (legacy)
+  const agents     = rawStatus.agents || rawStatus;
+  const rawChat    = readJSON(path.join(pr, 'group-chat.json'))   || { channel: 'team-panchayat-general', messages: [] };
+  const req        = readJSON(path.join(pr, 'requirement.json'))  || {};
+  const memory     = {};
   try {
     fs.readdirSync(path.join(pr, 'agent-memory')).forEach(f => {
       const agent = f.replace('-memory.json', '');
@@ -195,20 +267,23 @@ function getFullState() {
     messages:   allMessages.slice(-CHAT_DASHBOARD_WINDOW),
   };
 
-  return { status, chat, req, memory, activeProject, projects, timestamp: new Date().toISOString() };
+  return { agents, chat, req, memory, activeProject, projects, timestamp: new Date().toISOString() };
 }
 
 function postToChat(from, role, type, message, tags) {
   const chatFile = path.join(getProjectRoot(), 'group-chat.json');
   const chat = readJSON(chatFile) || { channel: 'team-panchayat-general', messages: [] };
   if (!chat.messages) chat.messages = [];
-  chat.messages.push({
+  const msg = {
     id:        `msg-${Date.now()}-${Math.random().toString(36).slice(2,6)}`,
     from, role, type, message,
     tags:      tags || [],
     timestamp: new Date().toISOString(),
-  });
+  };
+  chat.messages.push(msg);
   writeJSON(chatFile, chat);
+  // Push just the new message instantly — no file-watcher delay
+  broadcast('chat-message', msg);
 }
 
 // Cache sprint-board.html at startup so it is not re-read on every request
@@ -466,6 +541,8 @@ const server = http.createServer(async (req, res) => {
       if (!chat.messages) chat.messages = [];
       chat.messages.push(msg);
       writeJSON(chatFile, chat);
+      // Push to all clients instantly
+      broadcast('chat-message', msg);
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ ok: true }));
     } catch (e) {
@@ -580,6 +657,9 @@ const server = http.createServer(async (req, res) => {
       postToChat('ARJUN', 'Orchestrator', 'broadcast',
         `All agents - new requirement received: "${reqObj.title}". Read requirement.json and post your analysis.`,
         ['action-required', 'all-agents']);
+      postToChat('ARJUN', 'Orchestrator', 'system',
+        `🚀 Analysis started for "${reqObj.title}"! I'm spinning up the discovery phase now — Vikram, Rasool, Kiran, Kavya, Rohan: please review requirement.json and report your estimates back here. Keerthi stands by for QA once all agents are done.`,
+        ['analysis-started', 'all-agents']);
 
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ ok: true, requirementId: req_id }));
@@ -718,6 +798,56 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  // -- API: launch agents ------------------------------------------
+  if (pathname === '/api/launch-agents' && req.method === 'POST') {
+    cors(res);
+    try {
+      const body = await readBody(req);
+      const data = JSON.parse(body || '{}');
+      const targets = Array.isArray(data.agents) ? data.agents : AGENTS.filter(a => a !== 'keerthi');
+      const results = {};
+      for (const a of targets) results[a] = launchAgent(a);
+      postToChat('SYSTEM', 'System', 'broadcast',
+        `🚀 Launching agents: ${targets.join(', ')} — check the agent cards for live progress.`,
+        ['system', 'all-agents']);
+      broadcast('update', getFullState());
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, results }));
+    } catch (e) {
+      res.writeHead(500); res.end(JSON.stringify({ error: e.message }));
+    }
+    return;
+  }
+
+  // -- API: stop agents --------------------------------------------
+  if (pathname === '/api/stop-agents' && req.method === 'POST') {
+    cors(res);
+    const stopped = stopAllAgents();
+    postToChat('SYSTEM', 'System', 'broadcast',
+      `⏹ ${stopped} agent process(es) stopped by Tarun.`, ['system']);
+    broadcast('update', getFullState());
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true, stopped }));
+    return;
+  }
+
+  // -- API: agent process status -----------------------------------
+  if (pathname === '/api/agent-processes' && req.method === 'GET') {
+    cors(res);
+    const status = {};
+    for (const [name, info] of Object.entries(agentProcesses)) {
+      status[name] = {
+        running:    info.proc && info.proc.exitCode === null,
+        pid:        info.pid,
+        startedAt:  info.startedAt,
+        exitCode:   info.proc ? info.proc.exitCode : null,
+      };
+    }
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(status));
+    return;
+  }
+
   // -- Static files -----------------------------------------------
   // Serve sprint-board.html (the active Kanban dashboard) at /
   let filePath = (pathname === '/' || pathname === '/index.html') ? '/sprint-board.html' : pathname;
@@ -733,8 +863,9 @@ const server = http.createServer(async (req, res) => {
   let src;
   function connect(){
     src = new EventSource('http://localhost:' + PORT + '/events');
-    src.addEventListener('init',   e => { window.dispatchEvent(new CustomEvent('panchayat-state', {detail: JSON.parse(e.data)})); showStatus('live'); });
-    src.addEventListener('update', e => { window.dispatchEvent(new CustomEvent('panchayat-state', {detail: JSON.parse(e.data)})); flashStatus(); });
+    src.addEventListener('init',         e => { window.dispatchEvent(new CustomEvent('panchayat-state',   {detail: JSON.parse(e.data)})); showStatus('live'); });
+    src.addEventListener('update',       e => { window.dispatchEvent(new CustomEvent('panchayat-state',   {detail: JSON.parse(e.data)})); flashStatus(); });
+    src.addEventListener('chat-message', e => { window.dispatchEvent(new CustomEvent('panchayat-chat-msg',{detail: JSON.parse(e.data)})); flashStatus(); });
     src.onerror = () => { showStatus('error'); setTimeout(connect, 3000); };
   }
   function showStatus(s){

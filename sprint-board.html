@@ -495,6 +495,30 @@ body {
   background: #fafbff;
 }
 
+/* ── Chat new-message animation ── */
+@keyframes chatSlideIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+/* ── Typing indicator ── */
+.chat-typing {
+  display: flex; align-items: center; gap: 8px;
+  padding: 4px 0 4px 42px; font-size: 11px; color: var(--text-dim);
+  min-height: 22px;
+}
+.chat-typing-dots { display: flex; gap: 3px; align-items: center; }
+.chat-typing-dots span {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--primary); opacity: .4;
+  animation: typingBounce 1.2s infinite;
+}
+.chat-typing-dots span:nth-child(2) { animation-delay: .2s; }
+.chat-typing-dots span:nth-child(3) { animation-delay: .4s; }
+@keyframes typingBounce {
+  0%,60%,100% { transform: translateY(0); opacity: .4; }
+  30% { transform: translateY(-4px); opacity: 1; }
+}
+
 /* ── Teams Message Bubbles ── */
 .chat-msg {
   display: flex;
@@ -504,6 +528,7 @@ body {
   padding: 3px 0;
   position: relative;
 }
+.chat-msg.new { animation: chatSlideIn .18s ease; }
 .chat-msg.is-grouped { padding-top: 1px; }
 
 /* Avatar circle */
@@ -1618,6 +1643,7 @@ body {
   <div id="sse-status">● Connecting...</div>
   <button id="btn-approve-next" class="topbtn approve" onclick="approveAndStartNext()" style="display:none" title="Mark this project done and start the next requirement">✅ Approve &amp; Start Next</button>
   <button class="topbtn primary" onclick="openNewProjectScreen()">+ New Project</button>
+  <button id="btn-launch-agents" class="topbtn success" onclick="launchAgents()" title="Spawn all agent Claude processes">🚀 Launch Agents</button>
   <button class="topbtn" onclick="openUXScreen()" title="Open UX Design Review screen" style="border-color:#c4b5fd;color:#e9d5ff">🎨 UX Design</button>
   <button class="topbtn" onclick="openPermModal()" title="Manage agent tool permissions">🔐 Permissions</button>
   <button class="topbtn success" onclick="activateKeerthi()">🟢 Activate QA</button>
@@ -1739,6 +1765,7 @@ body {
       <span id="chat-toggle" onclick="toggleChat()" title="Toggle chat">▼</span>
     </div>
     <div id="chat-messages"></div>
+    <div id="chat-typing-row"></div>
 
     <!-- File preview strip (shown only when files are staged) -->
     <div id="attach-preview"></div>
@@ -1904,8 +1931,6 @@ const AGENT_META = {
 
 // ── State ────────────────────────────────────────────────────────────────────
 let currentState   = {};
-let mcpConfig      = {};
-let npUploadedFiles = [];
 let logEventSource = null;
 let logAgent       = null;
 let startTime      = Date.now();
@@ -2072,6 +2097,7 @@ function renderBoard(state) {
 
   // Render chat -- state.chat is the full {channel, messages:[]} object
   renderChat((state.chat && state.chat.messages) ? state.chat.messages : []);
+  updateTypingIndicator(state.agents || {});
 }
 
 function normaliseStatus(agentStatus, containerInfo) {
@@ -2264,6 +2290,111 @@ function typeBadge(type) {
   return '<span class="chat-type-badge ' + cls + '">' + escHtml(type) + '</span>';
 }
 
+// ── Lightweight markdown renderer ────────────────────────────────────────────
+function renderMarkdown(text) {
+  return escHtml(text)
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/`([^`]+)`/g, '<code style="background:var(--surface3);padding:1px 4px;border-radius:3px;font-family:var(--mono);font-size:11px">$1</code>')
+    .replace(/\n/g, '<br>');
+}
+
+// ── Typing indicator (driven by WIP agent statuses) ───────────────────────────
+let typingAgents = new Set();
+function updateTypingIndicator(agents) {
+  const wip = Object.entries(agents || {})
+    .filter(([, v]) => v.status === 'wip')
+    .map(([k]) => k);
+  typingAgents = new Set(wip);
+  const box = document.getElementById('chat-typing-row');
+  if (!box) return;
+  if (wip.length === 0) { box.innerHTML = ''; return; }
+  const names = wip.map(a => a.charAt(0).toUpperCase() + a.slice(1)).join(', ');
+  box.innerHTML = `<div class="chat-typing"><div class="chat-typing-dots"><span></span><span></span><span></span></div><span>${names} ${wip.length === 1 ? 'is' : 'are'} working…</span></div>`;
+}
+
+// ── Append a single new message (no full re-render) ───────────────────────────
+function appendChatMessage(msg, animate) {
+  const box = document.getElementById('chat-messages');
+  if (!box) return;
+  const atBottom = box.scrollTop + box.clientHeight >= box.scrollHeight - 40;
+  const msgType = msg.type || 'message';
+  const sender  = (msg.from || msg.sender || '?').toUpperCase();
+  const senderL = sender.toLowerCase();
+  const isOwn   = senderL === 'tarun';
+  const isSystem= senderL === 'system';
+  const time    = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' }) : '';
+
+  // Check if previous message is from same sender (grouping)
+  const prev = box.lastElementChild;
+  const prevSender = prev && prev.dataset.sender;
+  const isGrouped = prevSender === sender && !isSystem;
+
+  const el = document.createElement('div');
+  el.className = ['chat-msg', 'chat-type-' + msgType, isOwn ? 'own-msg' : '', isGrouped ? 'is-grouped' : '', animate ? 'new' : ''].filter(Boolean).join(' ');
+  el.dataset.sender = sender;
+  el.dataset.msgId  = msg.id || '';
+
+  const avatarHtml = isGrouped
+    ? '<div class="chat-avatar hidden"></div>'
+    : '<div class="chat-avatar avatar-' + senderL + '">' + senderInitials(sender) + '</div>';
+
+  const metaHtml = isGrouped ? '' :
+    '<div class="chat-meta">' +
+      '<span class="chat-sender sender-' + senderL + '">' + escHtml(sender) + '</span>' +
+      typeBadge(msgType) +
+      '<span class="chat-time">' + time + '</span>' +
+    '</div>';
+
+  let attachHtml = '';
+  if (Array.isArray(msg.attachments) && msg.attachments.length) {
+    const chips = msg.attachments.map(a => {
+      const icon    = fileIcon(a.mimeType, a.name);
+      const isImage = a.mimeType && a.mimeType.startsWith('image/');
+      const href    = a.url ? a.url : (a.data || '#');
+      const sizeStr = a.size ? formatSize(a.size) : '';
+      if (isImage && (a.url || a.data)) {
+        return '<a class="chat-attach-file" href="' + escHtml(href) + '" download="' + escHtml(a.name) + '" target="_blank">' +
+          icon + ' <span class="fa-name">' + escHtml(a.name) + '</span>' +
+          (sizeStr ? ' <span class="chat-attach-size">(' + sizeStr + ')</span>' : '') + '</a>' +
+          '<a href="' + escHtml(href) + '" target="_blank"><img class="chat-attach-img" src="' + escHtml(href) + '" alt="' + escHtml(a.name) + '"></a>';
+      }
+      return '<a class="chat-attach-file" href="' + escHtml(href) + '" download="' + escHtml(a.name) + '" target="_blank">' +
+        icon + ' <span class="fa-name">' + escHtml(a.name) + '</span>' +
+        (sizeStr ? ' <span class="chat-attach-size">(' + sizeStr + ')</span>' : '') + '</a>';
+    }).join('');
+    attachHtml = '<div class="chat-attachments" style="margin-top:6px;">' + chips + '</div>';
+  }
+
+  const bubbleText = renderMarkdown(msg.message || '');
+  el.innerHTML = avatarHtml +
+    '<div class="chat-msg-content">' + metaHtml +
+      '<div class="chat-bubble">' + bubbleText + attachHtml + '</div>' +
+    '</div>';
+
+  box.appendChild(el);
+  lastChatLen = (lastChatLen || 0) + 1;
+  document.getElementById('chat-msg-count').textContent = lastChatLen + ' messages';
+
+  // Auto-expand chat panel if it was collapsed
+  if (!chatOpen) {
+    chatOpen = true;
+    const panel = document.getElementById('chat-panel');
+    panel.style.height = '180px';
+    document.getElementById('chat-toggle').textContent = '▼';
+  }
+  if (atBottom) box.scrollTop = box.scrollHeight;
+}
+
+// ── Handle instant chat-message SSE event ─────────────────────────────────────
+window.addEventListener('panchayat-chat-msg', e => {
+  const msg = e.detail;
+  // Deduplicate: skip if we already rendered this id
+  const box = document.getElementById('chat-messages');
+  if (box && msg.id && box.querySelector('[data-msg-id="' + msg.id + '"]')) return;
+  appendChatMessage(msg, true);
+});
+
 function renderChat(messages) {
   if (messages.length === lastChatLen) return;
   lastChatLen = messages.length;
@@ -2293,6 +2424,8 @@ function renderChat(messages) {
       isOwn     ? 'own-msg'    : '',
       isGrouped ? 'is-grouped' : '',
     ].filter(Boolean).join(' ');
+    el.dataset.sender = sender;
+    el.dataset.msgId  = msg.id || '';
 
     // Avatar
     const avatarHtml = isGrouped
@@ -2330,7 +2463,7 @@ function renderChat(messages) {
       attachHtml = '<div class="chat-attachments" style="margin-top:6px;">' + chips + '</div>';
     }
 
-    const bubbleText = escHtml(msg.message || '').replace(/\n/g, '<br>');
+    const bubbleText = renderMarkdown(msg.message || '');
 
     el.innerHTML =
       avatarHtml +
@@ -2536,11 +2669,37 @@ function activateKeerthi() {
 }
 
 function stopAll() {
-  if (!confirm('Stop all agent containers? The cluster will shut down.')) return;
-  sendTeamMessage('⏹ Cluster stop requested by Tarun', 'broadcast');
-  setTimeout(() => {
-    alert('Run: docker compose down\n(in the ADLC-Agent-Kit directory)');
-  }, 500);
+  if (!confirm('Stop all running agent processes?')) return;
+  fetch('/api/stop-agents', { method: 'POST' })
+    .then(r => r.json())
+    .then(d => {
+      if (d.ok) sendTeamMessage(`⏹ ${d.stopped} agent process(es) stopped by Tarun`, 'broadcast');
+      else alert('Error: ' + (d.error || 'unknown'));
+    });
+}
+
+function launchAgents(agents) {
+  const targets = agents || null;
+  const label = targets ? targets.join(', ') : 'all agents';
+  if (!confirm(`Launch ${label}?\n\nThis will spawn Claude processes for each agent using their prompt files.`)) return;
+  const btn = document.getElementById('btn-launch-agents');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Launching…'; }
+  fetch('/api/launch-agents', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(targets ? { agents: targets } : {}),
+  })
+    .then(r => r.json())
+    .then(d => {
+      if (btn) { btn.disabled = false; btn.textContent = '🚀 Launch Agents'; }
+      if (!d.ok) { alert('Error: ' + (d.error || 'unknown')); return; }
+      const failed = Object.entries(d.results || {}).filter(([, r]) => !r.ok).map(([a, r]) => `${a}: ${r.error}`);
+      if (failed.length) alert('Some agents could not start:\n' + failed.join('\n'));
+    })
+    .catch(e => {
+      if (btn) { btn.disabled = false; btn.textContent = '🚀 Launch Agents'; }
+      alert('Network error: ' + e.message);
+    });
 }
 
 // ── Permissions Manager ───────────────────────────────────────────────────────
@@ -3002,6 +3161,12 @@ async function submitNewProject() {
       const msg = document.getElementById('np-msg');
       msg.style.display = 'block';
       setTimeout(closeNewProjectScreen, 1800);
+      setTimeout(() => {
+        const panel = document.getElementById('chat-panel');
+        if (!chatOpen) { chatOpen = true; panel.style.height = '180px'; document.getElementById('chat-toggle').textContent = '▼'; }
+        const box = document.getElementById('chat-messages');
+        if (box) box.scrollTop = box.scrollHeight;
+      }, 2200);
     } else { alert('Error: ' + (d.error || 'unknown')); }
   } catch(e) { alert('Network error: ' + e.message); }
 }
@@ -3517,6 +3682,8 @@ function requestUXChanges() {
 }
 
 // ── MCP Configuration ──────────────────────────────────────────────────────
+let mcpConfig = {};
+
 function mcpFieldChanged(key) {
   const vals = {
     db:     document.getElementById('mcp-db-url')?.value.trim(),
@@ -3566,6 +3733,8 @@ async function loadMCPConfig() {
 }
 
 // ── Context Document Upload ────────────────────────────────────────────────
+let npUploadedFiles = [];
+
 function npFileIcon(name) {
   const ext = name.split('.').pop().toLowerCase();
   const icons = { pdf: '📄', docx: '📝', xlsx: '📊', csv: '📋', json: '🗂️', md: '📑', txt: '📃' };
