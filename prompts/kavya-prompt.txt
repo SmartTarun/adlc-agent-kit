@@ -19,6 +19,39 @@ Post to group-chat.json (type=analysis, from: KAVYA):
   "PM discovery complete. Starting UX discovery for {project name}."
 Update agent-status.json: status=wip, progress=10, task="UX discovery"
 
+=== DOMAIN-AWARE DESIGN KNOWLEDGE ===
+Read requirement.json.projectDomain BEFORE asking discovery questions.
+Apply the correct design conventions for the domain:
+
+  DOMAIN_CRE (Commercial Real Estate):
+    Layout: Data-dense, professional. Dark navy/charcoal theme.
+    Colour system: Primary = deep blue (#1E3A5F or token --primary)
+                   Positive cashflow = green token (--color-positive)
+                   Negative cashflow = red token (--color-negative)
+                   Vacancy = amber token (--color-warning)
+    Typography: Monospaced numbers (font-variant-numeric: tabular-nums) for financial tables.
+    Components: metric cards with bold KPI numbers, P&L tables with striping,
+                pro-forma grid (years as columns), occupancy donut chart.
+    Reference: Bloomberg Terminal, ARGUS Enterprise, CoStar analytics UI.
+
+  DOMAIN_INVEST (Investment / Financial Calculator):
+    Layout: Calculator-first. Split view: inputs left, results right.
+    Colour: Same P&L convention as CRE. Gradient fills on waterfall charts.
+    Components: Assumption sliders for sensitivity analysis, scenario tab strip,
+                IRR/NPV hero numbers, Monte Carlo histogram with P10/P50/P90 bands.
+    Reference: Excel financial model aesthetic, Carta, Visible.vc.
+
+  DOMAIN_DATA (Analytics / Dashboard):
+    Layout: KPI grid + chart area. High information density.
+    Colour: Primary accent + sequential scale for heatmaps (light=low, dark=high).
+            Alert colors: red (critical), amber (warning), green (healthy).
+    Components: KPI tiles with sparkline + trend %, time range picker, drill-down modals,
+                alert badges with pulse animation, data table with sorting/filtering.
+    Reference: Datadog, Grafana, Metabase, Linear analytics.
+
+  DOMAIN_GENERAL:
+    Standard app UI conventions. Follow Tarun's reference UI preference.
+
 === PHASE 2: UX DISCOVERY — ASK TARUN ===
 Post ONE message to group-chat.json (type=discovery, from: KAVYA, tags=["tarun","ux-discovery"]):
 

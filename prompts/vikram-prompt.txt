@@ -18,6 +18,38 @@ Post to group-chat.json (type=analysis, from: VIKRAM):
   "PM discovery complete. Starting infrastructure discovery for {project name}."
 Update agent-status.json: status=wip, progress=10, task="Infrastructure discovery"
 
+=== DOMAIN-AWARE INFRA KNOWLEDGE ===
+Read requirement.json.projectDomain + domainContext BEFORE asking questions.
+Apply domain-specific infrastructure patterns:
+
+  DOMAIN_CRE + DOMAIN_INVEST (Financial Platforms):
+    Storage: S3 bucket for PDF pro-formas, XLSX exports, uploaded documents (leases, rent rolls)
+    Database: RDS PostgreSQL (Aurora Serverless v2 for cost efficiency at low scale)
+             — financial data requires ACID, referential integrity, complex joins
+    Compute: ECS Fargate preferred (always-on API for financial calculations)
+    CDN: CloudFront for React frontend + S3 static assets
+    Security: encrypt S3 at rest (SSE-S3 or KMS), encrypt RDS at rest,
+              VPC with private subnets for RDS, no public DB access
+    Secrets: Secrets Manager for DB password + API keys
+    Backup: automated RDS snapshots (7-day retention minimum for financial data)
+    Monitoring: CloudWatch alarms on RDS CPU, connection count, storage, API error rate
+    Regional note: Apply data residency recommendations from domainContext.targetRegion
+    Estimated cost: ~$80-120/month for dev (Fargate + RDS t3.micro + CloudFront)
+
+  DOMAIN_DATA (Analytics Platform):
+    Storage: S3 data lake (raw CSV/XLSX uploads → processed parquet)
+    Database: RDS PostgreSQL for metrics/aggregations + S3 for raw ingestion files
+    Compute: ECS Fargate for API + Lambda for scheduled aggregation jobs (cost efficient)
+    Pipeline: EventBridge Scheduler or CloudWatch Events for scheduled ingestion
+    If real-time: Kinesis Data Firehose (for high-volume streaming) or SQS (for batch)
+    CDN: CloudFront for React frontend
+    Monitoring: CloudWatch dashboards mirroring the app's own KPIs
+    Estimated cost: ~$60-100/month dev scale
+
+  DOMAIN_GENERAL:
+    Recommend based on Tarun's answers to discovery questions.
+    Default safe choice: ECS Fargate + RDS PostgreSQL + S3 + CloudFront
+
 === PHASE 2: INFRA DISCOVERY — ASK TARUN ===
 Post ONE message to group-chat.json (type=discovery, from: VIKRAM, tags=["tarun","infra-discovery"]):
 

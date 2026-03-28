@@ -319,6 +319,95 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  // -- API: MCP config (GET + POST) --------------------------------
+  if (pathname === '/api/mcp/config') {
+    cors(res);
+    const CONN_FILE = path.join(ROOT, 'connections.json');
+    if (req.method === 'GET') {
+      const cfg = readJSON(CONN_FILE) || {};
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        db:     cfg.database?.url      || '',
+        gh:     cfg.github?.token      || '',
+        aws:    cfg.aws?.region        || '',
+        custom: cfg.custom?.mcpUrl     || '',
+      }));
+      return;
+    }
+    if (req.method === 'POST') {
+      try {
+        const body = JSON.parse(await readBody(req));
+        const existing = readJSON(CONN_FILE) || {};
+        if (body.db)     { existing.database = { ...existing.database, url: body.db }; }
+        if (body.gh)     { existing.github   = { ...existing.github,   token: body.gh }; }
+        if (body.aws)    { existing.aws      = { ...existing.aws,      region: body.aws }; }
+        if (body.custom) { existing.custom   = { ...existing.custom,   mcpUrl: body.custom }; }
+        writeJSON(CONN_FILE, existing);
+        console.log(`[${new Date().toLocaleTimeString()}] MCP config saved`);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true }));
+      } catch (e) {
+        res.writeHead(400); res.end('Bad request');
+      }
+      return;
+    }
+  }
+
+  // -- API: context file upload ------------------------------------
+  if (pathname === '/api/project/upload-context' && req.method === 'POST') {
+    cors(res);
+    try {
+      const contentType = req.headers['content-type'] || '';
+      const boundary = contentType.split('boundary=')[1];
+      if (!boundary) { res.writeHead(400); res.end('Missing boundary'); return; }
+
+      const chunks = [];
+      for await (const chunk of req) chunks.push(chunk);
+      const raw = Buffer.concat(chunks);
+
+      // Parse multipart: extract projectId and files
+      const parts = raw.toString('binary').split('--' + boundary);
+      let projectId = '';
+      const savedFiles = [];
+
+      for (const part of parts) {
+        if (!part.includes('Content-Disposition')) continue;
+        const headerEnd = part.indexOf('\r\n\r\n');
+        if (headerEnd < 0) continue;
+        const header  = part.slice(0, headerEnd);
+        const bodyRaw = part.slice(headerEnd + 4, part.endsWith('\r\n') ? -2 : undefined);
+
+        const nameMatch = header.match(/name="([^"]+)"/);
+        const fileMatch = header.match(/filename="([^"]+)"/);
+        if (!nameMatch) continue;
+
+        if (nameMatch[1] === 'projectId' && !fileMatch) {
+          projectId = bodyRaw.replace(/\r?\n$/, '');
+          continue;
+        }
+
+        if (fileMatch) {
+          const fname   = fileMatch[1].replace(/[^a-zA-Z0-9._-]/g, '_');
+          const projDir = projectId
+            ? path.join(ROOT, 'projects', projectId, 'context')
+            : path.join(ROOT, 'chat-uploads', 'context');
+          if (!fs.existsSync(projDir)) fs.mkdirSync(projDir, { recursive: true });
+          const savePath = path.join(projDir, fname);
+          fs.writeFileSync(savePath, Buffer.from(bodyRaw, 'binary'));
+          savedFiles.push(fname);
+          console.log(`[${new Date().toLocaleTimeString()}] Context file saved: ${savePath}`);
+        }
+      }
+
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, saved: savedFiles }));
+    } catch (e) {
+      console.error('[upload-context]', e);
+      res.writeHead(500); res.end('Upload failed');
+    }
+    return;
+  }
+
   // -- API: post to group chat ------------------------------------
   if (pathname === '/api/chat' && req.method === 'POST') {
     cors(res);

@@ -19,6 +19,59 @@ Post to group-chat.json (type=analysis, from: RASOOL):
   "PM discovery complete. Starting database discovery for {project name}."
 Update agent-status.json: status=wip, progress=10, task="Database discovery"
 
+=== DOMAIN-AWARE SCHEMA KNOWLEDGE ===
+Read requirement.json.projectDomain BEFORE designing questions.
+Apply domain-specific table patterns and data conventions:
+
+  DOMAIN_CRE (Commercial Real Estate):
+    Core tables (always include):
+      properties         (id, name, address, property_type, total_area, purchase_price,
+                          current_value, year_built, status, owner_id, created_at, updated_at)
+      leases             (id, property_id, tenant_id, start_date, end_date, base_rent,
+                          rent_type[gross/net/nnn], escalation_rate, area_leased,
+                          lease_status, options, created_at, updated_at)
+      tenants            (id, name, industry, credit_rating, contact_email, created_at)
+      financial_snapshots(id, property_id, snapshot_date, noi, cap_rate, irr, dscr,
+                          ltv, cash_on_cash, occupancy_rate, gross_income,
+                          operating_expenses, debt_service, created_at)
+      transactions       (id, property_id, type[acquisition/disposition/refi/capex],
+                          amount, date, notes, created_at)
+    Optional (if portfolio):
+      portfolios         (id, name, owner_id, target_cap_rate, total_value, created_at)
+      portfolio_properties(portfolio_id, property_id)
+    Index: properties(owner_id), leases(property_id, status), financial_snapshots(property_id, snapshot_date)
+
+  DOMAIN_INVEST (Investment / Financial):
+    Core tables:
+      portfolios         (id, name, user_id, currency, benchmark, created_at)
+      positions          (id, portfolio_id, asset_name, asset_class, entry_date,
+                          entry_price, current_value, quantity, status, created_at)
+      transactions       (id, portfolio_id, position_id, type[buy/sell/dividend/fee],
+                          amount, date, notes)
+      return_snapshots   (id, portfolio_id, snapshot_date, irr, moic, npv, sharpe,
+                          var_95, sortino, max_drawdown, total_return_pct)
+      scenarios          (id, name, portfolio_id, assumptions_json, results_json,
+                          created_by, created_at)
+    Index: positions(portfolio_id, status), transactions(portfolio_id, date),
+           return_snapshots(portfolio_id, snapshot_date)
+
+  DOMAIN_DATA (Analytics / Dashboard):
+    Core tables:
+      data_sources       (id, name, type[csv/api/db], config_json, last_synced_at, status)
+      raw_ingestions     (id, source_id, ingested_at, row_count, file_name, status)
+      metrics            (id, name, description, unit, category, aggregation_method)
+      metric_values      (id, metric_id, recorded_at, value, dimensions_json)
+      alert_rules        (id, metric_id, condition[gt/lt/anomaly], threshold,
+                          channel[email/slack/in-app], is_active, created_at)
+      alert_events       (id, rule_id, triggered_at, value_at_trigger,
+                          resolved_at, acknowledged_by)
+    Index: metric_values(metric_id, recorded_at DESC), alert_events(rule_id, triggered_at)
+    Partition metric_values by month if expecting >1M rows/month.
+
+  DOMAIN_GENERAL:
+    Standard tables: users, sessions, audit_log (optional).
+    Derive domain tables from productBrief.backendSchema if set by Arjun.
+
 === PHASE 2: DB DISCOVERY — ASK TARUN ===
 Post ONE message to group-chat.json (type=discovery, from: RASOOL, tags=["tarun","db-discovery"]):
 

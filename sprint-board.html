@@ -1564,6 +1564,34 @@ body {
   background: var(--green-dim); color: var(--green);
   font-size: 11px; font-weight: 700; padding: 6px 16px; border-radius: 8px;
 }
+/* ── New Project: MCP + Upload ───────────────────────────────── */
+.np-section-divider { margin: 20px 0 10px; padding-top: 16px; border-top: 1px solid var(--border); }
+.np-section-title { font-size: 10px; font-weight: 800; color: var(--text-dim); text-transform: uppercase; letter-spacing: .08em; display: flex; align-items: center; gap: 6px; margin-bottom: 10px; }
+.np-optional-tag { font-size: 9px; font-weight: 600; background: var(--surface3); color: var(--text-dim); padding: 2px 6px; border-radius: 4px; text-transform: none; letter-spacing: 0; }
+.np-mcp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 4px; }
+.np-mcp-card { background: var(--surface2); border: 1.5px solid var(--border); border-radius: 10px; padding: 10px 12px; cursor: pointer; transition: all .15s; }
+.np-mcp-card:hover { border-color: var(--primary); }
+.np-mcp-card.connected { border-color: var(--green); background: var(--green-dim); }
+.np-mcp-card-header { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+.np-mcp-icon { font-size: 14px; }
+.np-mcp-name { font-size: 11px; font-weight: 700; color: var(--text-bright); }
+.np-mcp-status { font-size: 9px; color: var(--text-dim); margin-left: auto; }
+.np-mcp-status.ok { color: var(--green); }
+.np-mcp-input { width: 100%; background: var(--surface3); border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; color: var(--text); font-size: 10px; font-family: var(--mono); box-sizing: border-box; }
+.np-mcp-input:focus { outline: none; border-color: var(--primary); }
+.np-mcp-input::placeholder { color: var(--text-dim); }
+.np-upload-zone { border: 2px dashed var(--border); border-radius: 10px; padding: 16px; text-align: center; cursor: pointer; transition: all .15s; position: relative; }
+.np-upload-zone:hover, .np-upload-zone.drag-over { border-color: var(--primary); background: rgba(91,91,214,.04); }
+.np-upload-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.np-upload-label { font-size: 11px; color: var(--text-dim); pointer-events: none; }
+.np-upload-label strong { color: var(--primary); }
+.np-upload-files { list-style: none; padding: 0; margin: 8px 0 0; text-align: left; }
+.np-upload-files li { display: flex; align-items: center; gap: 6px; font-size: 10px; color: var(--text); padding: 4px 6px; background: var(--surface2); border-radius: 6px; margin-bottom: 4px; }
+.np-upload-files .np-file-icon { font-size: 12px; }
+.np-upload-files .np-file-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.np-upload-files .np-file-size { color: var(--text-dim); font-size: 9px; }
+.np-upload-files .np-file-remove { cursor: pointer; color: var(--text-dim); font-size: 11px; padding: 0 2px; }
+.np-upload-files .np-file-remove:hover { color: var(--red); }
 </style>
 </head>
 <body>
@@ -3479,6 +3507,152 @@ function requestUXChanges() {
     }),
   }).then(() => alert('Change request sent to Kavya.')).catch(console.error);
 }
+
+// ── MCP Configuration ──────────────────────────────────────────────────────
+let mcpConfig = {};
+
+function mcpFieldChanged(key) {
+  const vals = {
+    db:     document.getElementById('mcp-db-url')?.value.trim(),
+    gh:     document.getElementById('mcp-gh-token')?.value.trim(),
+    aws:    document.getElementById('mcp-aws-region')?.value.trim(),
+    custom: document.getElementById('mcp-custom-url')?.value.trim(),
+  };
+  const labels = { db: 'mcp-db-status', gh: 'mcp-gh-status', aws: 'mcp-aws-status', custom: 'mcp-custom-status' };
+  const cards  = { db: 'mcp-db-card',   gh: 'mcp-gh-card',   aws: 'mcp-aws-card',   custom: 'mcp-custom-card' };
+  const val = vals[key];
+  const statusEl = document.getElementById(labels[key]);
+  const cardEl   = document.getElementById(cards[key]);
+  if (val) {
+    statusEl.textContent = 'set';
+    statusEl.className   = 'np-mcp-status ok';
+    cardEl.classList.add('connected');
+    mcpConfig[key] = val;
+  } else {
+    statusEl.textContent = 'not set';
+    statusEl.className   = 'np-mcp-status';
+    cardEl.classList.remove('connected');
+    delete mcpConfig[key];
+  }
+}
+
+async function saveMCPConfig() {
+  if (!Object.keys(mcpConfig).length) return;
+  try {
+    await fetch('/api/mcp/config', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(mcpConfig),
+    });
+  } catch (e) { console.error('MCP save failed', e); }
+}
+
+async function loadMCPConfig() {
+  try {
+    const r = await fetch('/api/mcp/config');
+    if (!r.ok) return;
+    const cfg = await r.json();
+    if (cfg.db)     { document.getElementById('mcp-db-url').value     = cfg.db;     mcpFieldChanged('db');     }
+    if (cfg.gh)     { document.getElementById('mcp-gh-token').value   = cfg.gh;     mcpFieldChanged('gh');     }
+    if (cfg.aws)    { document.getElementById('mcp-aws-region').value = cfg.aws;    mcpFieldChanged('aws');    }
+    if (cfg.custom) { document.getElementById('mcp-custom-url').value = cfg.custom; mcpFieldChanged('custom'); }
+  } catch {}
+}
+
+// ── Context Document Upload ────────────────────────────────────────────────
+let npUploadedFiles = [];
+
+function npFileIcon(name) {
+  const ext = name.split('.').pop().toLowerCase();
+  const icons = { pdf: '📄', docx: '📝', xlsx: '📊', csv: '📋', json: '🗂️', md: '📑', txt: '📃' };
+  return icons[ext] || '📁';
+}
+
+function npFormatSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / 1048576).toFixed(1) + ' MB';
+}
+
+function npRenderFileList() {
+  const ul = document.getElementById('np-upload-list');
+  if (!ul) return;
+  ul.innerHTML = npUploadedFiles.map((f, i) => `
+    <li>
+      <span class="np-file-icon">${npFileIcon(f.name)}</span>
+      <span class="np-file-name">${escHtml(f.name)}</span>
+      <span class="np-file-size">${npFormatSize(f.size)}</span>
+      <span class="np-file-remove" onclick="npRemoveFile(${i})">✕</span>
+    </li>`).join('');
+}
+
+function npFilesSelected(files) {
+  const MAX = 10 * 1024 * 1024;
+  for (const f of files) {
+    if (f.size > MAX) { alert(`${f.name} exceeds 10MB limit.`); continue; }
+    if (!npUploadedFiles.find(x => x.name === f.name)) npUploadedFiles.push(f);
+  }
+  npRenderFileList();
+}
+
+function npRemoveFile(idx) {
+  npUploadedFiles.splice(idx, 1);
+  npRenderFileList();
+}
+
+function npDragOver(e) { e.preventDefault(); document.getElementById('np-upload-zone').classList.add('drag-over'); }
+function npDragLeave()  { document.getElementById('np-upload-zone').classList.remove('drag-over'); }
+function npDrop(e) {
+  e.preventDefault();
+  document.getElementById('np-upload-zone').classList.remove('drag-over');
+  npFilesSelected(e.dataTransfer.files);
+}
+
+async function npUploadContextFiles(projectId) {
+  if (!npUploadedFiles.length) return;
+  const form = new FormData();
+  form.append('projectId', projectId);
+  npUploadedFiles.forEach(f => form.append('files', f));
+  try {
+    await fetch('/api/project/upload-context', { method: 'POST', body: form });
+  } catch (e) { console.error('Context upload failed', e); }
+}
+
+// Patch submitNewProject to also save MCP + upload files
+const _origSubmitNewProject = submitNewProject;
+async function submitNewProject() {
+  await saveMCPConfig();
+  // Run original (async-wrapped) then upload files
+  const titleEl = document.getElementById('np-title');
+  if (titleEl && !titleEl.value.trim()) { alert('Please enter a project title.'); return; }
+  const body = {
+    title:           document.getElementById('np-title').value.trim(),
+    description:     document.getElementById('np-desc').value.trim(),
+    businessGoal:    document.getElementById('np-goal')?.value.trim() || '',
+    targetUsers:     document.getElementById('np-users')?.value.trim() || '',
+    techConstraints: document.getElementById('np-constraints')?.value.trim()
+      ? document.getElementById('np-constraints').value.split(',').map(s => s.trim()) : [],
+    deadline:        document.getElementById('np-deadline')?.value || null,
+    mcpConfig:       Object.keys(mcpConfig).length ? mcpConfig : undefined,
+  };
+  try {
+    const r = await fetch('/api/requirement', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const data = await r.json();
+    if (data.projectId) await npUploadContextFiles(data.projectId);
+    const msg = document.getElementById('np-msg');
+    if (msg) { msg.style.display = 'block'; msg.textContent = 'Project created! Arjun is starting discovery...'; }
+    setTimeout(closeNewProjectScreen, 1800);
+  } catch (e) {
+    alert('Failed to create project. Is the dashboard server running?');
+  }
+}
+
+// Load MCP config when New Project screen opens
+const _origOpenNewProjectScreen = openNewProjectScreen;
+function openNewProjectScreen() {
+  _origOpenNewProjectScreen();
+  loadMCPConfig();
+}
 </script>
 
 <!-- ══════════════════════════════════════════════════════════════════════
@@ -3649,6 +3823,61 @@ function requestUXChanges() {
             <input id="np-deadline" type="date">
           </div>
         </div>
+        <!-- MCP Connections -->
+        <div class="np-section-divider">
+          <div class="np-section-title">MCP Connections <span class="np-optional-tag">optional — local only, never committed</span></div>
+          <div class="np-mcp-grid">
+            <div class="np-mcp-card" id="mcp-db-card">
+              <div class="np-mcp-card-header">
+                <span class="np-mcp-icon">🗄️</span>
+                <span class="np-mcp-name">PostgreSQL</span>
+                <span class="np-mcp-status" id="mcp-db-status">not set</span>
+              </div>
+              <input class="np-mcp-input" id="mcp-db-url" placeholder="postgresql://user:pass@host:5432/dbname" oninput="mcpFieldChanged('db')">
+            </div>
+            <div class="np-mcp-card" id="mcp-gh-card">
+              <div class="np-mcp-card-header">
+                <span class="np-mcp-icon">🐙</span>
+                <span class="np-mcp-name">GitHub</span>
+                <span class="np-mcp-status" id="mcp-gh-status">not set</span>
+              </div>
+              <input class="np-mcp-input" id="mcp-gh-token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" oninput="mcpFieldChanged('gh')">
+            </div>
+            <div class="np-mcp-card" id="mcp-aws-card">
+              <div class="np-mcp-card-header">
+                <span class="np-mcp-icon">☁️</span>
+                <span class="np-mcp-name">AWS Region</span>
+                <span class="np-mcp-status" id="mcp-aws-status">not set</span>
+              </div>
+              <input class="np-mcp-input" id="mcp-aws-region" placeholder="us-east-1 (uses your AWS profile)" oninput="mcpFieldChanged('aws')">
+            </div>
+            <div class="np-mcp-card" id="mcp-custom-card">
+              <div class="np-mcp-card-header">
+                <span class="np-mcp-icon">🔌</span>
+                <span class="np-mcp-name">Custom MCP</span>
+                <span class="np-mcp-status" id="mcp-custom-status">not set</span>
+              </div>
+              <input class="np-mcp-input" id="mcp-custom-url" placeholder="http://localhost:8090/mcp" oninput="mcpFieldChanged('custom')">
+            </div>
+          </div>
+        </div>
+
+        <!-- Context Documents -->
+        <div class="np-section-divider">
+          <div class="np-section-title">Context Documents <span class="np-optional-tag">optional — give agents more context</span></div>
+          <div class="np-upload-zone" id="np-upload-zone"
+               ondragover="npDragOver(event)" ondragleave="npDragLeave(event)" ondrop="npDrop(event)">
+            <input type="file" id="np-file-input" multiple
+                   accept=".pdf,.docx,.xlsx,.csv,.json,.txt,.md"
+                   onchange="npFilesSelected(this.files)">
+            <div class="np-upload-label">
+              <strong>Drop files here</strong> or click to browse<br>
+              PDF · Word · Excel · CSV · JSON · Markdown — max 10MB each
+            </div>
+            <ul class="np-upload-files" id="np-upload-list"></ul>
+          </div>
+        </div>
+
         <div id="np-msg">Project created! Arjun is starting discovery...</div>
       </div>
       <div id="np-footer">
