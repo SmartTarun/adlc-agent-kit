@@ -1904,6 +1904,8 @@ const AGENT_META = {
 
 // ── State ────────────────────────────────────────────────────────────────────
 let currentState   = {};
+let mcpConfig      = {};
+let npUploadedFiles = [];
 let logEventSource = null;
 let logAgent       = null;
 let startTime      = Date.now();
@@ -3515,8 +3517,6 @@ function requestUXChanges() {
 }
 
 // ── MCP Configuration ──────────────────────────────────────────────────────
-let mcpConfig = {};
-
 function mcpFieldChanged(key) {
   const vals = {
     db:     document.getElementById('mcp-db-url')?.value.trim(),
@@ -3566,8 +3566,6 @@ async function loadMCPConfig() {
 }
 
 // ── Context Document Upload ────────────────────────────────────────────────
-let npUploadedFiles = [];
-
 function npFileIcon(name) {
   const ext = name.split('.').pop().toLowerCase();
   const icons = { pdf: '📄', docx: '📝', xlsx: '📊', csv: '📋', json: '🗂️', md: '📑', txt: '📃' };
