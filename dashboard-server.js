@@ -543,6 +543,34 @@ const server = http.createServer(async (req, res) => {
       writeJSON(chatFile, chat);
       // Push to all clients instantly
       broadcast('chat-message', msg);
+
+      // Auto-relaunch any agent mentioned by name in Tarun's message
+      if (msg.from === 'TARUN' && msg.message) {
+        const mentioned = AGENTS.filter(a => a !== 'keerthi' &&
+          new RegExp(`\\b${a}\\b`, 'i').test(msg.message));
+        for (const agentName of mentioned) {
+          const pr = getProjectRoot();
+          const sd = readJSON(path.join(pr, 'agent-status.json')) || {};
+          const am = sd.agents || sd;
+          // Only relaunch if agent is done or not running
+          const isRunning = agentProcesses[agentName] &&
+            agentProcesses[agentName].proc &&
+            agentProcesses[agentName].proc.exitCode === null;
+          if (!isRunning) {
+            // Extract first sentence of task from message
+            const taskHint = msg.message.split(/[.\n]/)[0].trim().substring(0, 100);
+            am[agentName] = { status: 'wip', progress: 5, task: taskHint, blocker: '', updated: new Date().toISOString() };
+            if (sd.agents) sd.agents = am; else Object.assign(sd, am);
+            writeJSON(path.join(pr, 'agent-status.json'), sd);
+            broadcast('update', getFullState());
+            postToChat('SYSTEM', 'System', 'system',
+              `🚀 Auto-launching ${agentName.toUpperCase()} — new task detected in Tarun's message.`,
+              [agentName]);
+            launchAgent(agentName);
+          }
+        }
+      }
+
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ ok: true }));
     } catch (e) {
