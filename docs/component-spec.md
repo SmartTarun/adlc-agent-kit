@@ -1,343 +1,574 @@
-# Agent: Kavya | Sprint: 01 | Date: 2026-03-16
-# Infraviz — Component Specification
+# Agent: kavya | Sprint: 01 | Date: 2026-03-28
+# CBRE Unified Asset Intelligence Platform — Component Specification
 
 > Design system reference for Rohan (Frontend Engineer).
 > All components MUST use tokens from `/frontend/src/tokens/tokens.css`.
-> No hardcoded colours. Dark mode is default.
+> Stack: React 18 + TypeScript. Charts: Recharts ONLY. No hardcoded colours.
 
 ---
 
-## Design Principles
+## Table of Contents
 
-| Principle         | Guidance                                                                 |
-|-------------------|--------------------------------------------------------------------------|
-| **Data-dense**    | Cloud architects scan dashboards fast — maximise information per pixel   |
-| **Clarity first** | Clear hierarchy: critical alerts > KPIs > detail panels                  |
-| **Dark by default** | `--color-bg-base` (#0b0e14) as page background                         |
-| **Consistency**   | Use only token values; no one-off overrides                              |
-| **Agent-aware**   | UI must surface agent status, memory state, and LLM activity             |
-
----
-
-## Layout System
-
-### AppShell
-```
-┌──────────────────────────────────────────────────────┐
-│  Topbar (height: --topbar-height = 56px)             │
-├──────────┬───────────────────────────────────────────┤
-│          │                                           │
-│ Sidebar  │  Main Content Area                        │
-│ 240px    │  (scrollable)                             │
-│ (collap- │                                           │
-│ sible to │                                           │
-│  56px)   │                                           │
-│          │                                           │
-└──────────┴───────────────────────────────────────────┘
-```
-
-**Tokens**: `--sidebar-width`, `--sidebar-collapsed`, `--topbar-height`
-**Background**: `--color-bg-base`
-**Sidebar bg**: `--color-bg-surface`
-**Topbar bg**: `--color-bg-surface` + `--shadow-md`
+| # | Component | Screen |
+|---|-----------|--------|
+| 1 | [PageShell](#1-pageshell) | Global |
+| 2 | [TopBar](#2-topbar) | Global |
+| 3 | [SideNav](#3-sidenav) | Global |
+| 4 | [KpiCard](#4-kpicard) | Portfolio Overview |
+| 5 | [PortfolioBarChart](#5-portfoliobarchart) | Portfolio Overview |
+| 6 | [PropertyPieChart](#6-propertypiechare) | Portfolio Overview |
+| 7 | [RiskBadge](#7-riskbadge) | Lease Risk Engine |
+| 8 | [LeaseRiskTable](#8-leaserisktable) | Lease Risk Engine |
+| 9 | [CarbonEmissionsChart](#9-carbonemissionschart) | ESG & Carbon Tracker |
+| 10 | [EnergyKpiPanel](#10-energykpipanel) | ESG & Carbon Tracker |
+| 11 | [SpaceHeatmap](#11-spaceheatmap) | Tenant Experience Hub |
+| 12 | [SatisfactionGauge](#12-satisfactiongauge) | Tenant Experience Hub |
+| 13 | [MaintenanceTicketList](#13-maintenanceticketlist) | Tenant Experience Hub |
+| 14 | [AiChatPanel](#14-aichatpanel) | AI Deal Assistant |
+| 15 | [ChatMessage](#15-chatmessage) | AI Deal Assistant |
 
 ---
 
-## Component Catalogue
+## 1. PageShell
 
----
+**Purpose:** Top-level layout wrapper. Composes TopBar + SideNav + scrollable content area. All 5 screens render inside this shell.
 
-### 1. `<TopBar>`
-
-**Purpose**: Global navigation, agent status summary, user context.
-
-**Layout**: flex row, space-between
-**Height**: `--topbar-height` (56px)
-**Background**: `--color-bg-surface`
-**Border-bottom**: 1px solid `--color-border-subtle`
-
-**Slots**:
-- Left: Logo + "Infraviz" wordmark (`--color-primary-400`)
-- Center: Global search input (placeholder: "Search resources, agents, anomalies…")
-- Right: Agent pulse indicator + Notification bell + User avatar
-
-**States**:
-- Normal: no indicators
-- Anomaly detected: notification bell shows `--color-danger` badge count
-- Agent running: pulse dot (`--color-agent-active`) on agent indicator
-
----
-
-### 2. `<Sidebar>`
-
-**Purpose**: Primary navigation between views.
-
-**Width**: `--sidebar-width` (240px) | collapsed: `--sidebar-collapsed` (56px)
-**Background**: `--color-bg-surface`
-**Border-right**: 1px solid `--color-border-subtle`
-
-**Nav items** (with icons):
-| Icon | Label             | Route          |
-|------|-------------------|----------------|
-| 📊   | Overview          | /              |
-| 🗺️   | Infrastructure    | /infra         |
-| 💰   | Cost Anomalies    | /anomalies     |
-| 🤖   | Agent Activity    | /agents        |
-| 🧠   | Memory Explorer   | /memory        |
-| ⚙️   | Settings          | /settings      |
-
-**Active item**: `--color-primary-400` left border (3px) + `--color-bg-elevated` bg
-**Hover**: `--color-bg-elevated` bg
-**Collapsed**: show icon only, tooltip on hover
-
----
-
-### 3. `<MetricCard>`
-
-**Purpose**: KPI summary tile (cost, anomaly count, resource count, agent runs).
-
-**Variants**: `default` | `warning` | `danger` | `success`
-
-**Anatomy**:
-```
-┌─────────────────────────────────┐
-│  [Icon]  Label           [Trend]│
-│                                 │
-│  Primary Value                  │
-│  Secondary/context text         │
-└─────────────────────────────────┘
+**Props:**
+```typescript
+interface PageShellProps {
+  children: React.ReactNode;
+  activeScreen: 'portfolio' | 'lease-risk' | 'esg' | 'tenant' | 'ai-assistant';
+}
 ```
 
-**Props**:
-- `label: string`
-- `value: string | number`
-- `unit?: string` (e.g., "$", "%", "resources")
-- `trend?: { value: number; direction: "up"|"down"|"flat" }`
-- `variant?: "default" | "warning" | "danger" | "success"`
-- `icon?: ReactNode`
+**Layout:**
+- Full-viewport height grid: `topbar (56px) / [sidenav (224px) | content]`
+- Content area: `overflow-y: auto`, `padding: var(--page-padding-y) var(--page-padding-x)`
+- Background: `var(--color-bg-primary)`
 
-**Tokens**:
-- Background: `--color-bg-surface`
-- Border: `--color-border-subtle`
-- Border-radius: `--radius-lg`
-- Label: `--color-text-secondary`, `--font-size-sm`
-- Value: `--color-text-primary`, `--font-size-3xl`, `--font-weight-bold`
-- Trend up (bad for cost): `--color-danger-text`
-- Trend down (good for cost): `--color-success-text`
-- Variant danger: left border 3px `--color-danger` + `--shadow-glow-danger`
-- Variant warning: left border 3px `--color-warning`
-- Variant success: left border 3px `--color-success`
+**Tokens used:**
+- `--topbar-height`, `--sidenav-width`, `--color-bg-primary`, `--page-padding-x`, `--page-padding-y`
 
 ---
 
-### 4. `<AnomalyTable>`
+## 2. TopBar
 
-**Purpose**: Tabular list of detected cost anomalies with severity, service, delta.
+**Purpose:** Fixed header. CBRE logo + app title, screen title, user avatar/initials. No nav items (nav lives in SideNav).
 
-**Columns**: Severity | Service | Resource | Detected At | Expected | Actual | Delta% | Action
-
-**Row severity colours**:
-- Critical: `--color-anomaly-critical` left border
-- High: `--color-anomaly-high` left border
-- Medium: `--color-anomaly-medium` left border
-- Low: `--color-anomaly-low` left border
-
-**Props**:
-- `anomalies: AnomalyRecord[]`
-- `onAcknowledge: (id: string) => void`
-- `onDrillDown: (id: string) => void`
-- `loading?: boolean`
-- `pageSize?: number` (default 20)
-
-**Tokens**:
-- Table bg: `--color-bg-surface`
-- Header: `--color-bg-elevated`, `--color-text-secondary`, `--font-size-sm`, `--letter-spacing-caps`
-- Row hover: `--color-bg-elevated`
-- Row border: `--color-border-subtle`
-- Font: `--font-family-mono` for numeric columns
-
----
-
-### 5. `<InfraTopologyGraph>`
-
-**Purpose**: Interactive graph showing cloud resource relationships (VPCs, subnets, services, costs).
-
-**Library**: Use `@xyflow/react` (React Flow) for graph layout — Recharts is NOT applicable here; this is topology not time-series.
-> ⚠️ Confirm with Arjun/Kiran if React Flow is approved or if we use D3 with Recharts for a simpler tree view.
-
-**Node types**:
-| Type        | Shape     | Colour                        |
-|-------------|-----------|-------------------------------|
-| Region      | Rectangle | `--color-primary-700` bg      |
-| VPC         | Rectangle | `--color-primary-600` bg      |
-| Subnet      | Rounded   | `--color-primary-500` bg      |
-| Service     | Circle    | `--color-accent-500` bg       |
-| Anomalous   | Circle    | `--color-danger` bg + glow    |
-
-**Interaction**: click node → slide-out detail panel
-**Background**: `--color-bg-base`
-**Edge colour**: `--color-border-default`
-**Selected edge**: `--color-primary-400`
-
----
-
-### 6. `<AgentStatusPanel>`
-
-**Purpose**: Live feed of all 7 agents' status (wip/done/blocked/queue), progress bars, last action.
-
-**Layout**: Vertical stack of agent rows
-**Background**: `--color-bg-surface`
-
-**AgentRow anatomy**:
-```
-┌──────────────────────────────────────────────────────────┐
-│ [Avatar]  AgentName   [STATUS BADGE]                  xx%│
-│           Last action: "Created tokens.css"              │
-│           ████████████░░░░░░░░  Progress bar             │
-└──────────────────────────────────────────────────────────┘
+**Props:**
+```typescript
+interface TopBarProps {
+  screenTitle: string;
+  userName: string;      // For avatar initials
+}
 ```
 
-**Status badge colours**:
-- `wip`: `--color-agent-wip` (amber)
-- `done`: `--color-agent-done` (green)
-- `blocked`: `--color-agent-blocked` (red) + `--shadow-glow-danger`
-- `queue`: `--color-agent-queue` (grey)
-- `active`: `--color-agent-active` (blue) + pulse animation
+**Layout:**
+- Height: `var(--topbar-height)` (56px), `position: sticky; top: 0`
+- Flex row: `[CBRE logo | app name | flex-grow | screen title | avatar]`
+- Border bottom: `1px solid var(--color-border-subtle)`
+- Background: `var(--color-bg-surface)`, `z-index: var(--z-sticky)`
 
-**Progress bar**: fill `--color-primary-400`, track `--color-bg-overlay`
+**Design notes:**
+- CBRE logo: SVG at 24px height, coloured with `var(--color-brand-primary)`
+- App name: `"CBRE Asset Intelligence"` — `var(--font-size-base)`, `var(--font-weight-semibold)`
+- Screen title: right of centre, `var(--font-size-sm)`, `var(--color-text-secondary)`
+- Avatar: 32px circle, `var(--color-brand-primary)` fill, `var(--color-text-inverse)` initials
 
----
-
-### 7. `<AgentChatFeed>`
-
-**Purpose**: Real-time group chat from `/group-chat.json` — shows agent messages, broadcasts, and system events.
-
-**Layout**: Scrollable message list (bottom-anchored, auto-scroll on new)
-**Background**: `--color-bg-base`
-**Max-height**: `calc(100vh - --topbar-height - --space-12)`
-
-**Message types**:
-| type         | Style                                                   |
-|--------------|----------------------------------------------------------|
-| `system`     | Centered pill, `--color-text-tertiary`, `--font-size-sm`|
-| `broadcast`  | Full-width banner, `--color-info-light` bg              |
-| `analysis`   | Card with left border `--color-accent-500`              |
-| `message`    | Chat bubble, sender avatar + name                       |
-| `requirement`| Highlighted card, `--color-primary-700` bg             |
-| `blocker`    | Red card, `--color-danger-light` bg                    |
-
-**Sender avatars**: 2-char initials, unique `--color-primary-*` per agent
+**Tokens used:**
+- `--topbar-height`, `--color-bg-surface`, `--color-border-subtle`, `--color-brand-primary`
+- `--color-text-primary`, `--color-text-secondary`, `--color-text-inverse`
+- `--font-size-base`, `--font-size-sm`, `--font-weight-semibold`, `--z-sticky`
 
 ---
 
-### 8. `<MemoryExplorer>`
+## 3. SideNav
 
-**Purpose**: Visualise agent memory JSON files — shows current task, completed tasks, decisions, blockers.
+**Purpose:** Left navigation rail. Links to all 5 screens. Collapsible to icon-only mode.
 
-**Layout**: Two-panel: agent selector (left) + memory detail (right)
-**Background**: `--color-bg-surface`
-
-**Memory detail sections**:
-- Current Task: progress ring + task title + last step
-- Completed Tasks: checkmark list (`--color-success`)
-- Key Decisions: bullet list (`--color-accent-300`)
-- Blockers: alert cards (`--color-danger-light`)
-- Pending Steps: ordered list (`--color-warning-text`)
-- Files Created/Modified: monospace list (`--font-family-mono`, `--color-text-secondary`)
-
-**Progress ring**: SVG circle, stroke `--color-primary-400`, track `--color-bg-overlay`
-
----
-
-### 9. `<CostTimeseriesChart>`
-
-**Purpose**: Time-series line/area chart of AWS cost over time, with anomaly spike markers.
-
-**Library**: Recharts `<AreaChart>` or `<ComposedChart>`
-
-**Props**:
-- `data: { timestamp: string; expected: number; actual: number }[]`
-- `anomalies: { timestamp: string; severity: string }[]`
-- `timeRange: "1d" | "7d" | "30d" | "90d"`
-
-**Visual spec**:
-- Expected cost: dashed line, `--chart-color-2` (teal)
-- Actual cost: solid area, `--chart-color-1` (blue), 20% fill opacity
-- Anomaly markers: vertical reference lines, `--color-anomaly-critical`/`high`/`medium`
-- Grid: `--chart-grid-color`
-- Axis labels: `--chart-axis-color`, `--font-size-sm`, `--font-family-mono`
-- Tooltip: `--chart-tooltip-bg` bg, `--chart-tooltip-border` border, `--radius-md`
-
----
-
-### 10. `<LLMActivityLog>`
-
-**Purpose**: Shows LLM prompt/response activity from Claude or Azure OpenAI — token usage, latency, model.
-
-**Layout**: Expandable log rows
-**Background**: `--color-bg-surface`
-
-**Row anatomy**:
-```
-▶ [timestamp]  claude-sonnet-4-6  |  tokens: 1,240 in / 380 out  |  492ms
-  ─ Prompt: "Analyse cost spike for service: ec2-prod-us-east-1..."
-  ─ Response: "Detected 340% increase vs 7-day baseline..."
+**Props:**
+```typescript
+interface SideNavProps {
+  activeScreen: 'portfolio' | 'lease-risk' | 'esg' | 'tenant' | 'ai-assistant';
+  collapsed?: boolean;
+  onToggle?: () => void;
+}
 ```
 
-**Tokens**:
-- Timestamp/model: `--font-family-mono`, `--color-text-tertiary`, `--font-size-sm`
-- Prompt label: `--color-warning-text`
-- Response label: `--color-success-text`
-- Token counts: `--font-family-mono`, `--color-text-secondary`
+**Nav items:**
+| Icon | Label | Screen key |
+|------|-------|-----------|
+| BarChart2 | Portfolio Overview | `portfolio` |
+| AlertTriangle | Lease Risk Engine | `lease-risk` |
+| Leaf | ESG & Carbon | `esg` |
+| Users | Tenant Experience | `tenant` |
+| MessageSquare | AI Deal Assistant | `ai-assistant` |
+
+**Layout:**
+- Width: `var(--sidenav-width)` expanded / `var(--sidenav-collapsed-width)` collapsed
+- Height: `calc(100vh - var(--topbar-height))`, `position: sticky; top: var(--topbar-height)`
+- Background: `var(--color-bg-surface)`, border-right: `1px solid var(--color-border-subtle)`
+- Each nav item: 44px height, flex row `[icon | label]`, `gap: var(--space-3)`
+
+**Active state:**
+- Background: `var(--color-bg-selected)`
+- Left border: `3px solid var(--color-brand-primary)`
+- Text colour: `var(--color-text-primary)`, icon: `var(--color-brand-primary)`
+
+**Tokens used:**
+- `--sidenav-width`, `--sidenav-collapsed-width`, `--topbar-height`
+- `--color-bg-surface`, `--color-bg-selected`, `--color-border-subtle`, `--color-brand-primary`
+- `--color-text-primary`, `--color-text-secondary`, `--space-3`, `--transition-fast`
 
 ---
 
-## Spacing & Grid
+## 4. KpiCard
 
-- Page padding: `--space-6` (24px)
-- Card gap: `--space-4` (16px)
-- Section gap: `--space-8` (32px)
-- KPI grid: 4 columns on ≥1280px, 2 on ≥768px, 1 on mobile
-- Main layout: CSS Grid `grid-template-columns: var(--sidebar-width) 1fr`
+**Purpose:** Displays a single CRE metric (NOI, occupancy rate, cap rate, asset value, property count) with trend arrow.
+
+**Props:**
+```typescript
+interface KpiCardProps {
+  label: string;                        // e.g. "Net Operating Income"
+  value: string;                        // Pre-formatted: "$4.2M" | "91.3%" | "6.8%"
+  trend: 'up' | 'down' | 'neutral';
+  trendValue?: string;                  // e.g. "+2.1% vs last month"
+  icon?: React.ReactNode;
+  loading?: boolean;
+}
+```
+
+**Layout:**
+- Background: `var(--kpi-card-bg)`, border: `1px solid var(--kpi-card-border)`
+- Border-radius: `var(--kpi-card-radius)`, padding: `var(--card-padding)`
+- Shadow: `var(--shadow-sm)`
+- Flex column: `[icon + label | value | trend]`
+
+**Typography:**
+- Label: `var(--font-size-sm)`, `var(--kpi-card-label-color)`, uppercase, `var(--letter-spacing-caps)`
+- Value: `var(--kpi-card-value-size)`, `var(--kpi-card-value-font)` (monospace), `var(--font-weight-bold)`
+- Trend: `var(--font-size-xs)` + arrow icon
+  - Positive: `var(--kpi-card-trend-positive)` (green)
+  - Negative: `var(--kpi-card-trend-negative)` (red)
+  - Neutral: `var(--kpi-card-trend-neutral)` (muted)
+
+**Loading state:** Skeleton shimmer using `var(--color-bg-interactive)` animated gradient.
+
+**Tokens used:**
+- `--kpi-card-bg`, `--kpi-card-border`, `--kpi-card-radius`, `--kpi-card-value-font`
+- `--kpi-card-value-size`, `--kpi-card-label-color`
+- `--kpi-card-trend-positive`, `--kpi-card-trend-negative`, `--kpi-card-trend-neutral`
+- `--card-padding`, `--shadow-sm`, `--font-size-sm`, `--font-size-xs`, `--letter-spacing-caps`
 
 ---
 
-## Icon System
+## 5. PortfolioBarChart
 
-Use `lucide-react` exclusively. Sizes:
-- `sm`: 14px (table cells, badges)
-- `md`: 16px (buttons, nav items)
-- `lg`: 20px (section headers)
-- `xl`: 24px (empty states, feature icons)
+**Purpose:** Recharts BarChart showing property distribution by class (A / B / C) across metrics (count, NOI, occupancy).
 
-Icon colour: inherit from parent text colour token.
+**Props:**
+```typescript
+interface PortfolioBarChartProps {
+  data: Array<{ class: string; count: number; noi: number; occupancy: number }>;
+  metric: 'count' | 'noi' | 'occupancy';
+  height?: number;  // default 280
+}
+```
 
----
+**Recharts config:**
+- Component: `<BarChart>` inside `<ResponsiveContainer width="100%">`
+- Grid: `<CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid-color)"`
+- X-axis: `stroke="var(--chart-axis-color)"`, `tick={{ fill: 'var(--chart-axis-color)' }}`
+- Y-axis: same as X-axis
+- Tooltip: `contentStyle={{ background: 'var(--chart-tooltip-bg)', border: '1px solid var(--chart-tooltip-border)' }}`
+- Bar fill: `var(--chart-color-1)` (CBRE green), active fill: `var(--chart-color-2)` (lime)
+- Legend: `wrapperStyle={{ color: 'var(--chart-legend-color)' }}`
 
-## Motion & Animation
-
-- Page transitions: fade + slide-up, 200ms (`--transition-normal`)
-- Loading skeletons: `--color-bg-elevated` → `--color-bg-overlay` shimmer, 1.2s loop
-- Agent pulse: `box-shadow` pulse on `--color-agent-active`, 1.5s infinite
-- Anomaly alert flash: background flash `--color-danger-light`, 600ms, 2x on mount
-
----
-
-## Accessibility
-
-- All interactive elements: min 44×44px touch target
-- Focus ring: 2px solid `--color-primary-400`, 2px offset
-- Colour alone never conveys meaning — always pair with icon or text
-- ARIA labels on all icon-only buttons
-- Contrast ratio: minimum 4.5:1 for text (`--color-text-primary` on `--color-bg-surface` passes)
+**Tokens used:**
+- `--chart-color-1`, `--chart-color-2`, `--chart-grid-color`, `--chart-axis-color`
+- `--chart-tooltip-bg`, `--chart-tooltip-border`, `--chart-legend-color`
 
 ---
 
-## Handoff Notes for Rohan
+## 6. PropertyPieChart
 
-1. Import `tokens.css` at the root of `main.tsx` or `index.css`
-2. Use `var(--token-name)` in all styled components / CSS modules
-3. Recharts `<Tooltip>` and `<Legend>` styles need inline `style` props to pick up CSS vars — see `--chart-tooltip-*` tokens
-4. For the topology graph: confirm library choice with Arjun before starting `<InfraTopologyGraph>`
-5. All chart `stroke`/`fill` props should reference `var(--chart-color-N)` via `getComputedStyle` or use CSS custom properties where Recharts allows
-6. Agent avatar colours: assign deterministically by agent name hash so they stay stable across renders
+**Purpose:** Recharts PieChart showing property type breakdown (Office A/B/C by percentage of portfolio value).
+
+**Props:**
+```typescript
+interface PropertyPieChartProps {
+  data: Array<{ name: string; value: number; color: string }>;
+  height?: number;  // default 260
+  innerRadius?: number;  // default 60 — donut chart
+}
+```
+
+**Recharts config:**
+- Component: `<PieChart>` inside `<ResponsiveContainer>`
+- `<Pie dataKey="value" cx="50%" cy="50%">` with `<Cell fill={entry.color}>`
+- Colours from `--chart-color-1` through `--chart-color-4`
+- `<Legend>` at bottom, `wrapperStyle={{ color: 'var(--chart-legend-color)' }}`
+- Tooltip with same style as PortfolioBarChart
+
+**Tokens used:**
+- `--chart-color-1` through `--chart-color-4`, `--chart-tooltip-bg`, `--chart-tooltip-border`
+- `--chart-legend-color`
+
+---
+
+## 7. RiskBadge
+
+**Purpose:** Displays a tenant's AI-scored lease risk level with colour-coded pill badge.
+
+**Props:**
+```typescript
+interface RiskBadgeProps {
+  level: 'High' | 'Medium' | 'Low';
+  showDot?: boolean;  // default true
+}
+```
+
+**Styles per level:**
+
+| Level | Text colour | Background | Border |
+|-------|-------------|------------|--------|
+| High | `--color-risk-high` | `--color-risk-high-bg` | `--color-risk-high` at 30% opacity |
+| Medium | `--color-risk-medium` | `--color-risk-medium-bg` | `--color-risk-medium` at 30% opacity |
+| Low | `--color-risk-low` | `--color-risk-low-bg` | `--color-risk-low` at 30% opacity |
+
+**Layout:**
+- `display: inline-flex; align-items: center; gap: var(--space-1)`
+- Padding: `var(--space-1) var(--space-2)`
+- Border-radius: `var(--risk-badge-radius)` (4px — corporate sharp)
+- Font: `var(--risk-badge-font-size)`, `var(--risk-badge-font-weight)`, `var(--risk-badge-letter-spacing)`
+- Optional dot: 6px circle, same colour as text
+
+**Tokens used:**
+- `--color-risk-high`, `--color-risk-high-bg`, `--color-risk-medium`, `--color-risk-medium-bg`
+- `--color-risk-low`, `--color-risk-low-bg`
+- `--risk-badge-radius`, `--risk-badge-font-size`, `--risk-badge-font-weight`, `--risk-badge-letter-spacing`
+- `--space-1`, `--space-2`
+
+---
+
+## 8. LeaseRiskTable
+
+**Purpose:** Sortable data table showing all tenants with AI risk scores, lease expiry, DSCR, and broker action recommendations.
+
+**Props:**
+```typescript
+interface LeaseRiskTableRow {
+  tenantName: string;
+  property: string;
+  leaseExpiryDays: number;    // Days remaining
+  riskLevel: 'High' | 'Medium' | 'Low';
+  riskScore: number;          // 0–100
+  dscr: number;               // e.g. 1.35
+  recommendation: string;     // AI-generated broker action
+}
+
+interface LeaseRiskTableProps {
+  data: LeaseRiskTableRow[];
+  loading?: boolean;
+  onSort?: (column: keyof LeaseRiskTableRow, direction: 'asc' | 'desc') => void;
+}
+```
+
+**Layout:**
+- Full-width table, `border-collapse: collapse`
+- Header: `background: var(--risk-table-header-bg)`, text `var(--risk-table-header-color)`, uppercase, `var(--letter-spacing-caps)`
+- Row hover: `background: var(--risk-table-row-hover)`, `transition: var(--transition-fast)`
+- Row border-bottom: `1px solid var(--risk-table-border)`
+- Numeric columns (riskScore, dscr, leaseExpiryDays): `font-family: var(--risk-table-font-mono)`
+
+**Column details:**
+| Column | Width | Notes |
+|--------|-------|-------|
+| Tenant | 20% | Bold, primary text |
+| Property | 15% | Secondary text |
+| Lease Expiry | 12% | Mono font, red if < 90 days |
+| Risk | 10% | `<RiskBadge>` |
+| Score | 8% | Mono, 0–100 |
+| DSCR | 8% | Mono, coloured: green ≥ 1.25, amber 1.0–1.25, red < 1.0 |
+| Recommendation | auto | Secondary text, truncated with tooltip |
+
+**Tokens used:**
+- `--risk-table-header-bg`, `--risk-table-header-color`, `--risk-table-row-hover`
+- `--risk-table-row-selected`, `--risk-table-border`, `--risk-table-font-mono`
+- `--color-text-primary`, `--color-text-secondary`, `--letter-spacing-caps`
+- `--transition-fast`, `--color-error`, `--color-warning`, `--color-success`
+
+---
+
+## 9. CarbonEmissionsChart
+
+**Purpose:** Recharts ComposedChart showing monthly CO2 emissions per building as line(s) with a flat 2030 net-zero target reference line and optional area fill.
+
+**Props:**
+```typescript
+interface MonthlyEmission {
+  month: string;            // "Jan 2025"
+  emissions: number;        // Actual CO2 tonnes
+  target: number;           // Net-zero target (same value each month)
+}
+
+interface CarbonEmissionsChartProps {
+  data: MonthlyEmission[];
+  buildingName: string;
+  height?: number;          // default 300
+  showArea?: boolean;       // default true — fill under actual emissions
+}
+```
+
+**Recharts config:**
+- Component: `<ComposedChart>` inside `<ResponsiveContainer>`
+- Actual line: `<Line type="monotone" dataKey="emissions" stroke="var(--carbon-chart-actual)" strokeWidth={2} dot={{ r: var(--carbon-chart-dot-radius) }}`
+- Target line: `<ReferenceLine y={targetValue} stroke="var(--chart-reference-line)" strokeDasharray="6 3" label={{ value: '2030 Target', fill: 'var(--chart-reference-line)' }}`
+- Optional area: `<Area dataKey="emissions" fill="var(--carbon-chart-actual)" fillOpacity={var(--carbon-chart-area-opacity)}`
+- Grid, axes, tooltip: same pattern as PortfolioBarChart
+
+**Tokens used:**
+- `--carbon-chart-actual`, `--chart-reference-line`, `--carbon-chart-area-opacity`
+- `--carbon-chart-dot-radius`, `--chart-grid-color`, `--chart-axis-color`
+- `--chart-tooltip-bg`, `--chart-tooltip-border`
+
+---
+
+## 10. EnergyKpiPanel
+
+**Purpose:** Row of energy intensity KPI cards for the ESG screen (kWh/sqft, CO2/sqft, water intensity, energy star score).
+
+**Props:**
+```typescript
+interface EnergyKpi {
+  label: string;       // e.g. "Energy Intensity"
+  value: string;       // e.g. "18.4 kWh/sqft"
+  target: string;      // e.g. "Target: 15.0"
+  onTarget: boolean;   // Drives colour
+}
+
+interface EnergyKpiPanelProps {
+  kpis: EnergyKpi[];
+}
+```
+
+**Layout:**
+- Flex row, `gap: var(--space-4)`, wraps on smaller screens
+- Each KPI: same structure as `KpiCard` but smaller (`--font-size-2xl` value, `--font-size-xs` label)
+- `onTarget=true`: value colour `var(--color-success)` | `onTarget=false`: `var(--color-warning)`
+
+**Tokens used:**
+- Same as KpiCard plus `--color-success`, `--color-warning`, `--font-size-2xl`, `--font-size-xs`
+
+---
+
+## 11. SpaceHeatmap
+
+**Purpose:** Grid-based floor-plan heatmap showing room-level occupancy (0–100%). Data from Kaggle occupancy CSV.
+
+**Props:**
+```typescript
+interface HeatmapCell {
+  roomId: string;
+  label: string;      // e.g. "Room 3B"
+  occupancy: number;  // 0–100 (percentage)
+}
+
+interface SpaceHeatmapProps {
+  cells: HeatmapCell[];
+  columns: number;             // Grid columns, default 8
+  floorLabel: string;
+  onCellClick?: (cell: HeatmapCell) => void;
+}
+```
+
+**Layout:**
+- CSS Grid: `grid-template-columns: repeat(columns, 1fr)`, `gap: var(--heatmap-cell-gap)`
+- Each cell: `aspect-ratio: 1`, `border-radius: var(--heatmap-cell-radius)`, `cursor: pointer`
+- Occupancy → background colour mapping (CSS custom properties):
+  - 0%: `var(--heatmap-cell-empty)`
+  - 1–30%: `var(--heatmap-cell-low)`
+  - 31–70%: `var(--heatmap-cell-medium)`
+  - 71–99%: `var(--heatmap-cell-high)`
+  - 100%: `var(--heatmap-cell-full)`
+- Tooltip on hover: room label + occupancy %
+
+**Legend:** Horizontal gradient strip below grid from `--heatmap-cell-empty` to `--heatmap-cell-full`, labelled "0% — 100%".
+
+**Tokens used:**
+- `--heatmap-cell-gap`, `--heatmap-cell-radius`
+- `--heatmap-cell-empty`, `--heatmap-cell-low`, `--heatmap-cell-medium`
+- `--heatmap-cell-high`, `--heatmap-cell-full`
+
+---
+
+## 12. SatisfactionGauge
+
+**Purpose:** Recharts RadialBarChart showing a tenant satisfaction score (0–100) as a partial arc gauge.
+
+**Props:**
+```typescript
+interface SatisfactionGaugeProps {
+  score: number;          // 0–100
+  label?: string;         // default "Satisfaction"
+  size?: number;          // diameter in px, default 160
+}
+```
+
+**Recharts config:**
+- `<RadialBarChart innerRadius="70%" outerRadius="100%" startAngle={210} endAngle={-30}`
+- Single `<RadialBar>` with `data={[{ value: score }]}`
+- Fill colour derived from score:
+  - ≥ 80: `var(--gauge-excellent)` (green)
+  - 60–79: `var(--gauge-good)` (brand green)
+  - 40–59: `var(--gauge-fair)` (amber)
+  - < 40: `var(--gauge-poor)` (red)
+- Track: `<RadialBar>` at 100% with fill `var(--gauge-track)` (behind the score arc)
+- Score value displayed as centred text inside arc: `var(--font-size-3xl)`, `var(--font-mono)`, `var(--font-weight-bold)`
+- Label below arc: `var(--font-size-xs)`, `var(--color-text-secondary)`
+
+**Tokens used:**
+- `--gauge-track`, `--gauge-excellent`, `--gauge-good`, `--gauge-fair`, `--gauge-poor`
+- `--font-size-3xl`, `--font-size-xs`, `--font-mono`, `--font-weight-bold`
+- `--color-text-secondary`
+
+---
+
+## 13. MaintenanceTicketList
+
+**Purpose:** List of open maintenance tickets for the selected building/floor. Shows status, priority, description, and assigned team.
+
+**Props:**
+```typescript
+interface MaintenanceTicket {
+  id: string;
+  title: string;
+  status: 'open' | 'in_progress' | 'resolved';
+  priority: 'high' | 'medium' | 'low';
+  floor: string;
+  assignedTo: string;
+  createdAt: string;    // ISO date
+}
+
+interface MaintenanceTicketListProps {
+  tickets: MaintenanceTicket[];
+  maxVisible?: number;  // default 8, with "show more"
+}
+```
+
+**Layout:**
+- Vertical list, `gap: var(--space-3)` between items
+- Each ticket: flex row `[status-dot | title + meta | priority badge | assignee]`
+- Status dot (6px circle):
+  - `open`: `var(--ticket-dot-open)` (red)
+  - `in_progress`: `var(--ticket-dot-progress)` (amber)
+  - `resolved`: `var(--ticket-dot-resolved)` (green)
+- Title: `var(--font-size-sm)`, `var(--font-weight-medium)`
+- Meta (floor, date): `var(--font-size-xs)`, `var(--color-text-muted)`
+- Priority badge: reuses `<RiskBadge>` with `High/Medium/Low` mapped from `priority`
+
+**Tokens used:**
+- `--ticket-dot-open`, `--ticket-dot-progress`, `--ticket-dot-resolved`
+- `--font-size-sm`, `--font-size-xs`, `--font-weight-medium`
+- `--color-text-muted`, `--space-3`, `--color-border-subtle`
+
+---
+
+## 14. AiChatPanel
+
+**Purpose:** Full-height chat interface for the AI Deal Assistant powered by Claude (claude-sonnet-4-6). Supports streaming SSE responses.
+
+**Props:**
+```typescript
+interface AiChatPanelProps {
+  onSend: (message: string) => Promise<void>;
+  streaming?: boolean;        // true when Claude is responding
+  disabled?: boolean;
+}
+```
+
+**Layout:**
+- Flex column: `[message list (flex-grow, overflow-y: auto) | input bar (fixed bottom)]`
+- Background: `var(--chat-panel-bg)`
+- Message list: `padding: var(--space-4)`, `gap: var(--space-4)`
+
+**Input bar:**
+- Background: `var(--chat-input-bg)`, border: `1px solid var(--chat-input-border)`
+- Focus: border `var(--chat-input-focus-border)`, `box-shadow: var(--shadow-focus)`
+- Send button: background `var(--color-brand-primary)`, disabled when `streaming=true`
+- Placeholder: "Ask about properties, leases, deals…", colour `var(--color-text-muted)`
+
+**Streaming indicator:** Animated blinking cursor (3 dots pulse) in `var(--chat-streaming-accent)` (lime) shown while `streaming=true`.
+
+**Suggested prompts:** 4 pre-set chip buttons shown on empty state (e.g. "What's our highest NOI property?"). Chips: `var(--color-bg-elevated)`, border `var(--color-border-default)`, hover `var(--color-bg-interactive)`.
+
+**Tokens used:**
+- `--chat-panel-bg`, `--chat-input-bg`, `--chat-input-border`, `--chat-input-focus-border`
+- `--color-brand-primary`, `--color-text-muted`, `--color-bg-elevated`
+- `--color-border-default`, `--color-bg-interactive`
+- `--chat-streaming-accent`, `--shadow-focus`, `--space-4`, `--transition-fast`
+
+---
+
+## 15. ChatMessage
+
+**Purpose:** Individual message bubble in the AiChatPanel. Handles both user messages and Claude assistant responses (with citation links).
+
+**Props:**
+```typescript
+interface ChatMessageProps {
+  role: 'user' | 'assistant';
+  content: string;            // Plain text or markdown (assistant only)
+  timestamp?: string;
+  streaming?: boolean;        // Show streaming cursor on last assistant message
+  citations?: string[];       // Property IDs / data source refs
+}
+```
+
+**Layout:**
+- User message: right-aligned, max-width 70%
+  - Background: `var(--chat-user-bg)`, border-left: `3px solid var(--chat-user-border)`
+  - Border-radius: `var(--radius-lg)`
+- Assistant message: left-aligned, max-width 80%
+  - Background: `var(--chat-assistant-bg)`, border: `1px solid var(--chat-assistant-border)`
+  - Border-radius: `var(--radius-lg)`
+
+**Typography:**
+- Content: `var(--font-size-base)`, `var(--line-height-relaxed)`
+- Timestamp: `var(--font-size-xs)`, `var(--color-text-muted)`
+- Citations: `var(--font-size-xs)`, `var(--chat-citation-color)` (link teal), comma-separated
+
+**Streaming cursor:** `|` character in `var(--chat-streaming-accent)`, 700ms blink animation. Only shown on last assistant message while `streaming=true`.
+
+**Tokens used:**
+- `--chat-user-bg`, `--chat-user-border`, `--chat-assistant-bg`, `--chat-assistant-border`
+- `--chat-streaming-accent`, `--chat-citation-color`
+- `--radius-lg`, `--font-size-base`, `--font-size-xs`
+- `--line-height-relaxed`, `--color-text-muted`
+
+---
+
+## Screen-to-Component Map
+
+| Screen | Components |
+|--------|-----------|
+| Portfolio Overview | PageShell, TopBar, SideNav, KpiCard (×5), PortfolioBarChart, PropertyPieChart |
+| Predictive Lease Risk Engine | PageShell, TopBar, SideNav, RiskBadge, LeaseRiskTable |
+| ESG & Carbon Tracker | PageShell, TopBar, SideNav, CarbonEmissionsChart, EnergyKpiPanel |
+| Tenant Experience Hub | PageShell, TopBar, SideNav, SpaceHeatmap, SatisfactionGauge, MaintenanceTicketList |
+| AI Deal Assistant | PageShell, TopBar, SideNav, AiChatPanel, ChatMessage |
+
+---
+
+## Token Quick-Reference for Rohan
+
+```css
+/* Import once in main.tsx or App.tsx */
+import '../tokens/tokens.css';
+
+/* Usage pattern — never hardcode colours */
+style={{ color: 'var(--color-text-primary)' }}
+className="..."  /* or use CSS modules with var() */
+```
+
+No hardcoded hex values anywhere. All colours, spacing, and typography must reference `var(--token-name)` from `tokens.css`.

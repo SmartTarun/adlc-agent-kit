@@ -256,3 +256,321 @@ alembic revision --autogenerate -m "describe_change"
 ---
 
 *Delivered by RASOOL — Database Agent | Sprint-01 | INFRAVIZ*
+
+---
+
+---
+
+# Agent: rasool | Sprint: 01 | Date: 2026-03-28
+# CBRE Unified Asset Intelligence Platform — DB Schema (Migration 0002)
+
+**Project**: CBRE Unified Asset Intelligence Platform
+**Database**: PostgreSQL
+**ORM**: SQLAlchemy 2.0 + Alembic
+**Migration file**: `backend/migrations/versions/0002_cbre_schema.py`
+**Chains from**: `0001` (INFRAVIZ)
+
+---
+
+## Architecture Decisions
+
+| Decision | Value | Authority |
+|---|---|---|
+| Auth for MVP | None — no user FK | Arjun 2026-03-28 |
+| All data storage | PostgreSQL (no S3 for CBRE) | Arjun |
+| ETL scheduler | APScheduler — RentCast hourly + CSV on startup | Arjun |
+| LLM | `claude-sonnet-4-6` via Anthropic API, SSE streaming | Arjun |
+| Region scope | US-only; North America CRE conventions | Tarun |
+| Property types | Office Class A/B/C only for Sprint-01 | Tarun |
+| Financial conventions | NOI = Revenue − OpEx; Cap Rate = NOI/Value; DSCR = NOI/DebtService | domain |
+| DB credentials | `DATABASE_URL` env var — no hardcoded creds | CLAUDE.md |
+
+---
+
+## Table Summary
+
+Table names match Kiran's ORM models in `backend/app/models/cbre.py` exactly.
+
+| Table | Screen | Data Source |
+|---|---|---|
+| `properties` | All screens | Seed data + RentCast |
+| `buildings` | ESG, Occupancy, Maintenance | Seed data |
+| `tenants` | Lease Risk, Tenant Experience | Seed data |
+| `leases` | Predictive Lease Risk Engine | Seed data + Claude risk scoring |
+| `esg_data` | ESG & Carbon Tracker | EIA CBECS CSV (per building) |
+| `occupancy_data` | Tenant Experience Hub | Kaggle Occupancy CSV (per building) |
+| `maintenance_tickets` | Tenant Experience Hub | Seed data (per building) |
+| `chat_sessions` | AI Deal Assistant | Claude RAG session headers |
+| `chat_messages` | AI Deal Assistant | Claude RAG turn messages |
+| `etl_runs` | ETL health / admin | APScheduler audit log |
+| `market_data` | Portfolio Overview, Lease Risk | RentCast API (city/state level) |
+
+---
+
+## Table Schemas
+
+### `properties`
+Core property catalogue. One row per US office campus (may contain multiple buildings).
+Matches: `backend/app/models/cbre.py :: Property`
+
+| Column | Type | Constraints | Notes |
+|---|---|---|---|
+| `id` | UUID | PK, NOT NULL | |
+| `name` | VARCHAR(255) | NOT NULL | |
+| `address` | VARCHAR(512) | NOT NULL | |
+| `city` | VARCHAR(128) | NOT NULL | |
+| `state` | VARCHAR(2) | NOT NULL, default `CA` | US state code |
+| `class_type` | VARCHAR(1) | NOT NULL, default `A` | `A`, `B`, `C` |
+| `property_type` | VARCHAR(64) | NOT NULL, default `office` | |
+| `total_sqft` | FLOAT | NOT NULL, default `0` | |
+| `asset_value` | NUMERIC(18,2) | NOT NULL, default `0` | USD |
+| `noi` | NUMERIC(18,2) | NOT NULL, default `0` | Net Operating Income USD |
+| `cap_rate` | FLOAT | NULLABLE | e.g. 0.065 = 6.5% |
+| `occupancy_rate` | FLOAT | NULLABLE | 0.0–100.0 % |
+| `year_built` | INTEGER | NULLABLE | |
+| `rentcast_id` | VARCHAR(128) | UNIQUE, NULLABLE | RentCast external ID |
+| `created_at` | TIMESTAMPTZ | NOT NULL, default NOW() | |
+| `updated_at` | TIMESTAMPTZ | NOT NULL, default NOW() | |
+
+**Indexes**: `ix_properties_city_state`, `ix_properties_class_type`, `ix_properties_property_type`, `ix_properties_rentcast_id`
+
+---
+
+### `buildings`
+Individual building within a property. ESG, occupancy, and maintenance data hang off buildings.
+Matches: `backend/app/models/cbre.py :: Building`
+
+| Column | Type | Constraints | Notes |
+|---|---|---|---|
+| `id` | UUID | PK, NOT NULL | |
+| `property_id` | UUID | FK → `properties.id` CASCADE | Parent property |
+| `name` | VARCHAR(255) | NOT NULL | |
+| `floors` | INTEGER | NOT NULL, default `1` | |
+| `total_sqft` | FLOAT | NOT NULL, default `0` | |
+| `year_built` | INTEGER | NULLABLE | |
+| `created_at` | TIMESTAMPTZ | NOT NULL, default NOW() | |
+
+**Indexes**: `ix_buildings_property_id`
+
+---
+
+### `tenants`
+Commercial tenant directory.
+Matches: `backend/app/models/cbre.py :: Tenant`
+
+| Column | Type | Constraints | Notes |
+|---|---|---|---|
+| `id` | UUID | PK, NOT NULL | |
+| `name` | VARCHAR(255) | NOT NULL | |
+| `industry` | VARCHAR(128) | NULLABLE | |
+| `credit_rating` | VARCHAR(8) | NULLABLE | e.g. `AA`, `A`, `BBB` |
+| `contact_email` | VARCHAR(255) | NULLABLE | |
+| `satisfaction_score` | FLOAT | NULLABLE | 0.0–10.0 |
+| `created_at` | TIMESTAMPTZ | NOT NULL, default NOW() | |
+
+**Indexes**: `ix_tenants_name`, `ix_tenants_industry`
+
+---
+
+### `leases`
+Lease agreements with AI-generated risk scores. Powers the Predictive Lease Risk Engine.
+Matches: `backend/app/models/cbre.py :: Lease`
+
+| Column | Type | Constraints | Notes |
+|---|---|---|---|
+| `id` | UUID | PK, NOT NULL | |
+| `property_id` | UUID | FK → `properties.id` CASCADE | |
+| `tenant_id` | UUID | FK → `tenants.id` CASCADE | |
+| `unit_number` | VARCHAR(32) | NULLABLE | |
+| `sqft` | FLOAT | NOT NULL, default `0` | |
+| `start_date` | TIMESTAMPTZ | NOT NULL | |
+| `end_date` | TIMESTAMPTZ | NOT NULL | Countdown source |
+| `monthly_rent` | NUMERIC(12,2) | NOT NULL, default `0` | USD |
+| `dscr` | FLOAT | NULLABLE | Debt Service Coverage Ratio |
+| `risk_score` | FLOAT | NULLABLE | 0.0–100.0, Claude-generated |
+| `risk_level` | VARCHAR(8) | NOT NULL, default `Low` | `High`, `Medium`, `Low` |
+| `ai_recommendations` | TEXT | NULLABLE | Claude broker action |
+| `is_active` | BOOLEAN | NOT NULL, default `true` | |
+| `created_at` | TIMESTAMPTZ | NOT NULL, default NOW() | |
+| `updated_at` | TIMESTAMPTZ | NOT NULL, default NOW() | |
+
+**Indexes**: `ix_leases_property_id`, `ix_leases_tenant_id`, `ix_leases_end_date`, `ix_leases_risk_level`, `ix_leases_is_active`
+
+---
+
+### `esg_data`
+Monthly ESG / energy metrics per building (from EIA CBECS CSV). Powers ESG & Carbon Tracker.
+Matches: `backend/app/models/cbre.py :: ESGData`
+
+| Column | Type | Constraints | Notes |
+|---|---|---|---|
+| `id` | UUID | PK, NOT NULL | |
+| `building_id` | UUID | FK → `buildings.id` CASCADE | |
+| `month_year` | VARCHAR(7) | NOT NULL | Format `YYYY-MM`, e.g. `2024-01` |
+| `co2_emissions_tons` | FLOAT | NOT NULL, default `0` | CO2 equivalent metric tons |
+| `energy_kwh` | FLOAT | NOT NULL, default `0` | Total electricity kWh |
+| `energy_intensity_kwh_sqft` | FLOAT | NULLABLE | kWh per sqft |
+| `co2_intensity_sqft` | FLOAT | NULLABLE | CO2 tons per sqft |
+| `created_at` | TIMESTAMPTZ | NOT NULL, default NOW() | |
+
+**Indexes**: `ix_esg_data_building_id`, `ix_esg_data_month_year` (composite: building_id + month_year)
+
+---
+
+### `occupancy_data`
+Room-level occupancy sensor readings (from Kaggle CSV). Powers Tenant Experience Hub heatmap.
+Matches: `backend/app/models/cbre.py :: OccupancyData`
+
+| Column | Type | Constraints | Notes |
+|---|---|---|---|
+| `id` | UUID | PK, NOT NULL | |
+| `building_id` | UUID | FK → `buildings.id` CASCADE | |
+| `floor` | INTEGER | NOT NULL | |
+| `room_id` | VARCHAR(32) | NOT NULL | Sensor ID |
+| `timestamp` | TIMESTAMPTZ | NOT NULL | Sensor reading time |
+| `occupancy_ratio` | FLOAT | NOT NULL, default `0` | 0.0–1.0 |
+| `created_at` | TIMESTAMPTZ | NOT NULL, default NOW() | |
+
+**Indexes**: `ix_occupancy_data_building_id`, `ix_occupancy_data_floor_room` (composite), `ix_occupancy_data_timestamp`
+
+---
+
+### `maintenance_tickets`
+Open and resolved maintenance requests per building. Powers Tenant Experience Hub ticket list.
+Matches: `backend/app/models/cbre.py :: MaintenanceTicket`
+
+| Column | Type | Constraints | Notes |
+|---|---|---|---|
+| `id` | UUID | PK, NOT NULL | |
+| `building_id` | UUID | FK → `buildings.id` CASCADE | |
+| `tenant_id` | UUID | FK → `tenants.id` SET NULL, NULLABLE | |
+| `title` | VARCHAR(255) | NOT NULL | |
+| `description` | TEXT | NULLABLE | |
+| `status` | VARCHAR(32) | NOT NULL, default `open` | `open`, `in_progress`, `resolved` |
+| `priority` | VARCHAR(16) | NOT NULL, default `medium` | `low`, `medium`, `high`, `critical` |
+| `reported_at` | TIMESTAMPTZ | NOT NULL, default NOW() | |
+| `resolved_at` | TIMESTAMPTZ | NULLABLE | |
+| `created_at` | TIMESTAMPTZ | NOT NULL, default NOW() | |
+
+**Indexes**: `ix_maintenance_tickets_building_id`, `ix_maintenance_tickets_tenant_id`, `ix_maintenance_tickets_status`, `ix_maintenance_tickets_priority`
+
+---
+
+### `chat_sessions`
+AI Deal Assistant session header. Groups many `chat_messages` turns.
+Matches: `backend/app/models/cbre.py :: ChatSession`
+
+| Column | Type | Constraints | Notes |
+|---|---|---|---|
+| `id` | UUID | PK, NOT NULL | |
+| `session_id` | VARCHAR(128) | UNIQUE, NOT NULL | UUID string generated by client |
+| `created_at` | TIMESTAMPTZ | NOT NULL, default NOW() | |
+
+**Indexes**: `ix_chat_sessions_session_id`, `ix_chat_sessions_created_at`
+
+---
+
+### `chat_messages`
+Individual turn (user or assistant) within an AI Deal Assistant session.
+FK is on `session_id` string (not UUID) to match ORM design.
+Matches: `backend/app/models/cbre.py :: ChatMessage`
+
+| Column | Type | Constraints | Notes |
+|---|---|---|---|
+| `id` | UUID | PK, NOT NULL | |
+| `session_id` | VARCHAR(128) | FK → `chat_sessions.session_id` CASCADE | |
+| `role` | VARCHAR(16) | NOT NULL | `user`, `assistant` |
+| `content` | TEXT | NOT NULL | |
+| `tokens_used` | INTEGER | NULLABLE | |
+| `created_at` | TIMESTAMPTZ | NOT NULL, default NOW() | |
+
+**Indexes**: `ix_chat_messages_session_id`, `ix_chat_messages_role`, `ix_chat_messages_created_at`
+
+---
+
+### `etl_runs`
+ETL pipeline execution audit log. Written by APScheduler on every RentCast pull and CSV import.
+Matches: `backend/app/models/cbre.py :: ETLRun`
+
+| Column | Type | Constraints | Notes |
+|---|---|---|---|
+| `id` | UUID | PK, NOT NULL | |
+| `source` | VARCHAR(64) | NOT NULL | `rentcast`, `eia_cbecs`, `kaggle`, `census_acs` |
+| `status` | VARCHAR(32) | NOT NULL, default `running` | `running`, `success`, `failed` |
+| `records_processed` | INTEGER | NOT NULL, default `0` | |
+| `error_message` | TEXT | NULLABLE | |
+| `started_at` | TIMESTAMPTZ | NOT NULL, default NOW() | |
+| `completed_at` | TIMESTAMPTZ | NULLABLE | |
+
+**Indexes**: `ix_etl_runs_source`, `ix_etl_runs_status`, `ix_etl_runs_started_at`
+
+---
+
+### `market_data`
+US commercial real estate market metrics from RentCast API. City/state-level — no property FK.
+Matches: `backend/app/models/cbre.py :: MarketData`
+
+| Column | Type | Constraints | Notes |
+|---|---|---|---|
+| `id` | UUID | PK, NOT NULL | |
+| `city` | VARCHAR(128) | NOT NULL | |
+| `state` | VARCHAR(2) | NOT NULL | |
+| `property_type` | VARCHAR(64) | NOT NULL, default `office` | |
+| `avg_cap_rate` | FLOAT | NULLABLE | |
+| `avg_rent_sqft` | FLOAT | NULLABLE | USD per sqft |
+| `avg_occupancy` | FLOAT | NULLABLE | 0.0–1.0 |
+| `source` | VARCHAR(32) | NOT NULL, default `rentcast` | |
+| `captured_at` | TIMESTAMPTZ | NOT NULL, default NOW() | ETL pull timestamp |
+
+**Indexes**: `ix_market_data_city_state`, `ix_market_data_property_type`, `ix_market_data_captured_at`, `ix_market_data_source`
+
+---
+
+## ERD (Text) — CBRE
+
+```
+properties
+  ├── buildings (property_id)
+  │     ├── esg_data (building_id)
+  │     ├── occupancy_data (building_id)
+  │     └── maintenance_tickets (building_id → tenants)
+  └── leases (property_id)
+        └── tenants (tenant_id)
+
+chat_sessions
+  └── chat_messages (session_id)   — RAG queries all tables above
+
+etl_runs    (audit log — no FK)
+market_data (city/state level — no FK)
+```
+
+---
+
+## Running CBRE Migration
+
+```bash
+# Run all migrations (0001 INFRAVIZ + 0002 CBRE)
+export DATABASE_URL=postgresql://user:pass@localhost:5432/cbre
+cd backend
+alembic upgrade head
+
+# Run only migration 0002
+alembic upgrade 0002
+
+# Rollback CBRE (back to INFRAVIZ only)
+alembic downgrade 0001
+```
+
+---
+
+## Files
+
+| File | Purpose |
+|---|---|
+| `backend/migrations/versions/0001_initial_schema.py` | INFRAVIZ — 8 tables |
+| `backend/migrations/versions/0002_cbre_schema.py` | CBRE — 11 tables + indexes |
+| `docs/db-schema.md` | This file |
+
+---
+
+*Delivered by RASOOL — Database Agent | Sprint-01 | CBRE Unified Asset Intelligence Platform*

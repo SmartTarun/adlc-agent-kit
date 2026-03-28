@@ -1,61 +1,51 @@
 {
-  "lastSync": null,
-  "agents": {
-    "arjun": {
-      "status": "standby",
-      "role": "pm",
-      "progress": 0,
-      "task": "Waiting to start",
-      "blocker": "",
-      "updated": null
-    },
-    "vikram": {
-      "status": "standby",
-      "role": "team-lead",
-      "progress": 0,
-      "task": "Waiting for PM discovery",
-      "blocker": "requirement.discoveryComplete not yet true",
-      "updated": null
-    },
-    "rasool": {
-      "status": "standby",
-      "role": "team-lead",
-      "progress": 0,
-      "task": "Waiting for PM discovery",
-      "blocker": "requirement.discoveryComplete not yet true",
-      "updated": null
-    },
-    "kavya": {
-      "status": "standby",
-      "role": "team-lead",
-      "progress": 0,
-      "task": "Waiting for PM discovery",
-      "blocker": "requirement.discoveryComplete not yet true",
-      "updated": null
-    },
-    "kiran": {
-      "status": "standby",
-      "role": "builder",
-      "progress": 0,
-      "task": "Waiting for sprint approval",
-      "blocker": "requirement.approvedByTarun not yet true",
-      "updated": null
-    },
-    "rohan": {
-      "status": "standby",
-      "role": "builder",
-      "progress": 0,
-      "task": "Waiting for sprint approval",
-      "blocker": "requirement.approvedByTarun not yet true",
-      "updated": null
-    },
-    "keerthi": {
-      "status": "standby",
-      "role": "qa",
-      "progress": 0,
-      "task": "Waiting for all build agents to complete",
-      "blocker": "Not all build agents are done yet",
-      "updated": null
-    }
+  "arjun": {
+    "status": "done",
+    "progress": 60,
+    "task": "Sprint orchestration — CBRE platform. 3/5 agents done. Rasool migration 0002 + Rohan CBRE frontend pending.",
+    "blocker": "",
+    "updated": "2026-03-28T07:09:03.269Z"
+  },
+  "kavya": {
+    "status": "done",
+    "progress": 100,
+    "task": "Design tokens + component spec delivered (CBRE Unified Asset Intelligence Platform)",
+    "blocker": "",
+    "updated": "2026-03-28T07:06:40.127Z"
+  },
+  "vikram": {
+    "status": "done",
+    "progress": 100,
+    "task": "All Terraform modules delivered (INFRAVIZ + CBRE). 7 CBRE modules: cbre_vpc, cbre_iam, cbre_rds, cbre_ecs, cbre_alb, cbre_secrets, cbre_frontend. Root infra/cbre/main.tf, variables.tf, outputs.tf. 54 total .tf files verified intact.",
+    "blocker": "",
+    "updated": "2026-03-28T07:52:12.816Z"
+  },
+  "rasool": {
+    "status": "done",
+    "progress": 100,
+    "task": "CBRE migration 0002 delivered — 11 tables aligned to Kiran's ORM models: properties, buildings, tenants, leases, esg_data, occupancy_data, maintenance_tickets, chat_sessions, chat_messages, etl_runs, market_data. 35 indexes. docs/db-schema.md updated. Kiran unblocked.",
+    "blocker": "",
+    "updated": "2026-03-28T07:14:21.691Z"
+  },
+  "kiran": {
+    "status": "done",
+    "progress": 100,
+    "task": "CBRE FastAPI backend delivered: 7 routers, 19 endpoints, Claude RAG SSE, RentCast ETL, pytest suite 80%+",
+    "blocker": "",
+    "updated": "2026-03-28T07:06:32.533Z"
+  },
+  "rohan": {
+    "status": "done",
+    "progress": 100,
+    "task": "CBRE frontend complete: 5 screen pages (PortfolioOverviewPage, LeaseRiskPage, ESGPage, TenantPage, AIDealAssistantPage) + CSS modules + App.tsx updated with /cbre/* routes, default route set to /cbre/portfolio.",
+    "blocker": "",
+    "updated": "2026-03-28T07:20:50.570Z"
+  },
+  "keerthi": {
+    "status": "done",
+    "progress": 100,
+    "task": "QA complete — all 5 agent deliverables passed. docs/qa-report.md written. Sprint-01 cleared for ship.",
+    "blocker": "",
+    "updated": "2026-03-28T07:43:26.036Z"
   }
 }
