@@ -3684,23 +3684,29 @@ function requestUXChanges() {
 // ── MCP Configuration ──────────────────────────────────────────────────────
 let mcpConfig = {};
 
+const MCP_FIELDS = {
+  db:     { input: 'mcp-db-url',     status: 'mcp-db-status',     card: 'mcp-db-card'     },
+  mysql:  { input: 'mcp-mysql-url',  status: 'mcp-mysql-status',  card: 'mcp-mysql-card'  },
+  oracle: { input: 'mcp-oracle-url', status: 'mcp-oracle-status', card: 'mcp-oracle-card' },
+  sqlite: { input: 'mcp-sqlite-path',status: 'mcp-sqlite-status', card: 'mcp-sqlite-card' },
+  gh:     { input: 'mcp-gh-token',   status: 'mcp-gh-status',     card: 'mcp-gh-card'     },
+  aws:    { input: 'mcp-aws-region', status: 'mcp-aws-status',    card: 'mcp-aws-card'    },
+  custom: { input: 'mcp-custom-url', status: 'mcp-custom-status', card: 'mcp-custom-card' },
+};
+
 function mcpFieldChanged(key) {
-  const vals = {
-    db:     document.getElementById('mcp-db-url')?.value.trim(),
-    gh:     document.getElementById('mcp-gh-token')?.value.trim(),
-    aws:    document.getElementById('mcp-aws-region')?.value.trim(),
-    custom: document.getElementById('mcp-custom-url')?.value.trim(),
-  };
-  const labels = { db: 'mcp-db-status', gh: 'mcp-gh-status', aws: 'mcp-aws-status', custom: 'mcp-custom-status' };
-  const cards  = { db: 'mcp-db-card',   gh: 'mcp-gh-card',   aws: 'mcp-aws-card',   custom: 'mcp-custom-card' };
-  const val = vals[key];
-  const statusEl = document.getElementById(labels[key]);
-  const cardEl   = document.getElementById(cards[key]);
+  const f = MCP_FIELDS[key]; if (!f) return;
+  const val = document.getElementById(f.input)?.value.trim();
+  // GitHub also needs token from the token field specifically
+  const ghOwner = key === 'gh' ? (document.getElementById('mcp-gh-owner')?.value.trim() || '') : undefined;
+  const statusEl = document.getElementById(f.status);
+  const cardEl   = document.getElementById(f.card);
   if (val) {
-    statusEl.textContent = 'set';
+    statusEl.textContent = '✓ set';
     statusEl.className   = 'np-mcp-status ok';
     cardEl.classList.add('connected');
     mcpConfig[key] = val;
+    if (ghOwner !== undefined) mcpConfig.ghOwner = ghOwner;
   } else {
     statusEl.textContent = 'not set';
     statusEl.className   = 'np-mcp-status';
@@ -3710,12 +3716,12 @@ function mcpFieldChanged(key) {
 }
 
 async function saveMCPConfig() {
-  if (!Object.keys(mcpConfig).length) return;
   try {
+    const payload = { ...mcpConfig };
     await fetch('/api/mcp/config', {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify(mcpConfig),
+      body:    JSON.stringify(payload),
     });
   } catch (e) { console.error('MCP save failed', e); }
 }
@@ -3725,10 +3731,18 @@ async function loadMCPConfig() {
     const r = await fetch('/api/mcp/config');
     if (!r.ok) return;
     const cfg = await r.json();
-    if (cfg.db)     { document.getElementById('mcp-db-url').value     = cfg.db;     mcpFieldChanged('db');     }
-    if (cfg.gh)     { document.getElementById('mcp-gh-token').value   = cfg.gh;     mcpFieldChanged('gh');     }
-    if (cfg.aws)    { document.getElementById('mcp-aws-region').value = cfg.aws;    mcpFieldChanged('aws');    }
-    if (cfg.custom) { document.getElementById('mcp-custom-url').value = cfg.custom; mcpFieldChanged('custom'); }
+    const set = (id, val, key) => {
+      const el = document.getElementById(id);
+      if (el && val) { el.value = val; mcpFieldChanged(key); }
+    };
+    set('mcp-db-url',     cfg.db,     'db');
+    set('mcp-mysql-url',  cfg.mysql,  'mysql');
+    set('mcp-oracle-url', cfg.oracle, 'oracle');
+    set('mcp-sqlite-path',cfg.sqlite, 'sqlite');
+    set('mcp-gh-token',   cfg.gh,     'gh');
+    set('mcp-gh-owner',   cfg.ghOwner,'gh');
+    set('mcp-aws-region', cfg.aws,    'aws');
+    set('mcp-custom-url', cfg.custom, 'custom');
   } catch {}
 }
 
@@ -3965,22 +3979,53 @@ async function npUploadContextFiles(projectId) {
         <div class="np-section-divider">
           <div class="np-section-title">MCP Connections <span class="np-optional-tag">optional — local only, never committed</span></div>
           <div class="np-mcp-grid">
+            <!-- PostgreSQL -->
             <div class="np-mcp-card" id="mcp-db-card">
               <div class="np-mcp-card-header">
-                <span class="np-mcp-icon">🗄️</span>
+                <span class="np-mcp-icon">🐘</span>
                 <span class="np-mcp-name">PostgreSQL</span>
                 <span class="np-mcp-status" id="mcp-db-status">not set</span>
               </div>
               <input class="np-mcp-input" id="mcp-db-url" placeholder="postgresql://user:pass@host:5432/dbname" oninput="mcpFieldChanged('db')">
             </div>
+            <!-- MySQL -->
+            <div class="np-mcp-card" id="mcp-mysql-card">
+              <div class="np-mcp-card-header">
+                <span class="np-mcp-icon">🐬</span>
+                <span class="np-mcp-name">MySQL</span>
+                <span class="np-mcp-status" id="mcp-mysql-status">not set</span>
+              </div>
+              <input class="np-mcp-input" id="mcp-mysql-url" placeholder="mysql://user:pass@host:3306/dbname" oninput="mcpFieldChanged('mysql')">
+            </div>
+            <!-- Oracle -->
+            <div class="np-mcp-card" id="mcp-oracle-card">
+              <div class="np-mcp-card-header">
+                <span class="np-mcp-icon">🔴</span>
+                <span class="np-mcp-name">Oracle</span>
+                <span class="np-mcp-status" id="mcp-oracle-status">not set</span>
+              </div>
+              <input class="np-mcp-input" id="mcp-oracle-url" placeholder="oracle://user:pass@host:1521/SID" oninput="mcpFieldChanged('oracle')">
+            </div>
+            <!-- SQLite -->
+            <div class="np-mcp-card" id="mcp-sqlite-card">
+              <div class="np-mcp-card-header">
+                <span class="np-mcp-icon">📁</span>
+                <span class="np-mcp-name">SQLite</span>
+                <span class="np-mcp-status" id="mcp-sqlite-status">not set</span>
+              </div>
+              <input class="np-mcp-input" id="mcp-sqlite-path" placeholder="/path/to/database.db" oninput="mcpFieldChanged('sqlite')">
+            </div>
+            <!-- GitHub -->
             <div class="np-mcp-card" id="mcp-gh-card">
               <div class="np-mcp-card-header">
                 <span class="np-mcp-icon">🐙</span>
                 <span class="np-mcp-name">GitHub</span>
                 <span class="np-mcp-status" id="mcp-gh-status">not set</span>
               </div>
-              <input class="np-mcp-input" id="mcp-gh-token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" oninput="mcpFieldChanged('gh')">
+              <input class="np-mcp-input" id="mcp-gh-token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" oninput="mcpFieldChanged('gh')" style="margin-bottom:4px">
+              <input class="np-mcp-input" id="mcp-gh-owner" placeholder="org or username (optional)" oninput="mcpFieldChanged('gh')">
             </div>
+            <!-- AWS -->
             <div class="np-mcp-card" id="mcp-aws-card">
               <div class="np-mcp-card-header">
                 <span class="np-mcp-icon">☁️</span>
@@ -3989,6 +4034,7 @@ async function npUploadContextFiles(projectId) {
               </div>
               <input class="np-mcp-input" id="mcp-aws-region" placeholder="us-east-1 (uses your AWS profile)" oninput="mcpFieldChanged('aws')">
             </div>
+            <!-- Custom MCP -->
             <div class="np-mcp-card" id="mcp-custom-card">
               <div class="np-mcp-card-header">
                 <span class="np-mcp-icon">🔌</span>

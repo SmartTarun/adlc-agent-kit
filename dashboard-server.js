@@ -410,32 +410,93 @@ const server = http.createServer(async (req, res) => {
   // -- API: MCP config (GET + POST) --------------------------------
   if (pathname === '/api/mcp/config') {
     cors(res);
-    const CONN_FILE = path.join(ROOT, 'connections.json');
+    const CONN_FILE    = path.join(ROOT, 'connections.json');
+    const CLAUDE_DIR   = path.join(ROOT, '.claude');
+    const SETTINGS_FILE = path.join(CLAUDE_DIR, 'settings.json');
+
     if (req.method === 'GET') {
       const cfg = readJSON(CONN_FILE) || {};
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({
-        db:     cfg.database?.url      || '',
-        gh:     cfg.github?.token      || '',
-        aws:    cfg.aws?.region        || '',
-        custom: cfg.custom?.mcpUrl     || '',
+        db:       cfg.database?.url      || '',
+        dbType:   cfg.database?.type     || 'postgres',
+        gh:       cfg.github?.token      || '',
+        ghOwner:  cfg.github?.owner      || '',
+        aws:      cfg.aws?.region        || '',
+        mysql:    cfg.mysql?.url         || '',
+        oracle:   cfg.oracle?.url        || '',
+        sqlite:   cfg.sqlite?.path       || '',
+        custom:   cfg.custom?.mcpUrl     || '',
       }));
       return;
     }
+
     if (req.method === 'POST') {
       try {
         const body = JSON.parse(await readBody(req));
         const existing = readJSON(CONN_FILE) || {};
-        if (body.db)     { existing.database = { ...existing.database, url: body.db }; }
-        if (body.gh)     { existing.github   = { ...existing.github,   token: body.gh }; }
-        if (body.aws)    { existing.aws      = { ...existing.aws,      region: body.aws }; }
-        if (body.custom) { existing.custom   = { ...existing.custom,   mcpUrl: body.custom }; }
+
+        // Save raw credentials
+        if (body.db !== undefined)     { existing.database = { ...existing.database, url: body.db, type: body.dbType || 'postgres' }; }
+        if (body.gh !== undefined)     { existing.github   = { ...existing.github,   token: body.gh, owner: body.ghOwner || '' }; }
+        if (body.aws !== undefined)    { existing.aws      = { ...existing.aws,      region: body.aws }; }
+        if (body.mysql !== undefined)  { existing.mysql    = { ...existing.mysql,    url: body.mysql }; }
+        if (body.oracle !== undefined) { existing.oracle   = { ...existing.oracle,   url: body.oracle }; }
+        if (body.sqlite !== undefined) { existing.sqlite   = { ...existing.sqlite,   path: body.sqlite }; }
+        if (body.custom !== undefined) { existing.custom   = { ...existing.custom,   mcpUrl: body.custom }; }
         writeJSON(CONN_FILE, existing);
-        console.log(`[${new Date().toLocaleTimeString()}] MCP config saved`);
+
+        // Build mcpServers block for .claude/settings.json
+        const settings  = readJSON(SETTINGS_FILE) || {};
+        const mcpServers = settings.mcpServers || {};
+
+        // PostgreSQL
+        if (existing.database?.url) {
+          mcpServers['postgres'] = { command: 'npx', args: ['-y', '@modelcontextprotocol/server-postgres', existing.database.url] };
+        } else { delete mcpServers['postgres']; }
+
+        // MySQL
+        if (existing.mysql?.url) {
+          mcpServers['mysql'] = { command: 'npx', args: ['-y', 'mcp-server-mysql', '--url', existing.mysql.url] };
+        } else { delete mcpServers['mysql']; }
+
+        // Oracle
+        if (existing.oracle?.url) {
+          mcpServers['oracle'] = { command: 'npx', args: ['-y', 'mcp-server-oracle', '--url', existing.oracle.url] };
+        } else { delete mcpServers['oracle']; }
+
+        // SQLite
+        if (existing.sqlite?.path) {
+          mcpServers['sqlite'] = { command: 'npx', args: ['-y', '@modelcontextprotocol/server-sqlite', '--db-path', existing.sqlite.path] };
+        } else { delete mcpServers['sqlite']; }
+
+        // GitHub
+        if (existing.github?.token) {
+          mcpServers['github'] = {
+            command: 'npx', args: ['-y', '@modelcontextprotocol/server-github'],
+            env: { GITHUB_PERSONAL_ACCESS_TOKEN: existing.github.token }
+          };
+        } else { delete mcpServers['github']; }
+
+        // Custom MCP
+        if (existing.custom?.mcpUrl) {
+          mcpServers['custom'] = { command: 'npx', args: ['-y', 'mcp-remote', existing.custom.mcpUrl] };
+        } else { delete mcpServers['custom']; }
+
+        settings.mcpServers = mcpServers;
+        if (!fs.existsSync(CLAUDE_DIR)) fs.mkdirSync(CLAUDE_DIR, { recursive: true });
+        writeJSON(SETTINGS_FILE, settings);
+
+        const activeCount = Object.keys(mcpServers).length;
+        console.log(`[${new Date().toLocaleTimeString()}] MCP config saved — ${activeCount} server(s) active`);
+        postToChat('SYSTEM', 'System', 'system',
+          `🔌 MCP config updated — ${activeCount} server(s) active: ${Object.keys(mcpServers).join(', ') || 'none'}. Agents will use these on next launch.`,
+          ['all-agents']);
+        broadcast('update', getFullState());
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ ok: true }));
+        res.end(JSON.stringify({ ok: true, active: Object.keys(mcpServers) }));
       } catch (e) {
-        res.writeHead(400); res.end('Bad request');
+        res.writeHead(400); res.end(JSON.stringify({ error: e.message }));
       }
       return;
     }
