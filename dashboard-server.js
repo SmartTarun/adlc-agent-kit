@@ -831,6 +831,30 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  // -- API: activate Keerthi QA ------------------------------------
+  if (pathname === '/api/agent/keerthi/activate' && req.method === 'POST') {
+    cors(res);
+    const pr = getProjectRoot();
+    const statusData = readJSON(path.join(pr, 'agent-status.json')) || {};
+    const agentsMap = statusData.agents || statusData;
+    agentsMap['keerthi'] = {
+      status: 'wip',
+      progress: 5,
+      task: 'QA gates starting — reviewing all agent outputs',
+      blocker: '',
+      updated: new Date().toISOString()
+    };
+    if (statusData.agents) statusData.agents = agentsMap; else Object.assign(statusData, agentsMap);
+    writeJSON(path.join(pr, 'agent-status.json'), statusData);
+    broadcast('update', getFullState());
+    postToChat('KEERTHI', 'QA Engineer', 'broadcast',
+      '🟢 Keerthi QA activated — running quality gates across all agent outputs.', ['all-agents']);
+    const launch = launchAgent('keerthi');
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true, launch }));
+    return;
+  }
+
   // -- API: agent process status -----------------------------------
   if (pathname === '/api/agent-processes' && req.method === 'GET') {
     cors(res);
