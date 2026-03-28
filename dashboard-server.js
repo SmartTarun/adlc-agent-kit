@@ -73,14 +73,12 @@ function launchAgent(agentName) {
 
   agentProcesses[agentName] = { proc, pid: proc.pid, startedAt: new Date().toISOString() };
 
-  // Mark agent as wip immediately
+  // Mark agent as wip immediately — write flat format so getFullState() normalises cleanly
   const pr = getProjectRoot();
-  const statusData = readJSON(path.join(pr, 'agent-status.json')) || { agents: {} };
-  if (!statusData.agents) statusData.agents = {};
-  statusData.agents[agentName] = {
-    status: 'wip', progress: 5, task: 'Agent starting…',
-    blocker: '', updated: new Date().toISOString(),
-  };
+  const statusData = readJSON(path.join(pr, 'agent-status.json')) || {};
+  const agentsMap = statusData.agents || statusData;
+  agentsMap[agentName] = { status: 'wip', progress: 5, task: 'Agent starting…', blocker: '', updated: new Date().toISOString() };
+  if (statusData.agents) statusData.agents = agentsMap; else Object.assign(statusData, agentsMap);
   writeJSON(path.join(pr, 'agent-status.json'), statusData);
 
   proc.stdout.on('data', chunk => {
@@ -92,13 +90,14 @@ function launchAgent(agentName) {
   });
   proc.on('exit', code => {
     const pr2 = getProjectRoot();
-    const sd = readJSON(path.join(pr2, 'agent-status.json')) || { agents: {} };
-    if (!sd.agents) sd.agents = {};
-    if (sd.agents[agentName]) {
-      sd.agents[agentName].status  = code === 0 ? 'done' : 'blocked';
-      sd.agents[agentName].blocker = code !== 0 ? `Exited with code ${code}` : '';
-      sd.agents[agentName].updated = new Date().toISOString();
+    const sd = readJSON(path.join(pr2, 'agent-status.json')) || {};
+    const am = sd.agents || sd;
+    if (am[agentName]) {
+      am[agentName].status  = code === 0 ? 'done' : 'blocked';
+      am[agentName].blocker = code !== 0 ? `Exited with code ${code}` : '';
+      am[agentName].updated = new Date().toISOString();
     }
+    if (sd.agents) sd.agents = am; else Object.assign(sd, am);
     writeJSON(path.join(pr2, 'agent-status.json'), sd);
     broadcast('update', getFullState());
     postToChat('SYSTEM', 'System', 'system',
@@ -244,11 +243,13 @@ function broadcast(event, data) {
 const CHAT_DASHBOARD_WINDOW = 50;
 
 function getFullState() {
-  const pr      = getProjectRoot();
-  const status  = readJSON(path.join(pr, 'agent-status.json'))  || {};
-  const rawChat = readJSON(path.join(pr, 'group-chat.json'))     || { channel: 'team-panchayat-general', messages: [] };
-  const req     = readJSON(path.join(pr, 'requirement.json'))    || {};
-  const memory  = {};
+  const pr         = getProjectRoot();
+  const rawStatus  = readJSON(path.join(pr, 'agent-status.json')) || {};
+  // Normalise: support both { agents: {...} } (new format) and flat { arjun: {...} } (legacy)
+  const agents     = rawStatus.agents || rawStatus;
+  const rawChat    = readJSON(path.join(pr, 'group-chat.json'))   || { channel: 'team-panchayat-general', messages: [] };
+  const req        = readJSON(path.join(pr, 'requirement.json'))  || {};
+  const memory     = {};
   try {
     fs.readdirSync(path.join(pr, 'agent-memory')).forEach(f => {
       const agent = f.replace('-memory.json', '');
@@ -266,7 +267,7 @@ function getFullState() {
     messages:   allMessages.slice(-CHAT_DASHBOARD_WINDOW),
   };
 
-  return { status, chat, req, memory, activeProject, projects, timestamp: new Date().toISOString() };
+  return { agents, chat, req, memory, activeProject, projects, timestamp: new Date().toISOString() };
 }
 
 function postToChat(from, role, type, message, tags) {
