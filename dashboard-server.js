@@ -116,6 +116,19 @@ function startWatching() {
     try { fs.readdirSync(memDir).forEach(f => targets.push('agent-memory/' + f)); } catch {}
   }
 
+  // Ensure core files exist so the watcher can attach
+  const defaults = {
+    'group-chat.json':  { channel: 'team-panchayat-general', messages: [] },
+    'agent-status.json': {},
+    'requirement.json':  {},
+  };
+  Object.entries(defaults).forEach(([rel, blank]) => {
+    const abs = path.join(pr, rel);
+    if (!fs.existsSync(abs)) {
+      try { fs.writeFileSync(abs, JSON.stringify(blank, null, 2), 'utf8'); } catch {}
+    }
+  });
+
   targets.forEach(rel => {
     const abs = path.join(pr, rel);
     if (!fs.existsSync(abs)) return;
