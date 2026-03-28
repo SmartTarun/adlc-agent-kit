@@ -63,9 +63,9 @@ function launchAgent(agentName) {
   const logPath = path.join(LOGS_DIR, `${agentName}.log`);
 
   const proc = spawn('claude', [
-    '--dangerously-skip-permissions',
     '--print',
     '--model', model,
+    '--allowedTools', 'Bash,Read,Write,Edit,Glob,Grep,WebFetch',
   ], { cwd: ROOT, shell: true, stdio: ['pipe', 'pipe', 'pipe'] });
 
   proc.stdin.write(promptContent);
