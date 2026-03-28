@@ -27,14 +27,97 @@ const http  = require('http');
 const fs    = require('fs');
 const path  = require('path');
 const url   = require('url');
+const { spawn } = require('child_process');
 
 const ROOT        = __dirname;
 const PORT        = (() => { const i = process.argv.indexOf('--port'); return i >= 0 ? parseInt(process.argv[i+1]) : 3000; })();
 const AGENTS      = ['arjun','vikram','rasool','kavya','kiran','rohan','keerthi'];
 const UPLOADS_DIR = path.join(ROOT, 'chat-uploads');
+const LOGS_DIR    = path.join(ROOT, 'agent-logs');
 
-// Ensure chat-uploads directory exists on startup
+// Ensure required directories exist on startup
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+if (!fs.existsSync(LOGS_DIR))    fs.mkdirSync(LOGS_DIR,    { recursive: true });
+
+// -- Agent process tracking --------------------------------------------------
+const agentProcesses = {}; // { agentName: { proc, pid, startedAt } }
+
+function getAgentModel(agentName) {
+  try {
+    const prompt = fs.readFileSync(path.join(ROOT, 'prompts', `${agentName}-prompt.txt`), 'utf8');
+    const m = prompt.match(/# Model:\s*(\S+)/);
+    return m ? m[1] : 'claude-sonnet-4-6';
+  } catch { return 'claude-sonnet-4-6'; }
+}
+
+function launchAgent(agentName) {
+  const existing = agentProcesses[agentName];
+  if (existing && existing.proc && existing.proc.exitCode === null) {
+    return { ok: false, error: 'already running' };
+  }
+  const promptFile = path.join(ROOT, 'prompts', `${agentName}-prompt.txt`);
+  if (!fs.existsSync(promptFile)) return { ok: false, error: 'no prompt file' };
+
+  const promptContent = fs.readFileSync(promptFile, 'utf8');
+  const model   = getAgentModel(agentName);
+  const logPath = path.join(LOGS_DIR, `${agentName}.log`);
+
+  const proc = spawn('claude', [
+    '--dangerously-skip-permissions',
+    '--print',
+    '--model', model,
+  ], { cwd: ROOT, shell: true, stdio: ['pipe', 'pipe', 'pipe'] });
+
+  proc.stdin.write(promptContent);
+  proc.stdin.end();
+
+  agentProcesses[agentName] = { proc, pid: proc.pid, startedAt: new Date().toISOString() };
+
+  // Mark agent as wip immediately
+  const pr = getProjectRoot();
+  const statusData = readJSON(path.join(pr, 'agent-status.json')) || { agents: {} };
+  if (!statusData.agents) statusData.agents = {};
+  statusData.agents[agentName] = {
+    status: 'wip', progress: 5, task: 'Agent starting…',
+    blocker: '', updated: new Date().toISOString(),
+  };
+  writeJSON(path.join(pr, 'agent-status.json'), statusData);
+
+  proc.stdout.on('data', chunk => {
+    fs.appendFileSync(logPath, chunk.toString());
+    broadcast('agent-log', { agent: agentName, text: chunk.toString() });
+  });
+  proc.stderr.on('data', chunk => {
+    fs.appendFileSync(logPath, '[ERR] ' + chunk.toString());
+  });
+  proc.on('exit', code => {
+    const pr2 = getProjectRoot();
+    const sd = readJSON(path.join(pr2, 'agent-status.json')) || { agents: {} };
+    if (!sd.agents) sd.agents = {};
+    if (sd.agents[agentName]) {
+      sd.agents[agentName].status  = code === 0 ? 'done' : 'blocked';
+      sd.agents[agentName].blocker = code !== 0 ? `Exited with code ${code}` : '';
+      sd.agents[agentName].updated = new Date().toISOString();
+    }
+    writeJSON(path.join(pr2, 'agent-status.json'), sd);
+    broadcast('update', getFullState());
+    postToChat('SYSTEM', 'System', 'system',
+      `Agent ${agentName.toUpperCase()} ${code === 0 ? 'completed ✅' : `exited with code ${code} ❌`}`,
+      [agentName]);
+  });
+
+  return { ok: true, pid: proc.pid };
+}
+
+function stopAllAgents() {
+  let stopped = 0;
+  for (const [, info] of Object.entries(agentProcesses)) {
+    if (info.proc && info.proc.exitCode === null) {
+      try { info.proc.kill(); stopped++; } catch {}
+    }
+  }
+  return stopped;
+}
 
 // -- Multi-project support -----------------------------------------------
 
@@ -92,6 +175,7 @@ function getProjects() {
 function switchActiveProject(relPath, meta) {
   const ap = { current: relPath, updatedAt: new Date().toISOString(), ...meta };
   fs.writeFileSync(path.join(ROOT, 'active-project.json'), JSON.stringify(ap, null, 2), 'utf8');
+  projectsCache = null; // bust cache on switch
   // Re-init watchers for the new project root
   startWatching();
   broadcast('project-switch', { activeProject: ap, state: getFullState() });
@@ -119,6 +203,7 @@ function startWatching() {
     const abs = path.join(pr, rel);
     if (!fs.existsSync(abs)) return;
     try {
+      const debounceMs = rel === 'group-chat.json' ? 50 : 300;
       const w = fs.watch(abs, () => {
         setTimeout(() => {
           try {
@@ -129,7 +214,7 @@ function startWatching() {
               console.log(`[${new Date().toLocaleTimeString()}] Changed: ${rel} -> pushed to ${clients.length} client(s)`);
             }
           } catch {}
-        }, 300);
+        }, debounceMs);
       });
       watchers.push(w);
     } catch {}
@@ -171,7 +256,7 @@ function getFullState() {
     });
   } catch {}
   const activeProject = readJSON(path.join(ROOT, 'active-project.json')) || { current: '.', name: 'Default' };
-  const projects = getProjects();
+  const projects = getProjectsCached();
 
   // Windowed chat: send last CHAT_DASHBOARD_WINDOW messages + totalCount for UI
   const allMessages = rawChat.messages || [];
@@ -188,13 +273,46 @@ function postToChat(from, role, type, message, tags) {
   const chatFile = path.join(getProjectRoot(), 'group-chat.json');
   const chat = readJSON(chatFile) || { channel: 'team-panchayat-general', messages: [] };
   if (!chat.messages) chat.messages = [];
-  chat.messages.push({
+  const msg = {
     id:        `msg-${Date.now()}-${Math.random().toString(36).slice(2,6)}`,
     from, role, type, message,
     tags:      tags || [],
     timestamp: new Date().toISOString(),
-  });
+  };
+  chat.messages.push(msg);
   writeJSON(chatFile, chat);
+  // Push just the new message instantly — no file-watcher delay
+  broadcast('chat-message', msg);
+}
+
+// Cache sprint-board.html at startup so it is not re-read on every request
+let cachedHtml = null;
+let cachedHtmlMtime = 0;
+function getHtml() {
+  const htmlPath = path.join(ROOT, 'sprint-board.html');
+  try {
+    const mtime = fs.statSync(htmlPath).mtimeMs;
+    if (!cachedHtml || mtime !== cachedHtmlMtime) {
+      cachedHtml = fs.readFileSync(htmlPath, 'utf8');
+      cachedHtmlMtime = mtime;
+    }
+  } catch {}
+  return cachedHtml || '';
+}
+// Warm the cache on startup
+getHtml();
+
+// Cache getProjects() — only invalidates on project switch or every 10s
+let projectsCache = null;
+let projectsCacheAt = 0;
+const PROJECTS_CACHE_TTL = 10000;
+function getProjectsCached() {
+  const now = Date.now();
+  if (!projectsCache || now - projectsCacheAt > PROJECTS_CACHE_TTL) {
+    projectsCache = getProjects();
+    projectsCacheAt = now;
+  }
+  return projectsCache;
 }
 
 // Start watching files for the active project
@@ -288,6 +406,95 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  // -- API: MCP config (GET + POST) --------------------------------
+  if (pathname === '/api/mcp/config') {
+    cors(res);
+    const CONN_FILE = path.join(ROOT, 'connections.json');
+    if (req.method === 'GET') {
+      const cfg = readJSON(CONN_FILE) || {};
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        db:     cfg.database?.url      || '',
+        gh:     cfg.github?.token      || '',
+        aws:    cfg.aws?.region        || '',
+        custom: cfg.custom?.mcpUrl     || '',
+      }));
+      return;
+    }
+    if (req.method === 'POST') {
+      try {
+        const body = JSON.parse(await readBody(req));
+        const existing = readJSON(CONN_FILE) || {};
+        if (body.db)     { existing.database = { ...existing.database, url: body.db }; }
+        if (body.gh)     { existing.github   = { ...existing.github,   token: body.gh }; }
+        if (body.aws)    { existing.aws      = { ...existing.aws,      region: body.aws }; }
+        if (body.custom) { existing.custom   = { ...existing.custom,   mcpUrl: body.custom }; }
+        writeJSON(CONN_FILE, existing);
+        console.log(`[${new Date().toLocaleTimeString()}] MCP config saved`);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true }));
+      } catch (e) {
+        res.writeHead(400); res.end('Bad request');
+      }
+      return;
+    }
+  }
+
+  // -- API: context file upload ------------------------------------
+  if (pathname === '/api/project/upload-context' && req.method === 'POST') {
+    cors(res);
+    try {
+      const contentType = req.headers['content-type'] || '';
+      const boundary = contentType.split('boundary=')[1];
+      if (!boundary) { res.writeHead(400); res.end('Missing boundary'); return; }
+
+      const chunks = [];
+      for await (const chunk of req) chunks.push(chunk);
+      const raw = Buffer.concat(chunks);
+
+      // Parse multipart: extract projectId and files
+      const parts = raw.toString('binary').split('--' + boundary);
+      let projectId = '';
+      const savedFiles = [];
+
+      for (const part of parts) {
+        if (!part.includes('Content-Disposition')) continue;
+        const headerEnd = part.indexOf('\r\n\r\n');
+        if (headerEnd < 0) continue;
+        const header  = part.slice(0, headerEnd);
+        const bodyRaw = part.slice(headerEnd + 4, part.endsWith('\r\n') ? -2 : undefined);
+
+        const nameMatch = header.match(/name="([^"]+)"/);
+        const fileMatch = header.match(/filename="([^"]+)"/);
+        if (!nameMatch) continue;
+
+        if (nameMatch[1] === 'projectId' && !fileMatch) {
+          projectId = bodyRaw.replace(/\r?\n$/, '');
+          continue;
+        }
+
+        if (fileMatch) {
+          const fname   = fileMatch[1].replace(/[^a-zA-Z0-9._-]/g, '_');
+          const projDir = projectId
+            ? path.join(ROOT, 'projects', projectId, 'context')
+            : path.join(ROOT, 'chat-uploads', 'context');
+          if (!fs.existsSync(projDir)) fs.mkdirSync(projDir, { recursive: true });
+          const savePath = path.join(projDir, fname);
+          fs.writeFileSync(savePath, Buffer.from(bodyRaw, 'binary'));
+          savedFiles.push(fname);
+          console.log(`[${new Date().toLocaleTimeString()}] Context file saved: ${savePath}`);
+        }
+      }
+
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, saved: savedFiles }));
+    } catch (e) {
+      console.error('[upload-context]', e);
+      res.writeHead(500); res.end('Upload failed');
+    }
+    return;
+  }
+
   // -- API: post to group chat ------------------------------------
   if (pathname === '/api/chat' && req.method === 'POST') {
     cors(res);
@@ -333,6 +540,8 @@ const server = http.createServer(async (req, res) => {
       if (!chat.messages) chat.messages = [];
       chat.messages.push(msg);
       writeJSON(chatFile, chat);
+      // Push to all clients instantly
+      broadcast('chat-message', msg);
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ ok: true }));
     } catch (e) {
@@ -447,6 +656,9 @@ const server = http.createServer(async (req, res) => {
       postToChat('ARJUN', 'Orchestrator', 'broadcast',
         `All agents - new requirement received: "${reqObj.title}". Read requirement.json and post your analysis.`,
         ['action-required', 'all-agents']);
+      postToChat('ARJUN', 'Orchestrator', 'system',
+        `🚀 Analysis started for "${reqObj.title}"! I'm spinning up the discovery phase now — Vikram, Rasool, Kiran, Kavya, Rohan: please review requirement.json and report your estimates back here. Keerthi stands by for QA once all agents are done.`,
+        ['analysis-started', 'all-agents']);
 
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ ok: true, requirementId: req_id }));
@@ -585,6 +797,56 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  // -- API: launch agents ------------------------------------------
+  if (pathname === '/api/launch-agents' && req.method === 'POST') {
+    cors(res);
+    try {
+      const body = await readBody(req);
+      const data = JSON.parse(body || '{}');
+      const targets = Array.isArray(data.agents) ? data.agents : AGENTS.filter(a => a !== 'keerthi');
+      const results = {};
+      for (const a of targets) results[a] = launchAgent(a);
+      postToChat('SYSTEM', 'System', 'broadcast',
+        `🚀 Launching agents: ${targets.join(', ')} — check the agent cards for live progress.`,
+        ['system', 'all-agents']);
+      broadcast('update', getFullState());
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, results }));
+    } catch (e) {
+      res.writeHead(500); res.end(JSON.stringify({ error: e.message }));
+    }
+    return;
+  }
+
+  // -- API: stop agents --------------------------------------------
+  if (pathname === '/api/stop-agents' && req.method === 'POST') {
+    cors(res);
+    const stopped = stopAllAgents();
+    postToChat('SYSTEM', 'System', 'broadcast',
+      `⏹ ${stopped} agent process(es) stopped by Tarun.`, ['system']);
+    broadcast('update', getFullState());
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true, stopped }));
+    return;
+  }
+
+  // -- API: agent process status -----------------------------------
+  if (pathname === '/api/agent-processes' && req.method === 'GET') {
+    cors(res);
+    const status = {};
+    for (const [name, info] of Object.entries(agentProcesses)) {
+      status[name] = {
+        running:    info.proc && info.proc.exitCode === null,
+        pid:        info.pid,
+        startedAt:  info.startedAt,
+        exitCode:   info.proc ? info.proc.exitCode : null,
+      };
+    }
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(status));
+    return;
+  }
+
   // -- Static files -----------------------------------------------
   // Serve sprint-board.html (the active Kanban dashboard) at /
   let filePath = (pathname === '/' || pathname === '/index.html') ? '/sprint-board.html' : pathname;
@@ -592,8 +854,7 @@ const server = http.createServer(async (req, res) => {
   // Inject SSE client into the sprint-board
   if (filePath === '/sprint-board.html' || filePath === '/sprint-dashboard.html') {
     try {
-      // Always serve sprint-board.html (the active one)
-      let html = fs.readFileSync(path.join(ROOT, 'sprint-board.html'), 'utf8');
+      let html = getHtml();
       const liveScript = `<script>
 /* ADLC Live Dashboard -- SSE auto-connect injected by dashboard-server.js */
 (function(){
@@ -601,8 +862,9 @@ const server = http.createServer(async (req, res) => {
   let src;
   function connect(){
     src = new EventSource('http://localhost:' + PORT + '/events');
-    src.addEventListener('init',   e => { window.dispatchEvent(new CustomEvent('panchayat-state', {detail: JSON.parse(e.data)})); showStatus('live'); });
-    src.addEventListener('update', e => { window.dispatchEvent(new CustomEvent('panchayat-state', {detail: JSON.parse(e.data)})); flashStatus(); });
+    src.addEventListener('init',         e => { window.dispatchEvent(new CustomEvent('panchayat-state',   {detail: JSON.parse(e.data)})); showStatus('live'); });
+    src.addEventListener('update',       e => { window.dispatchEvent(new CustomEvent('panchayat-state',   {detail: JSON.parse(e.data)})); flashStatus(); });
+    src.addEventListener('chat-message', e => { window.dispatchEvent(new CustomEvent('panchayat-chat-msg',{detail: JSON.parse(e.data)})); flashStatus(); });
     src.onerror = () => { showStatus('error'); setTimeout(connect, 3000); };
   }
   function showStatus(s){

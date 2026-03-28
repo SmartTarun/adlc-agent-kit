@@ -495,6 +495,30 @@ body {
   background: #fafbff;
 }
 
+/* ── Chat new-message animation ── */
+@keyframes chatSlideIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+/* ── Typing indicator ── */
+.chat-typing {
+  display: flex; align-items: center; gap: 8px;
+  padding: 4px 0 4px 42px; font-size: 11px; color: var(--text-dim);
+  min-height: 22px;
+}
+.chat-typing-dots { display: flex; gap: 3px; align-items: center; }
+.chat-typing-dots span {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--primary); opacity: .4;
+  animation: typingBounce 1.2s infinite;
+}
+.chat-typing-dots span:nth-child(2) { animation-delay: .2s; }
+.chat-typing-dots span:nth-child(3) { animation-delay: .4s; }
+@keyframes typingBounce {
+  0%,60%,100% { transform: translateY(0); opacity: .4; }
+  30% { transform: translateY(-4px); opacity: 1; }
+}
+
 /* ── Teams Message Bubbles ── */
 .chat-msg {
   display: flex;
@@ -504,6 +528,7 @@ body {
   padding: 3px 0;
   position: relative;
 }
+.chat-msg.new { animation: chatSlideIn .18s ease; }
 .chat-msg.is-grouped { padding-top: 1px; }
 
 /* Avatar circle */
@@ -1376,86 +1401,105 @@ body {
 /* ══════════════════════════════════════════════════════════════════════
    NEW PROJECT SCREEN  — full-page welcome & project launcher
    ══════════════════════════════════════════════════════════════════════ */
+/* ── Project Hub Screen ─────────────────────────────────────────────────── */
 #new-project-screen {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #1e40af 100%);
-  z-index: 300;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  overflow-y: auto;
-  padding: 40px 20px;
+  display: none; position: fixed; inset: 0;
+  background: linear-gradient(135deg,#0f0c29 0%,#1e1b4b 50%,#1a1040 100%);
+  z-index: 300; align-items: center; justify-content: center;
+  overflow-y: auto; padding: 24px 16px;
 }
 #new-project-screen.open { display: flex; }
 
-#np-card {
-  background: #fff;
-  border-radius: 20px;
-  width: 100%;
-  max-width: 680px;
-  box-shadow: 0 25px 60px rgba(0,0,0,.4);
-  overflow: hidden;
+#np-hub {
+  display: flex; gap: 0; width: 100%; max-width: 960px;
+  background: var(--surface1); border-radius: 20px;
+  box-shadow: 0 32px 80px rgba(0,0,0,.6);
+  overflow: hidden; min-height: 540px;
 }
-#np-card-header {
-  padding: 28px 32px 20px;
-  background: linear-gradient(135deg, #f5f3ff, #ede9fe);
-  border-bottom: 1px solid #ddd6fe;
-  text-align: center;
-}
-#np-card-header .np-logo { font-size: 36px; margin-bottom: 8px; }
-#np-card-header h1 { font-size: 20px; font-weight: 800; color: #1e1b4b; margin: 0 0 4px; }
-#np-card-header p  { font-size: 12px; color: var(--text-dim); margin: 0; }
 
-#np-existing { padding: 16px 28px; border-bottom: 1px solid var(--border-soft); display: none; }
-#np-existing h3 { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--text-dim); margin: 0 0 10px; }
-.np-existing-item {
-  display: flex; align-items: center; gap: 12px;
-  padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border-soft);
+/* Left column — existing projects */
+#np-projects-col {
+  width: 42%; background: var(--surface2);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+}
+#np-projects-header {
+  padding: 24px 24px 16px;
+  border-bottom: 1px solid var(--border-soft);
+}
+#np-projects-header h2 {
+  font-size: 15px; font-weight: 800; color: var(--text-bright); margin: 0 0 4px;
+}
+#np-projects-header p { font-size: 11px; color: var(--text-dim); margin: 0; }
+#np-projects-list {
+  flex: 1; overflow-y: auto; padding: 12px;
+}
+#np-empty-state {
+  padding: 40px 24px; text-align: center; color: var(--text-dim);
+  font-size: 12px; line-height: 1.8;
+}
+#np-empty-state .np-empty-icon { font-size: 36px; margin-bottom: 12px; }
+
+.np-proj-card {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 14px 16px; border-radius: 10px; border: 1.5px solid var(--border-soft);
   margin-bottom: 8px; cursor: pointer; transition: all .15s;
-  background: var(--surface2);
+  background: var(--surface1); position: relative;
 }
-.np-existing-item:hover { background: var(--primary-dim); border-color: var(--primary); }
-.np-existing-item .np-ei-icon { font-size: 20px; }
-.np-existing-item .np-ei-info { flex: 1; }
-.np-existing-item .np-ei-name { font-size: 13px; font-weight: 600; color: var(--text-bright); }
-.np-existing-item .np-ei-meta { font-size: 10px; color: var(--text-dim); margin-top: 2px; }
-.np-existing-item .np-ei-status {
-  font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px;
-  background: var(--blue-dim); color: var(--blue);
+.np-proj-card:hover { border-color: var(--primary); background: var(--primary-dim); transform: translateX(2px); }
+.np-proj-card.active-proj { border-color: var(--green); background: var(--green-dim); }
+.np-proj-icon { font-size: 22px; margin-top: 1px; }
+.np-proj-info { flex: 1; min-width: 0; }
+.np-proj-name { font-size: 13px; font-weight: 700; color: var(--text-bright); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.np-proj-meta { font-size: 10px; color: var(--text-dim); margin-top: 3px; }
+.np-proj-badge {
+  font-size: 9px; font-weight: 700; padding: 2px 8px; border-radius: 10px;
+  background: var(--blue-dim); color: var(--blue); white-space: nowrap; margin-top: 4px;
+  display: inline-block;
 }
-.np-existing-item .np-ei-status.done { background: var(--green-dim); color: var(--green); }
-.np-existing-item .np-ei-status.in_sprint { background: var(--purple-dim); color: var(--purple); }
+.np-proj-badge.done    { background: var(--green-dim); color: var(--green); }
+.np-proj-badge.wip     { background: var(--yellow-dim); color: var(--yellow); }
+.np-proj-badge.qa      { background: var(--purple-dim); color: var(--purple); }
+.np-proj-arrow { font-size: 16px; color: var(--text-dim); margin-top: 10px; transition: transform .15s; }
+.np-proj-card:hover .np-proj-arrow { transform: translateX(3px); color: var(--primary); }
 
-#np-form { padding: 24px 28px; }
-#np-form h3 { font-size: 13px; font-weight: 700; color: var(--text-bright); margin: 0 0 16px; display: flex; align-items: center; gap: 8px; }
-.np-field { margin-bottom: 16px; }
-.np-field label { display: block; font-size: 11px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
+/* Right column — new project form */
+#np-form-col {
+  flex: 1; display: flex; flex-direction: column;
+}
+#np-form-header {
+  padding: 24px 28px 16px;
+  border-bottom: 1px solid var(--border-soft);
+}
+#np-form-header h2 { font-size: 15px; font-weight: 800; color: var(--text-bright); margin: 0 0 4px; }
+#np-form-header p  { font-size: 11px; color: var(--text-dim); margin: 0; }
+#np-form { padding: 20px 28px; flex: 1; overflow-y: auto; }
+.np-field { margin-bottom: 14px; }
+.np-field label { display: block; font-size: 10px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 5px; }
 .np-field input, .np-field textarea {
   width: 100%; background: var(--surface2); border: 1.5px solid var(--border);
-  color: var(--text); padding: 10px 12px; border-radius: 8px; font-size: 13px;
+  color: var(--text); padding: 9px 12px; border-radius: 8px; font-size: 13px;
   font-family: var(--font); outline: none; box-sizing: border-box; transition: border-color .15s;
 }
-.np-field input:focus, .np-field textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(91,91,214,.1); }
-.np-field textarea { resize: vertical; min-height: 72px; }
-.np-field small { font-size: 10px; color: var(--text-dim); margin-top: 4px; display: block; }
-.np-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-
+.np-field input:focus, .np-field textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(91,91,214,.12); }
+.np-field textarea { resize: vertical; min-height: 68px; }
+.np-field small { font-size: 10px; color: var(--text-dim); margin-top: 3px; display: block; }
+.np-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 #np-footer {
-  padding: 16px 28px 24px;
-  display: flex; align-items: center; gap: 10px;
+  padding: 14px 28px 20px; display: flex; align-items: center; gap: 10px;
   border-top: 1px solid var(--border-soft);
 }
 #np-footer small { flex: 1; font-size: 10px; color: var(--text-dim); }
-#np-cancel-btn { background: none; border: 1.5px solid var(--border); color: var(--text-dim); padding: 9px 18px; border-radius: 8px; cursor: pointer; font-size: 13px; font-family: var(--font); transition: all .15s; }
+#np-cancel-btn { background: none; border: 1.5px solid var(--border); color: var(--text-dim); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 12px; font-family: var(--font); transition: all .15s; }
 #np-cancel-btn:hover { background: var(--surface3); }
 #np-launch-btn {
-  background: linear-gradient(135deg, var(--primary), #7c3aed);
-  border: none; color: #fff; padding: 10px 24px; border-radius: 8px; cursor: pointer;
+  background: linear-gradient(135deg,var(--primary),#7c3aed);
+  border: none; color: #fff; padding: 10px 22px; border-radius: 8px; cursor: pointer;
   font-size: 13px; font-family: var(--font); font-weight: 700; transition: opacity .15s;
   display: flex; align-items: center; gap: 8px;
 }
+#np-launch-btn:hover { opacity: .88; }
+#np-msg { display:none; background:var(--green-dim); color:var(--green); border-radius:8px; padding:10px 14px; font-size:12px; font-weight:600; margin-top:12px; }
 #np-launch-btn:hover { opacity: .9; }
 #np-msg { font-size: 11px; color: var(--green); font-weight: 600; display: none; }
 
@@ -1545,6 +1589,34 @@ body {
   background: var(--green-dim); color: var(--green);
   font-size: 11px; font-weight: 700; padding: 6px 16px; border-radius: 8px;
 }
+/* ── New Project: MCP + Upload ───────────────────────────────── */
+.np-section-divider { margin: 20px 0 10px; padding-top: 16px; border-top: 1px solid var(--border); }
+.np-section-title { font-size: 10px; font-weight: 800; color: var(--text-dim); text-transform: uppercase; letter-spacing: .08em; display: flex; align-items: center; gap: 6px; margin-bottom: 10px; }
+.np-optional-tag { font-size: 9px; font-weight: 600; background: var(--surface3); color: var(--text-dim); padding: 2px 6px; border-radius: 4px; text-transform: none; letter-spacing: 0; }
+.np-mcp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 4px; }
+.np-mcp-card { background: var(--surface2); border: 1.5px solid var(--border); border-radius: 10px; padding: 10px 12px; cursor: pointer; transition: all .15s; }
+.np-mcp-card:hover { border-color: var(--primary); }
+.np-mcp-card.connected { border-color: var(--green); background: var(--green-dim); }
+.np-mcp-card-header { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+.np-mcp-icon { font-size: 14px; }
+.np-mcp-name { font-size: 11px; font-weight: 700; color: var(--text-bright); }
+.np-mcp-status { font-size: 9px; color: var(--text-dim); margin-left: auto; }
+.np-mcp-status.ok { color: var(--green); }
+.np-mcp-input { width: 100%; background: var(--surface3); border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; color: var(--text); font-size: 10px; font-family: var(--mono); box-sizing: border-box; }
+.np-mcp-input:focus { outline: none; border-color: var(--primary); }
+.np-mcp-input::placeholder { color: var(--text-dim); }
+.np-upload-zone { border: 2px dashed var(--border); border-radius: 10px; padding: 16px; text-align: center; cursor: pointer; transition: all .15s; position: relative; }
+.np-upload-zone:hover, .np-upload-zone.drag-over { border-color: var(--primary); background: rgba(91,91,214,.04); }
+.np-upload-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.np-upload-label { font-size: 11px; color: var(--text-dim); pointer-events: none; }
+.np-upload-label strong { color: var(--primary); }
+.np-upload-files { list-style: none; padding: 0; margin: 8px 0 0; text-align: left; }
+.np-upload-files li { display: flex; align-items: center; gap: 6px; font-size: 10px; color: var(--text); padding: 4px 6px; background: var(--surface2); border-radius: 6px; margin-bottom: 4px; }
+.np-upload-files .np-file-icon { font-size: 12px; }
+.np-upload-files .np-file-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.np-upload-files .np-file-size { color: var(--text-dim); font-size: 9px; }
+.np-upload-files .np-file-remove { cursor: pointer; color: var(--text-dim); font-size: 11px; padding: 0 2px; }
+.np-upload-files .np-file-remove:hover { color: var(--red); }
 </style>
 </head>
 <body>
@@ -1571,6 +1643,7 @@ body {
   <div id="sse-status">● Connecting...</div>
   <button id="btn-approve-next" class="topbtn approve" onclick="approveAndStartNext()" style="display:none" title="Mark this project done and start the next requirement">✅ Approve &amp; Start Next</button>
   <button class="topbtn primary" onclick="openNewProjectScreen()">+ New Project</button>
+  <button id="btn-launch-agents" class="topbtn success" onclick="launchAgents()" title="Spawn all agent Claude processes">🚀 Launch Agents</button>
   <button class="topbtn" onclick="openUXScreen()" title="Open UX Design Review screen" style="border-color:#c4b5fd;color:#e9d5ff">🎨 UX Design</button>
   <button class="topbtn" onclick="openPermModal()" title="Manage agent tool permissions">🔐 Permissions</button>
   <button class="topbtn success" onclick="activateKeerthi()">🟢 Activate QA</button>
@@ -1587,155 +1660,8 @@ body {
     <span id="tdp-title">Your team leads need answers before the sprint starts</span>
     <span id="tdp-subtitle">Answer each agent's questions — they'll build their proposal based on your input</span>
   </div>
-  <div id="tdp-tabs">
-    <div class="tdp-tab active" onclick="switchTdpTab('kavya')" id="tdp-tab-kavya">
-      <span class="tdp-dot"></span>🎨 Kavya (UX)
-    </div>
-    <div class="tdp-tab" onclick="switchTdpTab('vikram')" id="tdp-tab-vikram">
-      <span class="tdp-dot"></span>☁️ Vikram (Cloud)
-    </div>
-    <div class="tdp-tab" onclick="switchTdpTab('rasool')" id="tdp-tab-rasool">
-      <span class="tdp-dot"></span>🗄️ Rasool (DB)
-    </div>
-  </div>
-
-  <!-- Kavya Tab -->
-  <div class="tdp-content active" id="tdp-content-kavya">
-    <div class="tdp-agent-profile">
-      <div class="tdp-avatar" style="background:linear-gradient(135deg,#7c3aed,#db2777)">🎨</div>
-      <div>
-        <div class="tdp-agent-name">Kavya — UX Designer</div>
-        <div class="tdp-agent-role">Frontend Design &amp; Tokens</div>
-      </div>
-      <div class="tdp-agent-desc">Kavya will design your colour palette, typography, component library and user flows based on your answers.</div>
-    </div>
-    <div class="tdp-q-block">
-      <div class="tdp-q-label">Visual Style</div>
-      <div class="tdp-q-text">What visual style should this product have? (minimal, bold, corporate, playful, dark-tech…)</div>
-      <textarea class="tdp-q-input" id="kavya-q1" placeholder="e.g. Minimal and clean, like Linear or Notion"></textarea>
-    </div>
-    <div class="tdp-q-block">
-      <div class="tdp-q-label">Colour Mode</div>
-      <div class="tdp-q-text">Dark mode first, light mode first, or both toggle?</div>
-      <textarea class="tdp-q-input" id="kavya-q2" placeholder="e.g. Dark mode primary, light mode toggle"></textarea>
-    </div>
-    <div class="tdp-q-block">
-      <div class="tdp-q-label">Brand Colours</div>
-      <div class="tdp-q-text">Any preferred primary / accent / background colours? (hex codes or descriptions)</div>
-      <textarea class="tdp-q-input" id="kavya-q3" placeholder="e.g. #5b5bd6 primary, teal accent, dark navy bg"></textarea>
-    </div>
-    <div class="tdp-q-block">
-      <div class="tdp-q-label">Priority Actions</div>
-      <div class="tdp-q-text">What are the 3 most important actions a user takes in this product?</div>
-      <textarea class="tdp-q-input" id="kavya-q4" placeholder="e.g. 1. View cost anomalies  2. Set alert thresholds  3. Export reports"></textarea>
-    </div>
-    <div class="tdp-q-block">
-      <div class="tdp-q-label">Reference UI</div>
-      <div class="tdp-q-text">Any existing products or screenshots to draw design inspiration from?</div>
-      <textarea class="tdp-q-input" id="kavya-q5" placeholder="e.g. AWS Cost Explorer, Datadog, Grafana"></textarea>
-    </div>
-    <div class="tdp-q-block">
-      <div class="tdp-q-label">Accessibility</div>
-      <div class="tdp-q-text">WCAG level, minimum font size, contrast requirements?</div>
-      <textarea class="tdp-q-input" id="kavya-q6" placeholder="e.g. WCAG AA, 14px minimum, high contrast mode optional"></textarea>
-    </div>
-    <div class="tdp-submit-row" id="tdp-submit-kavya">
-      <small>Answers are sent to Kavya via team chat. She will reply with a design proposal.</small>
-      <button class="tdp-submit-btn" onclick="submitTdpAnswers('kavya')">Send to Kavya →</button>
-    </div>
-  </div>
-
-  <!-- Vikram Tab -->
-  <div class="tdp-content" id="tdp-content-vikram">
-    <div class="tdp-agent-profile">
-      <div class="tdp-avatar" style="background:linear-gradient(135deg,#dc2626,#ea580c)">☁️</div>
-      <div>
-        <div class="tdp-agent-name">Vikram — Cloud Architect</div>
-        <div class="tdp-agent-role">Infrastructure &amp; Terraform</div>
-      </div>
-      <div class="tdp-agent-desc">Vikram will design your AWS infrastructure, write Terraform modules, and estimate costs based on your answers.</div>
-    </div>
-    <div class="tdp-q-block">
-      <div class="tdp-q-label">Cloud &amp; Region</div>
-      <div class="tdp-q-text">Which cloud provider and region should infrastructure be deployed to?</div>
-      <textarea class="tdp-q-input" id="vikram-q1" placeholder="e.g. AWS us-east-1, or AWS + GCP multi-cloud"></textarea>
-    </div>
-    <div class="tdp-q-block">
-      <div class="tdp-q-label">Scale &amp; Traffic</div>
-      <div class="tdp-q-text">Expected users, requests per second, and data volume?</div>
-      <textarea class="tdp-q-input" id="vikram-q2" placeholder="e.g. 100 users, ~50 RPS, 10GB data/month"></textarea>
-    </div>
-    <div class="tdp-q-block">
-      <div class="tdp-q-label">Compute Type</div>
-      <div class="tdp-q-text">Containers (ECS/Fargate), serverless (Lambda), or EC2 VMs?</div>
-      <textarea class="tdp-q-input" id="vikram-q3" placeholder="e.g. ECS Fargate for backend, Lambda for triggers"></textarea>
-    </div>
-    <div class="tdp-q-block">
-      <div class="tdp-q-label">Existing Infra</div>
-      <div class="tdp-q-text">Any existing AWS resources or VPCs to integrate with?</div>
-      <textarea class="tdp-q-input" id="vikram-q4" placeholder="e.g. Fresh account, no existing infra"></textarea>
-    </div>
-    <div class="tdp-q-block">
-      <div class="tdp-q-label">Cost Priority</div>
-      <div class="tdp-q-text">Monthly budget ceiling and cost optimisation priority?</div>
-      <textarea class="tdp-q-input" id="vikram-q5" placeholder="e.g. Under $200/month, optimise for cost over performance"></textarea>
-    </div>
-    <div class="tdp-q-block">
-      <div class="tdp-q-label">Compliance &amp; Security</div>
-      <div class="tdp-q-text">Any compliance requirements? (SOC2, HIPAA, GDPR, PCI-DSS…)</div>
-      <textarea class="tdp-q-input" id="vikram-q6" placeholder="e.g. No strict compliance, basic IAM least-privilege"></textarea>
-    </div>
-    <div class="tdp-submit-row" id="tdp-submit-vikram">
-      <small>Answers are sent to Vikram via team chat. He will reply with an architecture proposal and cost estimate.</small>
-      <button class="tdp-submit-btn" style="background:var(--red)" onclick="submitTdpAnswers('vikram')">Send to Vikram →</button>
-    </div>
-  </div>
-
-  <!-- Rasool Tab -->
-  <div class="tdp-content" id="tdp-content-rasool">
-    <div class="tdp-agent-profile">
-      <div class="tdp-avatar" style="background:linear-gradient(135deg,#d97706,#b45309)">🗄️</div>
-      <div>
-        <div class="tdp-agent-name">Rasool — Database Agent</div>
-        <div class="tdp-agent-role">Schema Design &amp; Migrations</div>
-      </div>
-      <div class="tdp-agent-desc">Rasool will design your PostgreSQL schema, write Alembic migrations, and create the db-schema.md documentation.</div>
-    </div>
-    <div class="tdp-q-block">
-      <div class="tdp-q-label">Multi-Tenancy</div>
-      <div class="tdp-q-text">Single-tenant or multi-tenant? If multi, row-level or schema-per-tenant?</div>
-      <textarea class="tdp-q-input" id="rasool-q1" placeholder="e.g. Single tenant for now, row-level isolation later"></textarea>
-    </div>
-    <div class="tdp-q-block">
-      <div class="tdp-q-label">Data Scale</div>
-      <div class="tdp-q-text">Expected row counts for the largest tables and write frequency?</div>
-      <textarea class="tdp-q-input" id="rasool-q2" placeholder="e.g. 1M cost records/month, 10K alerts, mostly reads"></textarea>
-    </div>
-    <div class="tdp-q-block">
-      <div class="tdp-q-label">Soft Delete</div>
-      <div class="tdp-q-text">Should records be soft-deleted (deleted_at) or hard-deleted?</div>
-      <textarea class="tdp-q-input" id="rasool-q3" placeholder="e.g. Soft delete for cost records, hard delete for sessions"></textarea>
-    </div>
-    <div class="tdp-q-block">
-      <div class="tdp-q-label">Real-Time</div>
-      <div class="tdp-q-text">Any real-time or streaming data requirements? (WebSockets, polling, CDC)</div>
-      <textarea class="tdp-q-input" id="rasool-q4" placeholder="e.g. Cost anomaly alerts should push in real-time via SSE"></textarea>
-    </div>
-    <div class="tdp-q-block">
-      <div class="tdp-q-label">File / Blob Storage</div>
-      <div class="tdp-q-text">Any file uploads, exports, or blob data to store? (S3 or in DB?)</div>
-      <textarea class="tdp-q-input" id="rasool-q5" placeholder="e.g. CSV export to S3, no file uploads in DB"></textarea>
-    </div>
-    <div class="tdp-q-block">
-      <div class="tdp-q-label">Audit Log</div>
-      <div class="tdp-q-text">Do you need an audit trail of who changed what and when?</div>
-      <textarea class="tdp-q-input" id="rasool-q6" placeholder="e.g. Yes — track cost threshold changes and alert dismissals"></textarea>
-    </div>
-    <div class="tdp-submit-row" id="tdp-submit-rasool">
-      <small>Answers are sent to Rasool via team chat. He will reply with a schema proposal and ERD.</small>
-      <button class="tdp-submit-btn" style="background:var(--yellow)" onclick="submitTdpAnswers('rasool')">Send to Rasool →</button>
-    </div>
-  </div>
+  <div id="tdp-tabs"></div>
+  <div id="tdp-body"></div>
 </div>
 
 <!-- ── PM Discovery Panel (shown when Arjun is in discovery mode) ──────── -->
@@ -1839,6 +1765,7 @@ body {
       <span id="chat-toggle" onclick="toggleChat()" title="Toggle chat">▼</span>
     </div>
     <div id="chat-messages"></div>
+    <div id="chat-typing-row"></div>
 
     <!-- File preview strip (shown only when files are staged) -->
     <div id="attach-preview"></div>
@@ -2170,6 +2097,7 @@ function renderBoard(state) {
 
   // Render chat -- state.chat is the full {channel, messages:[]} object
   renderChat((state.chat && state.chat.messages) ? state.chat.messages : []);
+  updateTypingIndicator(state.agents || {});
 }
 
 function normaliseStatus(agentStatus, containerInfo) {
@@ -2362,6 +2290,111 @@ function typeBadge(type) {
   return '<span class="chat-type-badge ' + cls + '">' + escHtml(type) + '</span>';
 }
 
+// ── Lightweight markdown renderer ────────────────────────────────────────────
+function renderMarkdown(text) {
+  return escHtml(text)
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/`([^`]+)`/g, '<code style="background:var(--surface3);padding:1px 4px;border-radius:3px;font-family:var(--mono);font-size:11px">$1</code>')
+    .replace(/\n/g, '<br>');
+}
+
+// ── Typing indicator (driven by WIP agent statuses) ───────────────────────────
+let typingAgents = new Set();
+function updateTypingIndicator(agents) {
+  const wip = Object.entries(agents || {})
+    .filter(([, v]) => v.status === 'wip')
+    .map(([k]) => k);
+  typingAgents = new Set(wip);
+  const box = document.getElementById('chat-typing-row');
+  if (!box) return;
+  if (wip.length === 0) { box.innerHTML = ''; return; }
+  const names = wip.map(a => a.charAt(0).toUpperCase() + a.slice(1)).join(', ');
+  box.innerHTML = `<div class="chat-typing"><div class="chat-typing-dots"><span></span><span></span><span></span></div><span>${names} ${wip.length === 1 ? 'is' : 'are'} working…</span></div>`;
+}
+
+// ── Append a single new message (no full re-render) ───────────────────────────
+function appendChatMessage(msg, animate) {
+  const box = document.getElementById('chat-messages');
+  if (!box) return;
+  const atBottom = box.scrollTop + box.clientHeight >= box.scrollHeight - 40;
+  const msgType = msg.type || 'message';
+  const sender  = (msg.from || msg.sender || '?').toUpperCase();
+  const senderL = sender.toLowerCase();
+  const isOwn   = senderL === 'tarun';
+  const isSystem= senderL === 'system';
+  const time    = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' }) : '';
+
+  // Check if previous message is from same sender (grouping)
+  const prev = box.lastElementChild;
+  const prevSender = prev && prev.dataset.sender;
+  const isGrouped = prevSender === sender && !isSystem;
+
+  const el = document.createElement('div');
+  el.className = ['chat-msg', 'chat-type-' + msgType, isOwn ? 'own-msg' : '', isGrouped ? 'is-grouped' : '', animate ? 'new' : ''].filter(Boolean).join(' ');
+  el.dataset.sender = sender;
+  el.dataset.msgId  = msg.id || '';
+
+  const avatarHtml = isGrouped
+    ? '<div class="chat-avatar hidden"></div>'
+    : '<div class="chat-avatar avatar-' + senderL + '">' + senderInitials(sender) + '</div>';
+
+  const metaHtml = isGrouped ? '' :
+    '<div class="chat-meta">' +
+      '<span class="chat-sender sender-' + senderL + '">' + escHtml(sender) + '</span>' +
+      typeBadge(msgType) +
+      '<span class="chat-time">' + time + '</span>' +
+    '</div>';
+
+  let attachHtml = '';
+  if (Array.isArray(msg.attachments) && msg.attachments.length) {
+    const chips = msg.attachments.map(a => {
+      const icon    = fileIcon(a.mimeType, a.name);
+      const isImage = a.mimeType && a.mimeType.startsWith('image/');
+      const href    = a.url ? a.url : (a.data || '#');
+      const sizeStr = a.size ? formatSize(a.size) : '';
+      if (isImage && (a.url || a.data)) {
+        return '<a class="chat-attach-file" href="' + escHtml(href) + '" download="' + escHtml(a.name) + '" target="_blank">' +
+          icon + ' <span class="fa-name">' + escHtml(a.name) + '</span>' +
+          (sizeStr ? ' <span class="chat-attach-size">(' + sizeStr + ')</span>' : '') + '</a>' +
+          '<a href="' + escHtml(href) + '" target="_blank"><img class="chat-attach-img" src="' + escHtml(href) + '" alt="' + escHtml(a.name) + '"></a>';
+      }
+      return '<a class="chat-attach-file" href="' + escHtml(href) + '" download="' + escHtml(a.name) + '" target="_blank">' +
+        icon + ' <span class="fa-name">' + escHtml(a.name) + '</span>' +
+        (sizeStr ? ' <span class="chat-attach-size">(' + sizeStr + ')</span>' : '') + '</a>';
+    }).join('');
+    attachHtml = '<div class="chat-attachments" style="margin-top:6px;">' + chips + '</div>';
+  }
+
+  const bubbleText = renderMarkdown(msg.message || '');
+  el.innerHTML = avatarHtml +
+    '<div class="chat-msg-content">' + metaHtml +
+      '<div class="chat-bubble">' + bubbleText + attachHtml + '</div>' +
+    '</div>';
+
+  box.appendChild(el);
+  lastChatLen = (lastChatLen || 0) + 1;
+  document.getElementById('chat-msg-count').textContent = lastChatLen + ' messages';
+
+  // Auto-expand chat panel if it was collapsed
+  if (!chatOpen) {
+    chatOpen = true;
+    const panel = document.getElementById('chat-panel');
+    panel.style.height = '180px';
+    document.getElementById('chat-toggle').textContent = '▼';
+  }
+  if (atBottom) box.scrollTop = box.scrollHeight;
+}
+
+// ── Handle instant chat-message SSE event ─────────────────────────────────────
+window.addEventListener('panchayat-chat-msg', e => {
+  const msg = e.detail;
+  // Deduplicate: skip if we already rendered this id
+  const box = document.getElementById('chat-messages');
+  if (box && msg.id && box.querySelector('[data-msg-id="' + msg.id + '"]')) return;
+  appendChatMessage(msg, true);
+});
+
 function renderChat(messages) {
   if (messages.length === lastChatLen) return;
   lastChatLen = messages.length;
@@ -2391,6 +2424,8 @@ function renderChat(messages) {
       isOwn     ? 'own-msg'    : '',
       isGrouped ? 'is-grouped' : '',
     ].filter(Boolean).join(' ');
+    el.dataset.sender = sender;
+    el.dataset.msgId  = msg.id || '';
 
     // Avatar
     const avatarHtml = isGrouped
@@ -2428,7 +2463,7 @@ function renderChat(messages) {
       attachHtml = '<div class="chat-attachments" style="margin-top:6px;">' + chips + '</div>';
     }
 
-    const bubbleText = escHtml(msg.message || '').replace(/\n/g, '<br>');
+    const bubbleText = renderMarkdown(msg.message || '');
 
     el.innerHTML =
       avatarHtml +
@@ -2634,11 +2669,37 @@ function activateKeerthi() {
 }
 
 function stopAll() {
-  if (!confirm('Stop all agent containers? The cluster will shut down.')) return;
-  sendTeamMessage('⏹ Cluster stop requested by Tarun', 'broadcast');
-  setTimeout(() => {
-    alert('Run: docker compose down\n(in the ADLC-Agent-Kit directory)');
-  }, 500);
+  if (!confirm('Stop all running agent processes?')) return;
+  fetch('/api/stop-agents', { method: 'POST' })
+    .then(r => r.json())
+    .then(d => {
+      if (d.ok) sendTeamMessage(`⏹ ${d.stopped} agent process(es) stopped by Tarun`, 'broadcast');
+      else alert('Error: ' + (d.error || 'unknown'));
+    });
+}
+
+function launchAgents(agents) {
+  const targets = agents || null;
+  const label = targets ? targets.join(', ') : 'all agents';
+  if (!confirm(`Launch ${label}?\n\nThis will spawn Claude processes for each agent using their prompt files.`)) return;
+  const btn = document.getElementById('btn-launch-agents');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Launching…'; }
+  fetch('/api/launch-agents', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(targets ? { agents: targets } : {}),
+  })
+    .then(r => r.json())
+    .then(d => {
+      if (btn) { btn.disabled = false; btn.textContent = '🚀 Launch Agents'; }
+      if (!d.ok) { alert('Error: ' + (d.error || 'unknown')); return; }
+      const failed = Object.entries(d.results || {}).filter(([, r]) => !r.ok).map(([a, r]) => `${a}: ${r.error}`);
+      if (failed.length) alert('Some agents could not start:\n' + failed.join('\n'));
+    })
+    .catch(e => {
+      if (btn) { btn.disabled = false; btn.textContent = '🚀 Launch Agents'; }
+      alert('Network error: ' + e.message);
+    });
 }
 
 // ── Permissions Manager ───────────────────────────────────────────────────────
@@ -3021,34 +3082,45 @@ function sendTeamMessage(message, type = 'broadcast') {
 function openNewProjectScreen() {
   renderNPExisting(currentState);
   document.getElementById('new-project-screen').classList.add('open');
+  loadMCPConfig();
 }
 
 function closeNewProjectScreen() {
+  const ap = (currentState.activeProject || {}).current;
+  // Only allow closing if a project is actually active
+  if (!ap || ap === 'none' || ap === null) return;
   document.getElementById('new-project-screen').classList.remove('open');
 }
 
 function renderNPExisting(state) {
-  const projects = (state.projects || []).filter(p => p.name && p.name !== 'Unnamed');
-  const wrap = document.getElementById('np-existing');
-  const list = document.getElementById('np-existing-list');
-  if (!projects.length) { wrap.style.display = 'none'; return; }
+  const projects  = (state.projects || []).filter(p => p.name && p.name !== 'Unnamed');
+  const listEl    = document.getElementById('np-projects-list');
+  const emptyEl   = document.getElementById('np-empty-state');
+  const activePath = (state.activeProject || {}).current || '';
 
-  wrap.style.display = 'block';
-  list.innerHTML = '';
-  projects.forEach(p => {
-    const div = document.createElement('div');
-    div.className = 'np-existing-item';
-    div.onclick = () => { switchToProject(p.path); closeNewProjectScreen(); };
-    const statusCls = p.status === 'done' ? 'done' : p.status === 'in_sprint' ? 'in_sprint' : '';
-    div.innerHTML =
-      `<div class="np-ei-icon">📁</div>
-       <div class="np-ei-info">
-         <div class="np-ei-name">${escHtml(p.name)}</div>
-         <div class="np-ei-meta">Sprint ${escHtml(p.sprint || '?')} · ${escHtml(p.path)}</div>
-       </div>
-       <span class="np-ei-status ${statusCls}">${escHtml((p.status || 'pending').replace(/_/g,' '))}</span>`;
-    list.appendChild(div);
-  });
+  if (!projects.length) {
+    listEl.innerHTML = '';
+    if (emptyEl) listEl.appendChild(emptyEl);
+    return;
+  }
+
+  const badgeCls = s => s === 'done' ? 'done' : s === 'qa' ? 'qa' : (s||'').includes('sprint') ? 'wip' : '';
+  const icon     = s => s === 'done' ? '✅' : s === 'qa' ? '🔍' : (s||'').includes('sprint') ? '⚡' : '📁';
+
+  listEl.innerHTML = projects.map(p => {
+    const isActive = activePath && activePath.endsWith(p.path || p.id);
+    const statusLabel = (p.status || 'pending').replace(/_/g, ' ');
+    return `<div class="np-proj-card${isActive ? ' active-proj' : ''}"
+                 onclick="switchToProject('${escHtml(p.path || '')}'); closeNewProjectScreen();">
+      <div class="np-proj-icon">${icon(p.status)}</div>
+      <div class="np-proj-info">
+        <div class="np-proj-name">${escHtml(p.name)}</div>
+        <div class="np-proj-meta">Sprint ${escHtml(p.sprint || '?')} &middot; ${escHtml(p.path || p.id || '')}</div>
+        <span class="np-proj-badge ${badgeCls(p.status)}">${escHtml(statusLabel)}</span>
+      </div>
+      <div class="np-proj-arrow">›</div>
+    </div>`;
+  }).join('');
 }
 
 function switchToProject(path) {
@@ -3056,10 +3128,12 @@ function switchToProject(path) {
     body: JSON.stringify({ path }) }).catch(console.error);
 }
 
-function submitNewProject() {
+async function submitNewProject() {
   const title       = document.getElementById('np-title').value.trim();
   const description = document.getElementById('np-desc').value.trim();
   if (!title || !description) { alert('Project name and description are required.'); return; }
+
+  await saveMCPConfig();
 
   const payload = {
     title,
@@ -3069,36 +3143,50 @@ function submitNewProject() {
     techConstraints: document.getElementById('np-constraints').value.trim()
       ? document.getElementById('np-constraints').value.split(',').map(s => s.trim()) : [],
     deadline:        document.getElementById('np-deadline').value || null,
+    mcpConfig:       Object.keys(mcpConfig).length ? mcpConfig : undefined,
     priority: 'high',
     type: 'new_project',
     sprint: '',
   };
 
-  fetch('/api/requirement', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
-  })
-  .then(r => r.json())
-  .then(d => {
+  try {
+    const r = await fetch('/api/requirement', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+    });
+    const d = await r.json();
     if (d.ok || d.requirementId) {
+      if (d.projectId || d.requirementId) {
+        await npUploadContextFiles(d.projectId || d.requirementId);
+      }
       const msg = document.getElementById('np-msg');
       msg.style.display = 'block';
       setTimeout(closeNewProjectScreen, 1800);
+      setTimeout(() => {
+        const panel = document.getElementById('chat-panel');
+        if (!chatOpen) { chatOpen = true; panel.style.height = '180px'; document.getElementById('chat-toggle').textContent = '▼'; }
+        const box = document.getElementById('chat-messages');
+        if (box) box.scrollTop = box.scrollHeight;
+      }, 2200);
     } else { alert('Error: ' + (d.error || 'unknown')); }
-  })
-  .catch(e => alert('Network error: ' + e.message));
+  } catch(e) { alert('Network error: ' + e.message); }
 }
 
-// Auto-show New Project screen when there is no active requirement
+// Auto-show Project Hub when no active project is selected
 function maybeShowNewProjectScreen(state) {
-  const req  = state.req || {};
+  const ap     = (state.activeProject || {}).current;
+  const noProj = !ap || ap === 'none' || ap === 'null';
   const isOpen = document.getElementById('new-project-screen').classList.contains('open');
   const uxOpen = document.getElementById('ux-screen').classList.contains('open');
   if (uxOpen) return;
-  if (!req.title && !isOpen) {
+
+  // Always re-render the project list so new projects appear immediately
+  if (isOpen) renderNPExisting(state);
+
+  if (noProj && !isOpen) {
     renderNPExisting(state);
     document.getElementById('new-project-screen').classList.add('open');
-  } else if (req.title && isOpen) {
-    closeNewProjectScreen();
+  } else if (!noProj && isOpen) {
+    document.getElementById('new-project-screen').classList.remove('open');
   }
 }
 
@@ -3107,17 +3195,67 @@ function maybeShowNewProjectScreen(state) {
 // ══════════════════════════════════════════════════════════════════════════════
 
 const TDP_AGENTS = {
-  kavya:  { label: 'Kavya (UX)',   qs: ['kavya-q1','kavya-q2','kavya-q3','kavya-q4','kavya-q5','kavya-q6'],
-            keys: ['visualStyle','colourMode','brandColours','priorityActions','referenceUI','accessibility'] },
-  vikram: { label: 'Vikram (Cloud)', qs: ['vikram-q1','vikram-q2','vikram-q3','vikram-q4','vikram-q5','vikram-q6'],
-            keys: ['cloudRegion','scaleTraffic','computeType','existingInfra','costPriority','compliance'] },
-  rasool: { label: 'Rasool (DB)',  qs: ['rasool-q1','rasool-q2','rasool-q3','rasool-q4','rasool-q5','rasool-q6'],
-            keys: ['multiTenancy','dataScale','softDelete','realTime','fileStorage','auditLog'] },
+  kavya:  { label: '🎨 Kavya (UX)',        avatarBg: 'linear-gradient(135deg,#7c3aed,#db2777)', btnColor: '',
+            role: 'UX Designer',       dept: 'Frontend Design & Tokens',
+            desc: 'Kavya will design your colour palette, typography, component library and user flows.',
+            questions: [
+              { key: 'visualStyle',     label: 'Visual Style',          text: 'What visual style should this product have? (minimal, bold, corporate, playful, dark-tech)', placeholder: 'e.g. Minimal and clean, like Linear or Notion' },
+              { key: 'colourMode',      label: 'Colour Mode',           text: 'Dark mode first, light mode first, or both toggle?', placeholder: 'e.g. Dark mode primary, light mode toggle' },
+              { key: 'brandColours',    label: 'Brand Colours',         text: 'Any preferred primary / accent / background colours? (hex codes or descriptions)', placeholder: 'e.g. #5b5bd6 primary, teal accent, dark navy bg' },
+              { key: 'priorityActions', label: 'Priority Actions',      text: 'What are the 3 most important actions a user takes in this product?', placeholder: 'e.g. 1. View anomalies  2. Set thresholds  3. Export reports' },
+              { key: 'referenceUI',     label: 'Reference UI',          text: 'Any existing products or screenshots to draw design inspiration from?', placeholder: 'e.g. AWS Cost Explorer, Datadog, Grafana' },
+              { key: 'accessibility',   label: 'Accessibility',         text: 'WCAG level, minimum font size, contrast requirements?', placeholder: 'e.g. WCAG AA, 14px minimum, high contrast optional' },
+            ]},
+  vikram: { label: '☁️ Vikram (Cloud)',     avatarBg: 'linear-gradient(135deg,#dc2626,#ea580c)', btnColor: 'var(--red)',
+            role: 'Cloud Architect',   dept: 'Infrastructure & Terraform',
+            desc: 'Vikram will design your AWS infrastructure, write Terraform modules, and estimate costs.',
+            questions: [
+              { key: 'cloudRegion',     label: 'Cloud & Region',        text: 'Which cloud provider and region should infrastructure be deployed to?', placeholder: 'e.g. AWS us-east-1, or AWS + GCP multi-cloud' },
+              { key: 'scaleTraffic',    label: 'Scale & Traffic',       text: 'Expected users, requests per second, and data volume?', placeholder: 'e.g. 100 users, ~50 RPS, 10GB data/month' },
+              { key: 'computeType',     label: 'Compute Type',          text: 'Containers (ECS/Fargate), serverless (Lambda), or EC2 VMs?', placeholder: 'e.g. ECS Fargate for backend, Lambda for triggers' },
+              { key: 'existingInfra',   label: 'Existing Infra',        text: 'Any existing AWS resources or VPCs to integrate with?', placeholder: 'e.g. Fresh account, no existing infra' },
+              { key: 'costPriority',    label: 'Cost Priority',         text: 'Monthly budget ceiling and cost optimisation priority?', placeholder: 'e.g. Under $200/month, optimise for cost over performance' },
+              { key: 'compliance',      label: 'Compliance & Security', text: 'Any compliance requirements? (SOC2, HIPAA, GDPR, PCI-DSS)', placeholder: 'e.g. No strict compliance, basic IAM least-privilege' },
+            ]},
+  rasool: { label: '🗄️ Rasool (DB)',        avatarBg: 'linear-gradient(135deg,#d97706,#b45309)', btnColor: 'var(--yellow)',
+            role: 'Database Agent',    dept: 'Schema Design & Migrations',
+            desc: 'Rasool will design your PostgreSQL schema, write Alembic migrations, and create db-schema.md.',
+            questions: [
+              { key: 'multiTenancy',    label: 'Multi-Tenancy',         text: 'Single-tenant or multi-tenant? If multi, row-level or schema-per-tenant?', placeholder: 'e.g. Single tenant for now, row-level isolation later' },
+              { key: 'dataScale',       label: 'Data Scale',            text: 'Expected row counts for the largest tables and write frequency?', placeholder: 'e.g. 1M cost records/month, 10K alerts, mostly reads' },
+              { key: 'softDelete',      label: 'Soft Delete',           text: 'Should records be soft-deleted (deleted_at) or hard-deleted?', placeholder: 'e.g. Soft delete for cost records, hard delete for sessions' },
+              { key: 'realTime',        label: 'Real-Time',             text: 'Any real-time or streaming data requirements? (WebSockets, polling, CDC)', placeholder: 'e.g. Anomaly alerts push in real-time via SSE' },
+              { key: 'fileStorage',     label: 'File / Blob Storage',   text: 'Any file uploads, exports, or blob data to store? (S3 or in DB?)', placeholder: 'e.g. CSV export to S3, no file uploads in DB' },
+              { key: 'auditLog',        label: 'Audit Log',             text: 'Do you need an audit trail of who changed what and when?', placeholder: 'e.g. Yes -- track threshold changes and alert dismissals' },
+            ]},
+  kiran:  { label: '⚙️ Kiran (API)',         avatarBg: 'linear-gradient(135deg,#0891b2,#0e7490)', btnColor: '#0891b2',
+            role: 'Backend Developer', dept: 'FastAPI Routers & Schemas',
+            desc: 'Kiran will design your API endpoints, Pydantic schemas, and write pytest tests.',
+            questions: [
+              { key: 'apiStyle',        label: 'API Style',             text: 'REST or GraphQL? Versioned (v1/v2) or unversioned?', placeholder: 'e.g. REST, versioned under /api/v1/' },
+              { key: 'authMethod',      label: 'Auth Method',           text: 'How should users authenticate? (JWT, OAuth2, API keys, sessions)', placeholder: 'e.g. JWT bearer tokens, OAuth2 via Google' },
+              { key: 'rateLimiting',    label: 'Rate Limiting',         text: 'Any rate limiting or throttling requirements?', placeholder: 'e.g. 100 req/min per user, 1000/min per API key' },
+              { key: 'backgroundTasks', label: 'Background Tasks',      text: 'Any async jobs, scheduled tasks, or queue workers needed?', placeholder: 'e.g. Celery for anomaly detection, cron for cost sync' },
+              { key: 'errorHandling',   label: 'Error Handling',        text: 'Preferred error response format and logging approach?', placeholder: 'e.g. RFC 7807 problem+json, structured JSON logs' },
+              { key: 'testCoverage',    label: 'Test Coverage',         text: 'Minimum test coverage target and preferred test approach?', placeholder: 'e.g. 80% coverage, integration tests over unit mocks' },
+            ]},
+  rohan:  { label: '🖥️ Rohan (Frontend)',    avatarBg: 'linear-gradient(135deg,#059669,#047857)', btnColor: '#059669',
+            role: 'Frontend Developer', dept: 'React Components',
+            desc: 'Rohan will build your React 18 + TypeScript components, routing, and state management.',
+            questions: [
+              { key: 'componentLib',    label: 'Component Library',     text: 'Any preferred component library or UI framework alongside design tokens?', placeholder: 'e.g. Headless UI + Tailwind, or plain CSS with tokens' },
+              { key: 'stateManagement', label: 'State Management',      text: 'How should global state be managed? (Context, Zustand, Redux, React Query)', placeholder: 'e.g. Zustand for local state, React Query for server state' },
+              { key: 'routing',         label: 'Routing',               text: 'Client-side routing approach? (React Router, TanStack Router)', placeholder: 'e.g. React Router v6 with nested routes' },
+              { key: 'formHandling',    label: 'Form Handling',         text: 'How should forms be handled? (React Hook Form, Formik, native)', placeholder: 'e.g. React Hook Form with Zod validation' },
+              { key: 'apiClient',       label: 'API Client',            text: 'How should the frontend call the API? (Fetch, Axios, React Query, tRPC)', placeholder: 'e.g. Axios with React Query for caching' },
+              { key: 'performance',     label: 'Performance',           text: 'Any performance requirements? (bundle size, lazy loading, SSR)', placeholder: 'e.g. Lazy load routes, under 100KB initial bundle' },
+            ]},
 };
-let tdpSubmitted = { kavya: false, vikram: false, rasool: false };
+let tdpSubmitted = {};
+let tdpActiveAgents = [];
 
 function renderTeamDiscovery(state) {
-  const req  = state.req || {};
+  const req   = state.req || {};
   const panel = document.getElementById('team-disc-panel');
 
   // Show only when PM discovery done but sprint not yet approved
@@ -3128,26 +3266,63 @@ function renderTeamDiscovery(state) {
     return;
   }
 
-  // Pre-fill any existing answers and mark done tabs
-  const disc = req.teamDiscovery || {};
-  ['kavya','vikram','rasool'].forEach(agent => {
-    const existing = disc[agent];
-    const tab = document.getElementById('tdp-tab-' + agent);
-    const submitRow = document.getElementById('tdp-submit-' + agent);
+  // Which agents are needed — set by Arjun in requirement.json, default to 3 team leads
+  tdpActiveAgents = (req.requiredAgents && req.requiredAgents.length)
+    ? req.requiredAgents.filter(a => TDP_AGENTS[a])
+    : ['kavya', 'vikram', 'rasool'];
 
-    if (existing || tdpSubmitted[agent]) {
-      if (tab) { tab.classList.add('done'); }
-      if (submitRow) {
-        submitRow.innerHTML = '<div class="tdp-done-badge">✓ Answers sent — waiting for ' + agent + '\'s proposal</div>';
-      }
-    }
-  });
+  const disc = req.teamDiscovery || {};
+
+  // Build tabs dynamically
+  const tabsEl = document.getElementById('tdp-tabs');
+  tabsEl.innerHTML = tdpActiveAgents.map((agent, i) => {
+    const cfg  = TDP_AGENTS[agent];
+    const done = disc[agent] || tdpSubmitted[agent];
+    return `<div class="tdp-tab${i === 0 ? ' active' : ''}${done ? ' done' : ''}"
+                 onclick="switchTdpTab('${agent}')" id="tdp-tab-${agent}">
+              <span class="tdp-dot"></span>${cfg.label}
+            </div>`;
+  }).join('');
+
+  // Build content panes dynamically
+  const bodyEl = document.getElementById('tdp-body');
+  bodyEl.innerHTML = tdpActiveAgents.map((agent, i) => {
+    const cfg      = TDP_AGENTS[agent];
+    const done     = disc[agent] || tdpSubmitted[agent];
+    const existing = disc[agent] || {};
+    const qHtml    = cfg.questions.map((q, qi) => `
+      <div class="tdp-q-block">
+        <div class="tdp-q-label">${q.label}</div>
+        <div class="tdp-q-text">${q.text}</div>
+        <textarea class="tdp-q-input" id="${agent}-q${qi + 1}" placeholder="${q.placeholder}">${existing[q.key] || ''}</textarea>
+      </div>`).join('');
+    const submitHtml = done
+      ? `<div class="tdp-done-badge">&#10003; Answers sent &mdash; waiting for ${agent}'s proposal</div>`
+      : `<small>Answers are sent to ${cfg.role} via team chat. They will reply with a proposal.</small>
+         <button class="tdp-submit-btn" ${cfg.btnColor ? 'style="background:' + cfg.btnColor + '"' : ''}
+           onclick="submitTdpAnswers('${agent}')">Send to ${agent.charAt(0).toUpperCase() + agent.slice(1)} &rarr;</button>`;
+    return `
+      <div class="tdp-content${i === 0 ? ' active' : ''}" id="tdp-content-${agent}">
+        <div class="tdp-agent-profile">
+          <div class="tdp-avatar" style="background:${cfg.avatarBg}">${cfg.label.split(' ')[0]}</div>
+          <div>
+            <div class="tdp-agent-name">${cfg.role}</div>
+            <div class="tdp-agent-role">${cfg.dept}</div>
+          </div>
+          <div class="tdp-agent-desc">${cfg.desc}</div>
+        </div>
+        ${qHtml}
+        <div class="tdp-submit-row" id="tdp-submit-${agent}">${submitHtml}</div>
+      </div>`;
+  }).join('');
 }
 
 function switchTdpTab(agent) {
-  ['kavya','vikram','rasool'].forEach(a => {
-    document.getElementById('tdp-tab-' + a).classList.toggle('active', a === agent);
-    document.getElementById('tdp-content-' + a).classList.toggle('active', a === agent);
+  tdpActiveAgents.forEach(a => {
+    const tab     = document.getElementById('tdp-tab-' + a);
+    const content = document.getElementById('tdp-content-' + a);
+    if (tab)     tab.classList.toggle('active', a === agent);
+    if (content) content.classList.toggle('active', a === agent);
   });
 }
 
@@ -3155,25 +3330,20 @@ function submitTdpAnswers(agent) {
   const cfg = TDP_AGENTS[agent];
   if (!cfg) return;
 
-  const answers = {};
-  let anyFilled = false;
-  cfg.qs.forEach((id, i) => {
-    const val = (document.getElementById(id) || {}).value || '';
-    answers[cfg.keys[i]] = val.trim();
-    if (val.trim()) anyFilled = true;
+  const answers  = {};
+  let anyFilled  = false;
+  cfg.questions.forEach((q, qi) => {
+    const val = (document.getElementById(agent + '-q' + (qi + 1)) || {}).value || '';
+    if (val.trim()) { answers[q.key] = val.trim(); anyFilled = true; }
   });
 
   if (!anyFilled) { alert('Please answer at least one question before submitting.'); return; }
 
-  const names = { kavya: 'Kavya (UX Designer)', vikram: 'Vikram (Cloud Architect)', rasool: 'Rasool (DB Agent)' };
-  const lines = cfg.keys.map((k, i) => {
-    const qEl = document.getElementById(cfg.qs[i]);
-    const labelEl = qEl ? qEl.closest('.tdp-q-block').querySelector('.tdp-q-label') : null;
-    const label = labelEl ? labelEl.textContent : k;
-    return `${label}: ${answers[k] || '(skipped)'}`;
+  const lines = cfg.questions.map((q, qi) => {
+    const num = qi + 1;
+    return `${num}. ${q.label}: ${answers[q.key] || '(not answered)'}`;
   });
-
-  const msg = `📋 Discovery Answers for ${names[agent]}:\n\n${lines.join('\n')}`;
+  const msg = `[Team Discovery -- ${cfg.role}]\n` + lines.join('\n');
 
   fetch('/api/chat', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -3183,9 +3353,9 @@ function submitTdpAnswers(agent) {
   .then(() => {
     tdpSubmitted[agent] = true;
     renderTeamDiscovery(currentState);
-    // Auto-switch to next unanswered tab
-    const order = ['kavya','vikram','rasool'];
-    const next  = order.find(a => !tdpSubmitted[a] && a !== agent);
+    // Auto-advance to next unanswered tab
+    const disc = (currentState.req || {}).teamDiscovery || {};
+    const next = tdpActiveAgents.find(a => a !== agent && !tdpSubmitted[a] && !disc[a]);
     if (next) switchTdpTab(next);
   })
   .catch(e => alert('Network error: ' + e.message));
@@ -3510,6 +3680,117 @@ function requestUXChanges() {
     }),
   }).then(() => alert('Change request sent to Kavya.')).catch(console.error);
 }
+
+// ── MCP Configuration ──────────────────────────────────────────────────────
+let mcpConfig = {};
+
+function mcpFieldChanged(key) {
+  const vals = {
+    db:     document.getElementById('mcp-db-url')?.value.trim(),
+    gh:     document.getElementById('mcp-gh-token')?.value.trim(),
+    aws:    document.getElementById('mcp-aws-region')?.value.trim(),
+    custom: document.getElementById('mcp-custom-url')?.value.trim(),
+  };
+  const labels = { db: 'mcp-db-status', gh: 'mcp-gh-status', aws: 'mcp-aws-status', custom: 'mcp-custom-status' };
+  const cards  = { db: 'mcp-db-card',   gh: 'mcp-gh-card',   aws: 'mcp-aws-card',   custom: 'mcp-custom-card' };
+  const val = vals[key];
+  const statusEl = document.getElementById(labels[key]);
+  const cardEl   = document.getElementById(cards[key]);
+  if (val) {
+    statusEl.textContent = 'set';
+    statusEl.className   = 'np-mcp-status ok';
+    cardEl.classList.add('connected');
+    mcpConfig[key] = val;
+  } else {
+    statusEl.textContent = 'not set';
+    statusEl.className   = 'np-mcp-status';
+    cardEl.classList.remove('connected');
+    delete mcpConfig[key];
+  }
+}
+
+async function saveMCPConfig() {
+  if (!Object.keys(mcpConfig).length) return;
+  try {
+    await fetch('/api/mcp/config', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(mcpConfig),
+    });
+  } catch (e) { console.error('MCP save failed', e); }
+}
+
+async function loadMCPConfig() {
+  try {
+    const r = await fetch('/api/mcp/config');
+    if (!r.ok) return;
+    const cfg = await r.json();
+    if (cfg.db)     { document.getElementById('mcp-db-url').value     = cfg.db;     mcpFieldChanged('db');     }
+    if (cfg.gh)     { document.getElementById('mcp-gh-token').value   = cfg.gh;     mcpFieldChanged('gh');     }
+    if (cfg.aws)    { document.getElementById('mcp-aws-region').value = cfg.aws;    mcpFieldChanged('aws');    }
+    if (cfg.custom) { document.getElementById('mcp-custom-url').value = cfg.custom; mcpFieldChanged('custom'); }
+  } catch {}
+}
+
+// ── Context Document Upload ────────────────────────────────────────────────
+let npUploadedFiles = [];
+
+function npFileIcon(name) {
+  const ext = name.split('.').pop().toLowerCase();
+  const icons = { pdf: '📄', docx: '📝', xlsx: '📊', csv: '📋', json: '🗂️', md: '📑', txt: '📃' };
+  return icons[ext] || '📁';
+}
+
+function npFormatSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / 1048576).toFixed(1) + ' MB';
+}
+
+function npRenderFileList() {
+  const ul = document.getElementById('np-upload-list');
+  if (!ul) return;
+  ul.innerHTML = npUploadedFiles.map((f, i) => `
+    <li>
+      <span class="np-file-icon">${npFileIcon(f.name)}</span>
+      <span class="np-file-name">${escHtml(f.name)}</span>
+      <span class="np-file-size">${npFormatSize(f.size)}</span>
+      <span class="np-file-remove" onclick="npRemoveFile(${i})">✕</span>
+    </li>`).join('');
+}
+
+function npFilesSelected(files) {
+  const MAX = 10 * 1024 * 1024;
+  for (const f of files) {
+    if (f.size > MAX) { alert(`${f.name} exceeds 10MB limit.`); continue; }
+    if (!npUploadedFiles.find(x => x.name === f.name)) npUploadedFiles.push(f);
+  }
+  npRenderFileList();
+}
+
+function npRemoveFile(idx) {
+  npUploadedFiles.splice(idx, 1);
+  npRenderFileList();
+}
+
+function npDragOver(e) { e.preventDefault(); document.getElementById('np-upload-zone').classList.add('drag-over'); }
+function npDragLeave()  { document.getElementById('np-upload-zone').classList.remove('drag-over'); }
+function npDrop(e) {
+  e.preventDefault();
+  document.getElementById('np-upload-zone').classList.remove('drag-over');
+  npFilesSelected(e.dataTransfer.files);
+}
+
+async function npUploadContextFiles(projectId) {
+  if (!npUploadedFiles.length) return;
+  const form = new FormData();
+  form.append('projectId', projectId);
+  npUploadedFiles.forEach(f => form.append('files', f));
+  try {
+    await fetch('/api/project/upload-context', { method: 'POST', body: form });
+  } catch (e) { console.error('Context upload failed', e); }
+}
+
 </script>
 
 <!-- ══════════════════════════════════════════════════════════════════════
@@ -3628,58 +3909,120 @@ function requestUXChanges() {
      NEW PROJECT SCREEN  — first-run & project launcher
      ══════════════════════════════════════════════════════════════════════ -->
 <div id="new-project-screen">
-  <div id="np-card">
+  <div id="np-hub">
 
-    <div id="np-card-header">
-      <div class="np-logo">🚀</div>
-      <h1>What would you like to build?</h1>
-      <p>Tell Arjun about your project — he'll lead the team through discovery and kick off the sprint.</p>
+    <!-- Left: existing projects -->
+    <div id="np-projects-col">
+      <div id="np-projects-header">
+        <h2>📁 Your Projects</h2>
+        <p>Click a project to continue — group chat loads automatically</p>
+      </div>
+      <div id="np-projects-list">
+        <div id="np-empty-state">
+          <div class="np-empty-icon">🌱</div>
+          No projects yet.<br>Start your first one on the right.
+        </div>
+      </div>
     </div>
 
-    <!-- Existing projects list (shown if any exist) -->
-    <div id="np-existing">
-      <h3>or continue an existing project</h3>
-      <div id="np-existing-list"><!-- rendered by JS --></div>
-    </div>
+    <!-- Right: new project form -->
+    <div id="np-form-col">
+      <div id="np-form-header">
+        <h2>🚀 Start New Project</h2>
+        <p>Arjun will lead discovery and kick off the sprint.</p>
+      </div>
+      <div id="np-form">
+        <div class="np-field">
+          <label>Project Name *</label>
+          <input id="np-title" type="text" placeholder="e.g. CRE Deal Analyser">
+        </div>
+        <div class="np-field">
+          <label>What do you want to build? *</label>
+          <textarea id="np-desc" placeholder="Describe the product — what it does, who uses it, key features…"></textarea>
+          <small>Be specific — Arjun will detect the domain and ask fewer questions.</small>
+        </div>
+        <div class="np-row">
+          <div class="np-field">
+            <label>Business Goal</label>
+            <input id="np-goal" type="text" placeholder="e.g. Track NOI and Cap Rate across portfolio">
+          </div>
+          <div class="np-field">
+            <label>Target Users</label>
+            <input id="np-users" type="text" placeholder="e.g. Investors, Asset Managers">
+          </div>
+        </div>
+        <div class="np-row">
+          <div class="np-field">
+            <label>Tech Constraints</label>
+            <input id="np-constraints" type="text" placeholder="e.g. AWS, Python, PostgreSQL">
+          </div>
+          <div class="np-field">
+            <label>Deadline</label>
+            <input id="np-deadline" type="date">
+          </div>
+        </div>
+        <!-- MCP Connections -->
+        <div class="np-section-divider">
+          <div class="np-section-title">MCP Connections <span class="np-optional-tag">optional — local only, never committed</span></div>
+          <div class="np-mcp-grid">
+            <div class="np-mcp-card" id="mcp-db-card">
+              <div class="np-mcp-card-header">
+                <span class="np-mcp-icon">🗄️</span>
+                <span class="np-mcp-name">PostgreSQL</span>
+                <span class="np-mcp-status" id="mcp-db-status">not set</span>
+              </div>
+              <input class="np-mcp-input" id="mcp-db-url" placeholder="postgresql://user:pass@host:5432/dbname" oninput="mcpFieldChanged('db')">
+            </div>
+            <div class="np-mcp-card" id="mcp-gh-card">
+              <div class="np-mcp-card-header">
+                <span class="np-mcp-icon">🐙</span>
+                <span class="np-mcp-name">GitHub</span>
+                <span class="np-mcp-status" id="mcp-gh-status">not set</span>
+              </div>
+              <input class="np-mcp-input" id="mcp-gh-token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" oninput="mcpFieldChanged('gh')">
+            </div>
+            <div class="np-mcp-card" id="mcp-aws-card">
+              <div class="np-mcp-card-header">
+                <span class="np-mcp-icon">☁️</span>
+                <span class="np-mcp-name">AWS Region</span>
+                <span class="np-mcp-status" id="mcp-aws-status">not set</span>
+              </div>
+              <input class="np-mcp-input" id="mcp-aws-region" placeholder="us-east-1 (uses your AWS profile)" oninput="mcpFieldChanged('aws')">
+            </div>
+            <div class="np-mcp-card" id="mcp-custom-card">
+              <div class="np-mcp-card-header">
+                <span class="np-mcp-icon">🔌</span>
+                <span class="np-mcp-name">Custom MCP</span>
+                <span class="np-mcp-status" id="mcp-custom-status">not set</span>
+              </div>
+              <input class="np-mcp-input" id="mcp-custom-url" placeholder="http://localhost:8090/mcp" oninput="mcpFieldChanged('custom')">
+            </div>
+          </div>
+        </div>
 
-    <div id="np-form">
-      <h3>✦ New Project</h3>
-      <div class="np-field">
-        <label>Project Name *</label>
-        <input id="np-title" type="text" placeholder="e.g. Cost Anomaly Detection Platform">
-      </div>
-      <div class="np-field">
-        <label>What do you want to build? *</label>
-        <textarea id="np-desc" placeholder="Describe the product — what it does, who uses it, key features…"></textarea>
-        <small>Be specific. The more detail you give, the better Arjun can guide the team.</small>
-      </div>
-      <div class="np-row">
-        <div class="np-field">
-          <label>Business Goal</label>
-          <input id="np-goal" type="text" placeholder="e.g. Reduce cloud spend by 30%">
+        <!-- Context Documents -->
+        <div class="np-section-divider">
+          <div class="np-section-title">Context Documents <span class="np-optional-tag">optional — give agents more context</span></div>
+          <div class="np-upload-zone" id="np-upload-zone"
+               ondragover="npDragOver(event)" ondragleave="npDragLeave(event)" ondrop="npDrop(event)">
+            <input type="file" id="np-file-input" multiple
+                   accept=".pdf,.docx,.xlsx,.csv,.json,.txt,.md"
+                   onchange="npFilesSelected(this.files)">
+            <div class="np-upload-label">
+              <strong>Drop files here</strong> or click to browse<br>
+              PDF · Word · Excel · CSV · JSON · Markdown — max 10MB each
+            </div>
+            <ul class="np-upload-files" id="np-upload-list"></ul>
+          </div>
         </div>
-        <div class="np-field">
-          <label>Target Users</label>
-          <input id="np-users" type="text" placeholder="e.g. DevOps, Finance team">
-        </div>
-      </div>
-      <div class="np-row">
-        <div class="np-field">
-          <label>Tech Constraints</label>
-          <input id="np-constraints" type="text" placeholder="e.g. AWS, Python 3.11+, PostgreSQL">
-        </div>
-        <div class="np-field">
-          <label>Deadline</label>
-          <input id="np-deadline" type="date">
-        </div>
-      </div>
-      <div id="np-msg">Project posted! Arjun is starting discovery...</div>
-    </div>
 
-    <div id="np-footer">
-      <small>Arjun (PM) starts first. Kavya, Vikram and Rasool activate after discovery.</small>
-      <button id="np-cancel-btn" onclick="closeNewProjectScreen()">Cancel</button>
-      <button id="np-launch-btn" onclick="submitNewProject()">🚀 Start Project →</button>
+        <div id="np-msg">Project created! Arjun is starting discovery...</div>
+      </div>
+      <div id="np-footer">
+        <small>Arjun (PM) starts first — agents activate only after discovery.</small>
+        <button id="np-cancel-btn" onclick="closeNewProjectScreen()">Close</button>
+        <button id="np-launch-btn" onclick="submitNewProject()">🚀 Start Project</button>
+      </div>
     </div>
 
   </div>
