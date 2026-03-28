@@ -16,23 +16,23 @@
   "vikram": {
     "status": "done",
     "progress": 100,
-    "task": "All Terraform modules delivered (INFRAVIZ + CBRE). 7 CBRE modules: cbre_vpc, cbre_iam, cbre_rds, cbre_ecs, cbre_alb, cbre_secrets, cbre_frontend. Root infra/cbre/main.tf, variables.tf, outputs.tf. 54 total .tf files verified intact.",
+    "task": "All 7 CBRE Terraform modules + root infra/cbre/ delivered (cbre_vpc, cbre_iam, cbre_rds, cbre_ecs, cbre_alb, cbre_secrets, cbre_frontend). Handoffs ready for Rasool, Kiran, Rohan.",
     "blocker": "",
-    "updated": "2026-03-28T07:52:12.816Z"
+    "updated": "2026-03-28T08:11:08.888Z"
   },
   "rasool": {
     "status": "done",
     "progress": 100,
-    "task": "CBRE migration 0002 delivered — 11 tables aligned to Kiran's ORM models: properties, buildings, tenants, leases, esg_data, occupancy_data, maintenance_tickets, chat_sessions, chat_messages, etl_runs, market_data. 35 indexes. docs/db-schema.md updated. Kiran unblocked.",
+    "task": "DB migrations delivered — 0001 (8 INFRAVIZ tables) + 0002 (11 CBRE tables, 35 indexes). docs/db-schema.md complete. Kiran unblocked.",
     "blocker": "",
-    "updated": "2026-03-28T07:14:21.691Z"
+    "updated": "2026-03-28T08:10:53.345Z"
   },
   "kiran": {
     "status": "done",
     "progress": 100,
-    "task": "CBRE FastAPI backend delivered: 7 routers, 19 endpoints, Claude RAG SSE, RentCast ETL, pytest suite 80%+",
+    "task": "Multi-DB + live DB connection support delivered: config.py (db_auth_method, SSL paths, aws_region, db_dialect), database.py (dialect auto-detect, IAM token via boto3 do_connect event, SSL context), /api/v1/health/db endpoint (db_type, connection_status, auth_method). requirements.txt updated (boto3, aiosqlite, aiomysql, aioodbc, cx_Oracle).",
     "blocker": "",
-    "updated": "2026-03-28T07:06:32.533Z"
+    "updated": "2026-03-28T08:14:54.777Z"
   },
   "rohan": {
     "status": "done",
