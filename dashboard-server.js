@@ -62,13 +62,39 @@ function launchAgent(agentName) {
   const model   = getAgentModel(agentName);
   const logPath = path.join(LOGS_DIR, `${agentName}.log`);
 
+  // Resolve project root so agents know where to read/write files
+  const pr          = getProjectRoot();
+  const activeProj  = readJSON(path.join(ROOT, 'active-project.json')) || {};
+  const projectId   = path.basename(pr);
+  const today       = new Date().toISOString().split('T')[0];
+
+  // Prepend a context block so agents always know real paths regardless of prompt placeholders
+  const contextBlock = [
+    '=== RUNTIME CONTEXT (injected by dashboard-server — read this first) ===',
+    `WORKSPACE_ROOT    : ${ROOT}`,
+    `PROJECT_ROOT      : ${pr}`,
+    `PROJECT_ID        : ${projectId}`,
+    `ACTIVE_PROJECT_ID : ${activeProj.id || ''}`,
+    `SPRINT            : ${activeProj.sprint || '01'}`,
+    `TODAY             : ${today}`,
+    '',
+    'PATH MAPPING (all prompts use these aliases — resolve to real paths above):',
+    `  /workspace/  →  ${ROOT}${path.sep}`,
+    `  /projects/${projectId}/  →  ${pr}${path.sep}`,
+    '',
+    'IMPORTANT: Use the WORKSPACE_ROOT and PROJECT_ROOT paths above for ALL file reads/writes.',
+    'Do NOT use /workspace/ or /projects/ literally — translate to the real paths shown above.',
+    '=== END RUNTIME CONTEXT ===',
+    '',
+  ].join('\n');
+
   const proc = spawn('claude', [
     '--print',
     '--model', model,
     '--allowedTools', 'Bash,Read,Write,Edit,Glob,Grep,WebFetch',
   ], { cwd: ROOT, shell: true, stdio: ['pipe', 'pipe', 'pipe'] });
 
-  proc.stdin.write(promptContent);
+  proc.stdin.write(contextBlock + promptContent);
   proc.stdin.end();
 
   agentProcesses[agentName] = { proc, pid: proc.pid, startedAt: new Date().toISOString() };
