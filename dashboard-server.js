@@ -354,6 +354,48 @@ function getFullState() {
   return { agents, chat, req, memory, activeProject, projects, timestamp: new Date().toISOString() };
 }
 
+// Respond to Tarun's chat message using a local Ollama LLM
+async function respondWithOllama(userMessage, llmCfg) {
+  try {
+    const pr          = getProjectRoot();
+    const req         = readJSON(path.join(pr, 'requirement.json')) || {};
+    const statusData  = readJSON(path.join(pr, 'agent-status.json')) || {};
+    const agents      = statusData.agents || statusData;
+    const projectName = req.title || 'the project';
+    const agentLines  = Object.entries(agents)
+      .map(([n, s]) => `  ${n}: ${s.status} (${s.progress || 0}%) — ${s.task || ''}`)
+      .join('\n');
+
+    const systemPrompt =
+      `You are ARJUN, PM of Team Panchayat working on "${projectName}". ` +
+      `Reply in 2-3 short sentences. Be direct, professional, and use plain text (no markdown).\n` +
+      `Current agent status:\n${agentLines}`;
+
+    const endpoint = (llmCfg.endpoint || 'http://localhost:11434').replace(/\/$/, '');
+    const model    = llmCfg.model || 'llama3.2';
+
+    const resp = await fetch(`${endpoint}/api/chat`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({
+        model,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user',   content: userMessage  },
+        ],
+        stream: false,
+      }),
+    });
+    if (!resp.ok) return;
+    const data  = await resp.json();
+    const reply = (data.message?.content || '').trim();
+    if (reply) {
+      postToChat('ARJUN', 'Orchestrator', 'message', `[Local LLM · ${model}] ${reply}`, ['tarun']);
+      broadcast('update', getFullState());
+    }
+  } catch { /* Ollama not available — silently skip */ }
+}
+
 function postToChat(from, role, type, message, tags) {
   const chatFile = path.join(getProjectRoot(), 'group-chat.json');
   const chat = readJSON(chatFile) || { channel: 'team-panchayat-general', messages: [] };
@@ -586,6 +628,65 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
+  // -- API: Local LLM config (GET + POST) ---------------------------
+  if (pathname === '/api/llm/config') {
+    cors(res);
+    const CONN_FILE = path.join(ROOT, 'connections.json');
+    if (req.method === 'GET') {
+      const cfg = (readJSON(CONN_FILE) || {}).localLLM || {};
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        enabled:  cfg.enabled  || false,
+        endpoint: cfg.endpoint || 'http://localhost:11434',
+        model:    cfg.model    || 'llama3.2',
+      }));
+      return;
+    }
+    if (req.method === 'POST') {
+      try {
+        const body     = JSON.parse(await readBody(req));
+        const existing = readJSON(CONN_FILE) || {};
+        existing.localLLM = {
+          enabled:  body.enabled  !== undefined ? body.enabled  : (existing.localLLM?.enabled || false),
+          endpoint: body.endpoint || existing.localLLM?.endpoint || 'http://localhost:11434',
+          model:    body.model    || existing.localLLM?.model    || 'llama3.2',
+        };
+        writeJSON(CONN_FILE, existing);
+        const status = existing.localLLM.enabled ? 'enabled' : 'disabled';
+        postToChat('SYSTEM', 'System', 'system',
+          `🤖 Local LLM (${existing.localLLM.model}) ${status}. Endpoint: ${existing.localLLM.endpoint}`,
+          ['tarun']);
+        broadcast('update', getFullState());
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true, config: existing.localLLM }));
+      } catch (e) { res.writeHead(400); res.end(JSON.stringify({ error: e.message })); }
+      return;
+    }
+  }
+
+  // -- API: Test Ollama connection -----------------------------------
+  if (pathname === '/api/llm/test' && req.method === 'POST') {
+    cors(res);
+    try {
+      const body     = JSON.parse(await readBody(req));
+      const endpoint = (body.endpoint || 'http://localhost:11434').replace(/\/$/, '');
+      const model    = body.model || 'llama3.2';
+      const r = await fetch(`${endpoint}/api/chat`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ model, messages: [{ role: 'user', content: 'ping' }], stream: false }),
+      });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const data = await r.json();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, reply: data.message?.content || 'ok' }));
+    } catch (e) {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: e.message }));
+    }
+    return;
+  }
+
   // -- API: context file upload ------------------------------------
   if (pathname === '/api/project/upload-context' && req.method === 'POST') {
     cors(res);
@@ -690,6 +791,12 @@ const server = http.createServer(async (req, res) => {
       broadcast('chat-message', msg);
 
       // Auto-relaunch any agent mentioned by name in Tarun's message
+      // Auto-respond via local LLM when no agent is being mentioned
+      if (msg.from === 'TARUN' && msg.message) {
+        const llmCfg = (readJSON(path.join(ROOT, 'connections.json')) || {}).localLLM || {};
+        if (llmCfg.enabled) respondWithOllama(msg.message, llmCfg);
+      }
+
       if (msg.from === 'TARUN' && msg.message) {
         const mentioned = AGENTS.filter(a => a !== 'keerthi' &&
           new RegExp(`\\b${a}\\b`, 'i').test(msg.message));

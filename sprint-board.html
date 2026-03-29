@@ -3083,6 +3083,7 @@ function openNewProjectScreen() {
   renderNPExisting(currentState);
   document.getElementById('new-project-screen').classList.add('open');
   loadMCPConfig();
+  loadLLMConfig();
 }
 
 function closeNewProjectScreen() {
@@ -3763,6 +3764,68 @@ async function loadMCPConfig() {
   } catch {}
 }
 
+// ── Local LLM (Ollama) ────────────────────────────────────────────────────
+async function loadLLMConfig() {
+  try {
+    const r = await fetch('/api/llm/config');
+    if (!r.ok) return;
+    const cfg = await r.json();
+    const cb = document.getElementById('ollama-enabled');
+    const ep = document.getElementById('ollama-endpoint');
+    const md = document.getElementById('ollama-model');
+    if (cb) cb.checked = cfg.enabled;
+    if (ep && cfg.endpoint) ep.value = cfg.endpoint;
+    if (md && cfg.model)    md.value = cfg.model;
+    updateOllamaCard(cfg.enabled);
+  } catch {}
+}
+
+function updateOllamaCard(enabled) {
+  const card   = document.getElementById('ollama-card');
+  const status = document.getElementById('ollama-status');
+  if (card)   card.className   = 'np-mcp-card' + (enabled ? ' connected' : '');
+  if (status) { status.textContent = enabled ? 'active' : 'off'; status.className = 'np-mcp-status' + (enabled ? ' ok' : ''); }
+}
+
+async function ollamaToggle() {
+  await ollamaSave();
+}
+
+async function ollamaSave() {
+  const enabled  = document.getElementById('ollama-enabled')?.checked || false;
+  const endpoint = document.getElementById('ollama-endpoint')?.value.trim() || 'http://localhost:11434';
+  const model    = document.getElementById('ollama-model')?.value.trim() || 'llama3.2';
+  try {
+    await fetch('/api/llm/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ enabled, endpoint, model }),
+    });
+    updateOllamaCard(enabled);
+  } catch {}
+}
+
+async function testOllama() {
+  const endpoint = document.getElementById('ollama-endpoint')?.value.trim() || 'http://localhost:11434';
+  const model    = document.getElementById('ollama-model')?.value.trim() || 'llama3.2';
+  const result   = document.getElementById('ollama-result');
+  if (result) result.textContent = 'Testing…';
+  try {
+    const r = await fetch('/api/llm/test', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ endpoint, model }),
+    });
+    const data = await r.json();
+    if (result) {
+      result.textContent = data.ok ? `✓ Connected — ${model} replied: "${data.reply?.substring(0,60)}…"` : `✗ ${data.error}`;
+      result.style.color = data.ok ? 'var(--green)' : 'var(--red, #f87171)';
+    }
+  } catch (e) {
+    if (result) { result.textContent = `✗ ${e.message}`; result.style.color = 'var(--red, #f87171)'; }
+  }
+}
+
 // ── Context Document Upload ────────────────────────────────────────────────
 let npUploadedFiles = [];
 
@@ -4059,6 +4122,28 @@ async function npUploadContextFiles(projectId) {
                 <span class="np-mcp-status" id="mcp-custom-status">not set</span>
               </div>
               <input class="np-mcp-input" id="mcp-custom-url" placeholder="http://localhost:8090/mcp" oninput="mcpFieldChanged('custom')">
+            </div>
+          </div>
+
+          <!-- Local LLM (Ollama) -->
+          <div class="np-section-divider" style="margin-top:12px">
+            <div class="np-section-title">Local LLM <span class="np-optional-tag">optional — faster chat, no API cost</span></div>
+            <div class="np-mcp-card" id="ollama-card" style="margin-top:6px">
+              <div class="np-mcp-card-header">
+                <span class="np-mcp-icon">🦙</span>
+                <span class="np-mcp-name">Ollama</span>
+                <label style="margin-left:auto;display:flex;align-items:center;gap:5px;cursor:pointer;font-size:10px;color:var(--text-dim)">
+                  <input type="checkbox" id="ollama-enabled" onchange="ollamaToggle()" style="width:13px;height:13px;accent-color:var(--primary)">
+                  Enable for chat
+                </label>
+                <span class="np-mcp-status" id="ollama-status" style="margin-left:8px">off</span>
+              </div>
+              <div style="display:flex;gap:6px;margin-top:4px">
+                <input class="np-mcp-input" id="ollama-endpoint" placeholder="http://localhost:11434" value="http://localhost:11434" style="flex:2" oninput="ollamaSave()">
+                <input class="np-mcp-input" id="ollama-model" placeholder="llama3.2" value="llama3.2" style="flex:1" oninput="ollamaSave()">
+                <button onclick="testOllama()" style="background:var(--primary);color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:10px;cursor:pointer;white-space:nowrap">Test</button>
+              </div>
+              <div id="ollama-result" style="font-size:9px;color:var(--text-dim);margin-top:4px"></div>
             </div>
           </div>
         </div>
