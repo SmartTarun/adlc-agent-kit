@@ -50,7 +50,163 @@ function getAgentModel(agentName) {
   } catch { return 'claude-sonnet-4-6'; }
 }
 
+// ── Local LLM agent runner (Ollama one-shot code generation) ─────────────
+const AGENT_ROLES = {
+  arjun: 'Orchestrator', kavya: 'UX Designer', vikram: 'Cloud Architect',
+  rasool: 'Database Agent', kiran: 'Backend Engineer', rohan: 'Frontend Engineer', keerthi: 'QA Agent',
+};
+
+function setAgentStatus(agentName, status, progress, task, blocker) {
+  const pr = getProjectRoot();
+  const sd = readJSON(path.join(pr, 'agent-status.json')) || {};
+  const am = sd.agents || sd;
+  am[agentName] = { status, progress, task, blocker: blocker || '', updated: new Date().toISOString() };
+  if (sd.agents) sd.agents = am; else Object.assign(sd, am);
+  writeJSON(path.join(pr, 'agent-status.json'), sd);
+  broadcast('update', getFullState());
+}
+
+async function launchAgentLocal(agentName, llmCfg) {
+  const pr        = getProjectRoot();
+  const activeProj = readJSON(path.join(ROOT, 'active-project.json')) || {};
+  const projectId  = path.basename(pr);
+  const today      = new Date().toISOString().split('T')[0];
+  const req        = readJSON(path.join(pr, 'requirement.json')) || {};
+  const logPath    = path.join(LOGS_DIR, `${agentName}.log`);
+
+  const promptFile = path.join(ROOT, 'prompts', `${agentName}-prompt.txt`);
+  if (!fs.existsSync(promptFile)) {
+    setAgentStatus(agentName, 'blocked', 0, 'No prompt file found', 'missing prompt');
+    return { ok: false, error: 'no prompt file' };
+  }
+  const promptContent = fs.readFileSync(promptFile, 'utf8');
+
+  setAgentStatus(agentName, 'wip', 10, `Local LLM generating code (${llmCfg.model})…`);
+
+  const outputInstruction = [
+    '',
+    '=== LOCAL LLM OUTPUT FORMAT (REQUIRED) ===',
+    'You are running in one-shot mode. You CANNOT use tools iteratively.',
+    'Respond with ONLY a raw JSON object (no markdown, no code fences):',
+    '{',
+    '  "files": [',
+    '    { "path": "relative/path/from/project/root/file.py", "content": "full file content" }',
+    '  ],',
+    '  "chat_message": "Short summary of what you built (1-2 sentences)",',
+    '  "status": { "task": "what was delivered", "progress": 100 }',
+    '}',
+    `PROJECT_ROOT is: ${pr}`,
+    `All file paths in "files" must be relative to PROJECT_ROOT (e.g. "backend/app/main.py").`,
+    'Write complete file contents — do NOT truncate or use placeholders.',
+    '=== END OUTPUT FORMAT ===',
+    '',
+  ].join('\n');
+
+  const contextBlock = [
+    '=== RUNTIME CONTEXT ===',
+    `WORKSPACE_ROOT    : ${ROOT}`,
+    `PROJECT_ROOT      : ${pr}`,
+    `PROJECT_ID        : ${projectId}`,
+    `ACTIVE_PROJECT_ID : ${activeProj.id || ''}`,
+    `SPRINT            : ${activeProj.sprint || '01'}`,
+    `TODAY             : ${today}`,
+    `PROJECT_NAME      : ${req.title || 'Unknown'}`,
+    `PATH MAPPING      : /workspace/ → ${ROOT}${path.sep}  |  /projects/${projectId}/ → ${pr}${path.sep}`,
+    '=== END CONTEXT ===',
+    '',
+  ].join('\n');
+
+  const fullPrompt = contextBlock + outputInstruction + promptContent;
+
+  try {
+    const endpoint = (llmCfg.endpoint || 'http://localhost:11434').replace(/\/$/, '');
+    const model    = llmCfg.model || 'llama3.2';
+
+    fs.appendFileSync(logPath, `[LOCAL LLM] Sending prompt to ${endpoint} model=${model}\n`);
+    broadcast('agent-log', { agent: agentName, text: `[LOCAL LLM] Calling ${model} at ${endpoint}…\n` });
+
+    const resp = await fetch(`${endpoint}/api/chat`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({
+        model,
+        messages: [{ role: 'user', content: fullPrompt }],
+        stream:   false,
+        options:  { num_ctx: 16384, temperature: 0.2 },
+      }),
+    });
+
+    if (!resp.ok) throw new Error(`Ollama HTTP ${resp.status}`);
+    const data    = await resp.json();
+    const content = (data.message?.content || '').trim();
+
+    fs.appendFileSync(logPath, `[LOCAL LLM] Raw response (${content.length} chars)\n`);
+    broadcast('agent-log', { agent: agentName, text: `[LOCAL LLM] Response received (${content.length} chars). Parsing…\n` });
+
+    // Strip markdown fences if model wrapped in them
+    const jsonStr = content
+      .replace(/^```(?:json)?\s*/m, '')
+      .replace(/\s*```\s*$/m, '')
+      .trim();
+
+    let parsed;
+    try {
+      parsed = JSON.parse(jsonStr);
+    } catch {
+      // Try to extract JSON object from response
+      const match = jsonStr.match(/\{[\s\S]*\}/);
+      if (!match) throw new Error('No valid JSON in response');
+      parsed = JSON.parse(match[0]);
+    }
+
+    // Write all generated files
+    const files = parsed.files || [];
+    let written = 0;
+    for (const file of files) {
+      if (!file.path || file.content === undefined) continue;
+      const absPath = path.resolve(pr, file.path);
+      // Safety: don't write outside project root
+      if (!absPath.startsWith(pr)) continue;
+      fs.mkdirSync(path.dirname(absPath), { recursive: true });
+      fs.writeFileSync(absPath, file.content, 'utf8');
+      written++;
+      fs.appendFileSync(logPath, `[LOCAL LLM] Wrote: ${file.path}\n`);
+      broadcast('agent-log', { agent: agentName, text: `  ✓ ${file.path}\n` });
+    }
+
+    const chatMsg = parsed.chat_message || `Generated ${written} file(s).`;
+    postToChat(
+      agentName.toUpperCase(),
+      AGENT_ROLES[agentName] || agentName,
+      'message',
+      `[Local LLM · ${model}] ${chatMsg}`,
+      ['tarun'],
+    );
+
+    const task = (parsed.status?.task || `${written} file(s) generated by ${model}`);
+    setAgentStatus(agentName, 'done', 100, task);
+    broadcast('update', getFullState());
+    return { ok: true, files: written };
+
+  } catch (e) {
+    const errMsg = e.message;
+    fs.appendFileSync(logPath, `[LOCAL LLM ERROR] ${errMsg}\n`);
+    broadcast('agent-log', { agent: agentName, text: `[LOCAL LLM ERROR] ${errMsg}\n` });
+    postToChat('SYSTEM', 'System', 'system',
+      `❌ Local LLM failed for ${agentName.toUpperCase()}: ${errMsg}`, [agentName]);
+    setAgentStatus(agentName, 'blocked', 0, `Local LLM error: ${errMsg}`, errMsg);
+    return { ok: false, error: errMsg };
+  }
+}
+
 function launchAgent(agentName) {
+  // Route to local LLM runner if enabled for agents
+  const llmCfg = (readJSON(path.join(ROOT, 'connections.json')) || {}).localLLM || {};
+  if (llmCfg.enabled && llmCfg.useForAgents) {
+    launchAgentLocal(agentName, llmCfg);
+    return { ok: true, mode: 'local-llm' };
+  }
+
   const existing = agentProcesses[agentName];
   if (existing && existing.proc && existing.proc.exitCode === null) {
     return { ok: false, error: 'already running' };
@@ -636,9 +792,10 @@ const server = http.createServer(async (req, res) => {
       const cfg = (readJSON(CONN_FILE) || {}).localLLM || {};
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({
-        enabled:  cfg.enabled  || false,
-        endpoint: cfg.endpoint || 'http://localhost:11434',
-        model:    cfg.model    || 'llama3.2',
+        enabled:      cfg.enabled      || false,
+        useForAgents: cfg.useForAgents || false,
+        endpoint:     cfg.endpoint     || 'http://localhost:11434',
+        model:        cfg.model        || 'qwen2.5-coder:7b',
       }));
       return;
     }
@@ -647,14 +804,16 @@ const server = http.createServer(async (req, res) => {
         const body     = JSON.parse(await readBody(req));
         const existing = readJSON(CONN_FILE) || {};
         existing.localLLM = {
-          enabled:  body.enabled  !== undefined ? body.enabled  : (existing.localLLM?.enabled || false),
-          endpoint: body.endpoint || existing.localLLM?.endpoint || 'http://localhost:11434',
-          model:    body.model    || existing.localLLM?.model    || 'llama3.2',
+          enabled:      body.enabled      !== undefined ? body.enabled      : (existing.localLLM?.enabled      || false),
+          useForAgents: body.useForAgents !== undefined ? body.useForAgents : (existing.localLLM?.useForAgents || false),
+          endpoint:     body.endpoint     || existing.localLLM?.endpoint    || 'http://localhost:11434',
+          model:        body.model        || existing.localLLM?.model       || 'qwen2.5-coder:7b',
         };
         writeJSON(CONN_FILE, existing);
-        const status = existing.localLLM.enabled ? 'enabled' : 'disabled';
+        const modes = [existing.localLLM.enabled && 'chat', existing.localLLM.useForAgents && 'agents'].filter(Boolean);
+        const status = modes.length ? `active for: ${modes.join(' + ')}` : 'disabled';
         postToChat('SYSTEM', 'System', 'system',
-          `🤖 Local LLM (${existing.localLLM.model}) ${status}. Endpoint: ${existing.localLLM.endpoint}`,
+          `🦙 Local LLM (${existing.localLLM.model}) ${status}. Endpoint: ${existing.localLLM.endpoint}`,
           ['tarun']);
         broadcast('update', getFullState());
         res.writeHead(200, { 'Content-Type': 'application/json' });
