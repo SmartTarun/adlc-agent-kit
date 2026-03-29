@@ -1,0 +1,173 @@
+# Agent: Arjun | Sprint: 01 | Date: 2026-03-29
+# Team Panchayat — OLLAMA LOCAL LLM MODE
+# Fully offline — no Claude API key required.
+# Dashboard launches agents via Ollama HTTP API (one-shot code generation).
+#
+# Usage:
+#   cp .env.ollama .env
+#   docker compose -f docker-compose.ollama.yml up --build
+#
+# GPU (NVIDIA):
+#   docker compose -f docker-compose.ollama.yml --profile gpu up --build
+#
+# Stop:
+#   docker compose -f docker-compose.ollama.yml down
+#
+# Model is pulled automatically on first start (~4GB for qwen2.5-coder:7b).
+# To use a different model: OLLAMA_MODEL=codellama:13b docker compose ...
+
+version: '3.9'
+
+volumes:
+  workspace_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${PWD}
+  ollama_data:    # persists downloaded models — survives container restarts
+
+networks:
+  panchayat:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.29.0.0/16
+
+services:
+
+  # ── Ollama — Local LLM server (CPU) ──────────────────────────────────────────
+  ollama:
+    image: ollama/ollama:latest
+    container_name: panchayat-ollama
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - panchayat
+    restart: unless-stopped
+    environment:
+      - OLLAMA_KEEP_ALIVE=24h
+      - OLLAMA_NUM_PARALLEL=${OLLAMA_NUM_PARALLEL:-2}
+      - OLLAMA_MAX_LOADED_MODELS=1
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list || exit 1"]
+      interval: 20s
+      timeout: 10s
+      start_period: 40s
+      retries: 5
+    labels:
+      - "com.panchayat.role=llm"
+      - "com.panchayat.mode=ollama"
+
+  # ── Ollama GPU variant (NVIDIA only — run with --profile gpu) ─────────────────
+  ollama-gpu:
+    image: ollama/ollama:latest
+    container_name: panchayat-ollama-gpu
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - panchayat
+    restart: unless-stopped
+    environment:
+      - OLLAMA_KEEP_ALIVE=24h
+      - OLLAMA_NUM_PARALLEL=${OLLAMA_NUM_PARALLEL:-4}
+      - OLLAMA_MAX_LOADED_MODELS=1
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    profiles:
+      - gpu
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list || exit 1"]
+      interval: 20s
+      timeout: 10s
+      start_period: 40s
+      retries: 5
+    labels:
+      - "com.panchayat.role=llm-gpu"
+      - "com.panchayat.mode=ollama"
+
+  # ── Ollama Init — pulls model on first start, then exits ─────────────────────
+  ollama-init:
+    image: ollama/ollama:latest
+    container_name: panchayat-ollama-init
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - panchayat
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+    entrypoint: >
+      sh -c "
+        echo '=== Ollama Model Init ===';
+        echo 'Target model: ${OLLAMA_MODEL:-qwen2.5-coder:7b}';
+        echo 'Waiting for Ollama API...';
+        until ollama list > /dev/null 2>&1; do
+          echo 'Still waiting...'; sleep 3;
+        done;
+        echo 'Ollama ready. Checking if model already exists...';
+        if ollama list | grep -q '${OLLAMA_MODEL:-qwen2.5-coder:7b}'; then
+          echo 'Model already downloaded. Skipping pull.';
+        else
+          echo 'Downloading model (this may take a few minutes)...';
+          ollama pull ${OLLAMA_MODEL:-qwen2.5-coder:7b};
+        fi;
+        echo 'Done. Model is ready for agent use.';
+      "
+    depends_on:
+      ollama:
+        condition: service_healthy
+    restart: "no"
+    labels:
+      - "com.panchayat.role=llm-init"
+
+  # ── Dashboard — serves UI + launches agents via Ollama ───────────────────────
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile.dashboard
+    container_name: panchayat-dashboard-ollama
+    ports:
+      - "${DASHBOARD_PORT:-3000}:3000"
+    volumes:
+      - .:/workspace:rw
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - panchayat
+    restart: unless-stopped
+    environment:
+      - WORKSPACE=/workspace
+      - COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME:-panchayat}
+      - PORT=3000
+      - LLM_MODE=ollama
+      - OLLAMA_ENDPOINT=http://ollama:11434
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-qwen2.5-coder:7b}
+      - OLLAMA_USE_FOR_AGENTS=true
+      - OLLAMA_USE_FOR_CHAT=true
+    depends_on:
+      ollama:
+        condition: service_healthy
+      ollama-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+      interval: 15s
+      timeout: 5s
+      start_period: 15s
+      retries: 3
+    labels:
+      - "com.panchayat.role=dashboard"
+      - "com.panchayat.mode=ollama"
+
+  # NOTE: No agent containers in Ollama mode.
+  # The dashboard server launches agents directly via Ollama HTTP API
+  # (launchAgentLocal) when you click "Launch Agents" in the UI.
+  # This eliminates the need for separate Claude CLI containers entirely.

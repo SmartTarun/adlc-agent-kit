@@ -1,0 +1,69 @@
+# Agent: Arjun | Sprint: 01 | Date: 2026-03-29
+# Team Panchayat — OPENAI-COMPATIBLE MODE
+# Works with: Azure OpenAI, Standard OpenAI, Groq, Together.ai, LM Studio
+#
+# Usage:
+#   copy .env.openai .env        (standard OpenAI)
+#   copy .env.azure  .env        (Azure OpenAI)
+#   docker compose -f docker-compose.openai.yml up --build
+
+version: '3.9'
+
+volumes:
+  workspace_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${PWD}
+
+networks:
+  panchayat:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.31.0.0/16
+
+services:
+
+  # ── Dashboard — runs agents via OpenAI-compatible API ────────────────────────
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile.dashboard
+    container_name: panchayat-dashboard-openai
+    ports:
+      - "${DASHBOARD_PORT:-3000}:3000"
+    volumes:
+      - .:/workspace:rw
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - panchayat
+    restart: unless-stopped
+    environment:
+      - WORKSPACE=/workspace
+      - COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME:-panchayat-openai}
+      - PORT=3000
+      - LLM_MODE=openai-compat
+      # Auto-configure openaiCompat on startup
+      - OPENAI_COMPAT_ENABLED=true
+      - OPENAI_PROVIDER=${OPENAI_PROVIDER:-openai}
+      - OPENAI_ENDPOINT=${OPENAI_ENDPOINT:-https://api.openai.com/v1}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o}
+      # Azure-specific (only used when OPENAI_PROVIDER=azure)
+      - AZURE_OPENAI_KEY=${AZURE_OPENAI_KEY}
+      - AZURE_DEPLOYMENT=${AZURE_DEPLOYMENT}
+      - AZURE_API_VERSION=${AZURE_API_VERSION:-2024-02-01}
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+      interval: 15s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+    labels:
+      - "com.panchayat.role=dashboard"
+      - "com.panchayat.mode=openai-compat"
+
+  # NOTE: No agent containers — agents launched via launchAgentOpenAICompat()
+  # in the dashboard (OpenAI-compatible HTTP calls).

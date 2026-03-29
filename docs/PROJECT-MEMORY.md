@@ -1,23 +1,23 @@
-# PROJECT MEMORY — INFRAVIZ
+# PROJECT MEMORY — CBRE
 > Auto-maintained by Arjun. Read this file to resume a session.
 > Last updated: 2026-03-25T16:02:00.000Z
 
 ## Identity
 | Field       | Value |
 |-------------|-------|
-| Project ID  | proj-infraviz-01 |
-| Name        | INFRAVIZ |
+| Project ID  | proj-cbre_platform-01 |
+| Name        | CBRE |
 | Sprint      | 01 |
 | Status      | QA — Session 7 — Keerthi nudged, awaiting qa-plan.md + E2E tests |
 | Directory   | /workspace |
 | Started     | 2026-03-16T08:28:00.000Z |
 
 ## What We Are Building
-InfraViz is an AI-powered IaC generation platform for cloud architects. Users design infrastructure visually on a React Flow canvas or describe it in natural language, and Claude (claude-sonnet-4-6) generates production-ready Terraform code along with architecture documentation, cost estimates, compliance checklists, and deployment guides. Includes workspace management, Terraform validation, and a CLI terminal with streaming responses. Sprint-01 scope: AWS-only, generate+validate only, dummy auth, dark mode first.
+CBRE Unified Asset Intelligence Platform is an AI-powered IaC generation platform for cloud architects. Users design infrastructure visually on a React Flow canvas or describe it in natural language, and Claude (claude-sonnet-4-6) generates production-ready Terraform code along with architecture documentation, cost estimates, compliance checklists, and deployment guides. Includes workspace management, Terraform validation, and a CLI terminal with streaming responses. Sprint-01 scope: AWS-only, generate+validate only, dummy auth, dark mode first.
 
 ## Key Decisions Made
 - LLM: claude-sonnet-4-6 via Anthropic API direct (NOT Bedrock Sprint-01)
-- Auth: Dummy username/password. JWT in localStorage. Demo: admin / infraviz2026
+- Auth: Dummy username/password. JWT in localStorage. Demo: admin / cbre_platform2026
 - Database: PostgreSQL via SQLAlchemy async + Alembic (8 tables)
 - Frontend: React 18 + TypeScript + Vite + React Flow + CSS Variables (tokens.css). NO Tailwind.
 - Backend: FastAPI + Python 3.11 + Anthropic SDK + SQLAlchemy async + Pydantic v2
@@ -28,7 +28,7 @@ InfraViz is an AI-powered IaC generation platform for cloud architects. Users de
 - AI pipeline: 7-step (Requirements → Architecture → Terraform → Diagram → Cost → Compliance → Deployment)
 
 ## Sprint Goal
-Demo-ready InfraViz: cloud architects can (1) drag AWS services onto canvas → generate Terraform via Claude, (2) type NL prompt → get Terraform + docs, (3) use Terminal CLI with streaming, (4) save/load workspaces, (5) validate Terraform. Deadline: 2026-04-01.
+Demo-ready CBRE Unified Asset Intelligence Platform: cloud architects can (1) drag AWS services onto canvas → generate Terraform via Claude, (2) type NL prompt → get Terraform + docs, (3) use Terminal CLI with streaming, (4) save/load workspaces, (5) validate Terraform. Deadline: 2026-04-01.
 
 ## Agent Progress
 | Agent   | Status  | Last Task | Notes |
@@ -36,7 +36,7 @@ Demo-ready InfraViz: cloud architects can (1) drag AWS services onto canvas → 
 | Arjun   | WIP     | Orchestrating QA phase | Session 7 active — Keerthi nudged with prioritised QA brief |
 | Vikram  | DONE    | 11 Terraform modules delivered | backend_state, iam, rds_aurora, lambda, api_gateway, s3_frontend, cloudfront, secrets_manager, ecs, cloudwatch, s3 |
 | Rasool  | DONE    | All 8 ORM models + Alembic migration | 8 tables, full SQLAlchemy graph, db-schema.md |
-| Kavya   | DONE    | tokens.css + component-spec.md (19 components) | InfraViz 4-view spec, IaC + node tokens |
+| Kavya   | DONE    | tokens.css + component-spec.md (19 components) | CBRE Unified Asset Intelligence Platform 4-view spec, IaC + node tokens |
 | Kiran   | DONE    | FastAPI backend: 6 routers, 19 endpoints, Claude SSE, 30+ tests | claude-sonnet-4-6 wired |
 | Rohan   | DONE    | AuthPage, CanvasView, DashboardView, TerminalView | React Flow + 9-tab panel, SSE streaming |
 | Keerthi | WIP     | QA — Session 7 nudge sent | 10% progress. Awaiting qa-plan.md, e2e_integration.py, demo-script.md |
@@ -94,7 +94,7 @@ Demo-ready InfraViz: cloud architects can (1) drag AWS services onto canvas → 
 - modules/cloudwatch/ — Log groups, alarms, dashboard
 
 ### Docs (/workspace/docs/)
-- component-spec.md — 19-component spec for all 4 InfraViz views
+- component-spec.md — 19-component spec for all 4 CBRE Unified Asset Intelligence Platform views
 - db-schema.md — full PostgreSQL schema documentation
 - PROJECT-MEMORY.md — this file
 
@@ -105,7 +105,7 @@ Demo-ready InfraViz: cloud architects can (1) drag AWS services onto canvas → 
 - Session 7 (2026-03-25): Arjun nudged Keerthi with prioritised brief — qa-plan.md, e2e_integration.py, demo-script.md
 - All build agents (Vikram, Kavya, Rasool, Kiran, Rohan) confirmed DONE across sessions 3–7
 - Keerthi is at 10% — critical path item. Check keerthi status immediately on next session
-- Demo credentials: admin / infraviz2026
+- Demo credentials: admin / cbre_platform2026
 - LLM endpoint: ANTHROPIC_API_KEY must be set in environment
 - Run order for infra: backend_state module first, then root module
 - Deadline: 2026-04-01 (hard)

@@ -1,5 +1,5 @@
 # Agent: Vikram | Sprint: 01 | Date: 2026-03-16
-# INFRAVIZ Root Module — wires all /infra/modules/ together
+# CBRE Root Module — wires all /infra/modules/ together
 #
 # DEPLOY ORDER:
 #   1. cd infra/modules/backend_state && terraform apply
@@ -21,10 +21,10 @@ terraform {
 
   # Uncomment after running backend_state module and replace with its outputs:
   # backend "s3" {
-  #   bucket         = "infraviz-dev-tfstate-<account-id>"
-  #   key            = "infraviz/root/terraform.tfstate"
+  #   bucket         = "cbre_platform-dev-tfstate-<account-id>"
+  #   key            = "cbre_platform/root/terraform.tfstate"
   #   region         = "us-east-1"
-  #   dynamodb_table = "infraviz-dev-tfstate-lock"
+  #   dynamodb_table = "cbre_platform-dev-tfstate-lock"
   #   encrypt        = true
   # }
 }
@@ -37,7 +37,7 @@ provider "aws" {
       Environment = var.environment
       Owner       = "TeamPanchayat"
       CostCenter  = "ADLC-01"
-      Project     = "INFRAVIZ"
+      Project     = "CBRE"
       ManagedBy   = "Terraform"
     }
   }
@@ -95,7 +95,7 @@ module "lambda" {
   lambda_exec_role_arn      = module.iam.lambda_exec_role_arn
   db_secret_arn             = module.rds_aurora.master_user_secret_arn
   db_host                   = module.rds_aurora.cluster_endpoint
-  db_name                   = "infraviz"
+  db_name                   = "cbre_platform"
   state_bucket_name         = var.iac_state_bucket_name
   bedrock_model_id          = var.bedrock_model_id
   api_gateway_execution_arn = module.api_gateway.execution_arn

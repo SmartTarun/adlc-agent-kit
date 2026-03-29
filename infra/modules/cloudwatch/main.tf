@@ -1,10 +1,10 @@
 # Agent: vikram | Sprint: 01 | Date: 2026-03-16
-# Terraform CloudWatch Module — INFRAVIZ
+# Terraform CloudWatch Module — CBRE
 #
 # Resources created:
 #   - Log groups: API Gateway, Lambda, application
 #   - Metric alarms: Lambda errors, API Gateway 5xx, RDS connections
-#   - CloudWatch dashboard for INFRAVIZ
+#   - CloudWatch dashboard for CBRE
 
 terraform {
   required_version = ">= 1.7"
@@ -24,14 +24,14 @@ provider "aws" {
       Environment = var.environment
       Owner       = "TeamPanchayat"
       CostCenter  = "ADLC-01"
-      Project     = "INFRAVIZ"
+      Project     = "CBRE"
       ManagedBy   = "Terraform"
     }
   }
 }
 
 locals {
-  name_prefix = "infraviz-${var.environment}"
+  name_prefix = "cbre_platform-${var.environment}"
 }
 
 # ── Log Groups ────────────────────────────────────────────────────────────────
@@ -50,7 +50,7 @@ resource "aws_cloudwatch_log_group" "lambda" {
 }
 
 resource "aws_cloudwatch_log_group" "application" {
-  name              = "/infraviz/${var.environment}/application"
+  name              = "/cbre_platform/${var.environment}/application"
   retention_in_days = var.log_retention_days
 
   tags = { Name = "${local.name_prefix}-app-logs" }
@@ -115,7 +115,7 @@ resource "aws_cloudwatch_metric_alarm" "rds_connections" {
 }
 
 # ── Dashboard ─────────────────────────────────────────────────────────────────
-resource "aws_cloudwatch_dashboard" "infraviz" {
+resource "aws_cloudwatch_dashboard" "cbre_platform" {
   dashboard_name = "${local.name_prefix}-dashboard"
 
   dashboard_body = jsonencode({

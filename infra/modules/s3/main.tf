@@ -1,12 +1,12 @@
 # Agent: vikram | Sprint: 01 | Date: 2026-03-16
-# Terraform S3 Module — INFRAVIZ
+# Terraform S3 Module — CBRE
 #
 # Resources created:
 #   - S3 bucket for user Terraform state file storage (IaC artefacts)
 #   - S3 bucket for access logs
 #
 # Distinct from backend_state module (which holds Terraform's own state).
-# This bucket stores user-generated .tfstate files uploaded via the InfraViz UI.
+# This bucket stores user-generated .tfstate files uploaded via the CBRE Unified Asset Intelligence Platform UI.
 
 terraform {
   required_version = ">= 1.7"
@@ -26,14 +26,14 @@ provider "aws" {
       Environment = var.environment
       Owner       = "TeamPanchayat"
       CostCenter  = "ADLC-01"
-      Project     = "INFRAVIZ"
+      Project     = "CBRE"
       ManagedBy   = "Terraform"
     }
   }
 }
 
 locals {
-  name_prefix  = "infraviz-${var.environment}"
+  name_prefix  = "cbre_platform-${var.environment}"
   bucket_name  = coalesce(var.bucket_name, "${local.name_prefix}-state-files-${data.aws_caller_identity.current.account_id}")
   log_bucket   = "${local.name_prefix}-state-files-logs-${data.aws_caller_identity.current.account_id}"
 }
@@ -81,7 +81,7 @@ resource "aws_s3_bucket" "state_files" {
   bucket        = local.bucket_name
   force_destroy = var.environment == "dev" ? true : false
 
-  tags = { Name = local.bucket_name, Purpose = "infraviz-user-state-files" }
+  tags = { Name = local.bucket_name, Purpose = "cbre_platform-user-state-files" }
 }
 
 resource "aws_s3_bucket_versioning" "state_files" {

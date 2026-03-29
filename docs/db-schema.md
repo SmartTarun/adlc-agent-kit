@@ -1,5 +1,5 @@
 # Agent: rasool | Sprint: 01 | Date: 2026-03-16
-# INFRAVIZ — PostgreSQL Database Schema
+# CBRE — PostgreSQL Database Schema
 
 ## Overview
 
@@ -7,7 +7,7 @@
 **Migration tool:** Alembic 1.x + SQLAlchemy async
 **Migration file:** `backend/migrations/versions/0001_initial_schema.py`
 
-InfraViz stores workspace metadata, AI-generated Terraform artefacts, and LLM conversation history in PostgreSQL. Terraform state *content* is stored in S3; only the pointer/metadata is in the DB (Arjun decision 2026-03-16).
+CBRE Unified Asset Intelligence Platform stores workspace metadata, AI-generated Terraform artefacts, and LLM conversation history in PostgreSQL. Terraform state *content* is stored in S3; only the pointer/metadata is in the DB (Arjun decision 2026-03-16).
 
 ---
 
@@ -273,7 +273,7 @@ projects (1) ──────────┬───────────�
 
 ```bash
 # Local development
-export DATABASE_URL=postgresql://infraviz:password@localhost:5432/infraviz
+export DATABASE_URL=postgresql://cbre_platform:password@localhost:5432/cbre_platform
 alembic upgrade head
 
 # Check current revision
@@ -283,4 +283,4 @@ alembic current
 alembic downgrade -1
 ```
 
-For AWS Aurora: `DATABASE_URL` is injected automatically from SSM parameter `/infraviz/db-url` via Lambda environment.
+For AWS Aurora: `DATABASE_URL` is injected automatically from SSM parameter `/cbre_platform/db-url` via Lambda environment.

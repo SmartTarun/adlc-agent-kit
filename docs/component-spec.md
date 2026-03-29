@@ -1,5 +1,5 @@
 # Agent: Kavya | Sprint: 01 | Date: 2026-03-16 (revised 2026-03-25)
-# InfraViz — Component Specification
+# CBRE Unified Asset Intelligence Platform — Component Specification
 
 > Design system reference for Rohan (Frontend Engineer).
 > All components MUST use tokens from `/frontend/src/tokens/tokens.css`.
@@ -56,7 +56,7 @@
 **Border-bottom**: 1px solid `--color-border-subtle`
 
 **Slots**:
-- Left: "InfraViz" logo + wordmark (`--color-primary-400`)
+- Left: "CBRE Unified Asset Intelligence Platform" logo + wordmark (`--color-primary-400`)
 - Center: Workspace name display + dropdown (current workspace)
 - Right: Region badge + Theme toggle + User avatar (initials)
 
@@ -109,7 +109,7 @@ interface TopBarProps {
 **Anatomy**:
 ```
 ┌────────────────────────────────┐
-│  InfraViz  (logo + wordmark)   │
+│  CBRE Unified Asset Intelligence Platform  (logo + wordmark)   │
 │  "AI-Powered IaC Platform"     │
 │                                │
 │  Username ________________     │
@@ -694,5 +694,5 @@ All icons inherit colour from parent token — do not set icon colour inline.
 6. Recharts `<Tooltip>` needs `contentStyle={{ background: 'var(--chart-tooltip-bg)', border: '1px solid var(--chart-tooltip-border)' }}` — CSS vars don't auto-apply to Recharts inline styles
 7. SSE streaming (TerminalView): use `EventSource` or `fetch` with `ReadableStream`; append token chunks to `entry.text` on each `message` event; set `isStreaming=false` on `[DONE]`
 8. Workspace state: keep in React context (`WorkspaceContext`) — Canvas nodes, edges, active workspace ID, generation result
-9. JWT: store in `localStorage` key `infraviz_token`; read on app load; redirect to `/login` if absent
+9. JWT: store in `localStorage` key `cbre_platform_token`; read on app load; redirect to `/login` if absent
 10. Undo/redo: use `useNodesState`/`useEdgesState` from React Flow + a simple history stack (max 50 steps)

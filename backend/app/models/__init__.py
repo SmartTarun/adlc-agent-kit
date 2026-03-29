@@ -1,5 +1,5 @@
 # Agent: rasool | Sprint: 01 | Date: 2026-03-16
-"""SQLAlchemy ORM models for InfraViz."""
+"""SQLAlchemy ORM models for CBRE Unified Asset Intelligence Platform."""
 
 from app.models.user import User
 from app.models.project import Project

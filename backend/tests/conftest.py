@@ -1,5 +1,5 @@
 # Agent: kiran | Sprint: 01 | Date: 2026-03-16
-"""Shared pytest fixtures for InfraViz backend tests.
+"""Shared pytest fixtures for CBRE Unified Asset Intelligence Platform backend tests.
 
 Uses an in-memory SQLite database via aiosqlite so tests run without PostgreSQL.
 All tables are created from the ORM models (not Alembic), keeping tests isolated.
@@ -61,7 +61,7 @@ async def test_user(db_session: AsyncSession) -> User:
     user = User(
         id=uuid.uuid4(),
         username="testuser",
-        email="test@infraviz.dev",
+        email="test@cbre_platform.dev",
         hashed_password=hash_password("testpass123"),
         is_active=True,
     )

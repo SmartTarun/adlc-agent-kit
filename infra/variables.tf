@@ -1,5 +1,5 @@
 # Agent: Vikram | Sprint: 01 | Date: 2026-03-16
-# INFRAVIZ Root Module — Variables
+# CBRE Root Module — Variables
 
 variable "aws_region" {
   description = "AWS region for all resources"
@@ -49,7 +49,7 @@ variable "bedrock_model_id" {
 variable "lambda_package_path" {
   description = "Path to the Lambda deployment zip (built by CI/CD from /backend)"
   type        = string
-  default     = "../backend/dist/infraviz-api.zip"
+  default     = "../backend/dist/cbre_platform-api.zip"
 }
 
 variable "cors_allow_origins" {

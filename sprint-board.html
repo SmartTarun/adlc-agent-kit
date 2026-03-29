@@ -6,6 +6,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Team Panchayat — Sprint Cluster</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
 <style>
 /* ── Reset & Base ──────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -1399,6 +1400,182 @@ body {
 .ux-req-changes-btn:hover { background: var(--yellow-dim); }
 
 /* ══════════════════════════════════════════════════════════════════════
+   ARCHITECTURE CANVAS SCREEN  — Vikram's cloud architecture review
+   ══════════════════════════════════════════════════════════════════════ */
+#arch-screen {
+  display: none; position: fixed; inset: 0;
+  background: var(--bg); z-index: 200;
+  flex-direction: column; font-family: var(--font);
+}
+#arch-screen.open { display: flex; }
+#arch-topbar {
+  background: linear-gradient(135deg, #0f4c81 0%, #1e40af 100%);
+  height: 52px; display: flex; align-items: center;
+  gap: 10px; padding: 0 16px; flex-shrink: 0;
+  box-shadow: 0 2px 10px rgba(15,76,129,.4);
+}
+.arch-title { font-size: 15px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px; }
+#arch-project-name { opacity: .7; font-size: 13px; font-weight: 400; }
+.arch-topbtn {
+  background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.25);
+  color: #fff; padding: 5px 12px; border-radius: 6px; cursor: pointer;
+  font-size: 12px; font-family: var(--font); transition: all .15s; white-space: nowrap;
+}
+.arch-topbtn:hover { background: rgba(255,255,255,.22); }
+.arch-topbtn.approve-arch { background: #16a34a; border-color: #16a34a; font-weight: 700; }
+.arch-topbtn.approve-arch:hover { background: #15803d; }
+.arch-topbtn.changes-arch { border-color: #fbbf24; color: #fbbf24; }
+.arch-topbtn.changes-arch:hover { background: rgba(251,191,36,.15); }
+#arch-body { flex: 1; display: flex; min-height: 0; overflow: hidden; }
+#arch-chat-panel {
+  width: 25%; min-width: 240px; max-width: 360px;
+  border-right: 2px solid #dbeafe; display: flex; flex-direction: column;
+  background: #fff; box-shadow: 2px 0 8px rgba(30,64,175,.06); flex-shrink: 0;
+}
+#arch-chat-header { padding: 12px 14px 10px; background: linear-gradient(135deg,#eff6ff,#dbeafe); border-bottom: 1px solid #bfdbfe; flex-shrink: 0; }
+#arch-chat-header h3 { font-size: 13px; font-weight: 700; color: var(--blue); margin: 0 0 2px 0; }
+#arch-chat-header small { font-size: 10px; color: var(--text-dim); }
+#arch-chat-messages {
+  flex: 1; overflow-y: auto; padding: 10px;
+  display: flex; flex-direction: column; gap: 8px; background: #f8faff;
+}
+.arch-chat-bubble {
+  max-width: 92%; padding: 8px 11px; border-radius: 10px;
+  font-size: 12px; line-height: 1.5; word-break: break-word;
+}
+.arch-chat-bubble.from-vikram { background: #eff6ff; border: 1px solid #bfdbfe; color: var(--text); align-self: flex-start; border-radius: 2px 10px 10px 10px; }
+.arch-chat-bubble.from-tarun  { background: var(--blue); color: #fff; align-self: flex-end; border-radius: 10px 10px 2px 10px; }
+.arch-chat-bubble.from-other  { background: var(--surface2); border: 1px solid var(--border); color: var(--text-dim); align-self: flex-start; font-size: 11px; }
+.arch-bubble-sender { font-size: 10px; font-weight: 700; margin-bottom: 3px; opacity: .65; text-transform: uppercase; letter-spacing: .04em; }
+.arch-bubble-time   { font-size: 9px; opacity: .45; text-align: right; margin-top: 3px; }
+.arch-empty-chat    { text-align: center; padding: 28px 12px; color: var(--text-dim); font-size: 11px; line-height: 1.6; }
+#arch-chat-input-area { padding: 10px; border-top: 1px solid #dbeafe; background: #fff; flex-shrink: 0; }
+#arch-feedback-input {
+  width: 100%; background: var(--surface2); border: 1.5px solid var(--border);
+  color: var(--text); padding: 8px 10px; border-radius: 8px;
+  font-size: 12px; font-family: var(--font); outline: none;
+  resize: none; min-height: 60px; max-height: 120px; box-sizing: border-box;
+}
+#arch-feedback-input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
+#arch-send-feedback {
+  width: 100%; margin-top: 6px; background: var(--blue); border: none;
+  color: #fff; padding: 8px 0; border-radius: 7px; cursor: pointer;
+  font-size: 12px; font-family: var(--font); font-weight: 600; transition: background .15s;
+}
+#arch-send-feedback:hover { background: #1d4ed8; }
+#arch-canvas {
+  flex: 1; overflow-y: auto; padding: 20px 24px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.arch-section {
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: 12px; overflow: hidden; box-shadow: var(--shadow-sm);
+}
+.arch-section-header {
+  display: flex; align-items: center; gap: 10px; padding: 12px 16px;
+  background: linear-gradient(90deg, #eff6ff, #fff); border-bottom: 1px solid var(--border);
+}
+.arch-section-icon  { font-size: 16px; }
+.arch-section-title { font-size: 13px; font-weight: 700; color: var(--text-bright); flex: 1; }
+.arch-section-badge { font-size: 10px; background: #dbeafe; color: #1e40af; padding: 2px 8px; border-radius: 20px; font-weight: 600; }
+.arch-section-body  { padding: 16px; }
+#arch-diagram-wrap { overflow-x: auto; }
+#arch-diagram-wrap .mermaid { min-height: 120px; }
+.arch-status-hero {
+  display: flex; align-items: center; gap: 16px;
+  background: linear-gradient(135deg, #eff6ff, #dbeafe);
+  border: 1.5px solid #bfdbfe; border-radius: 12px; padding: 16px 20px;
+}
+.arch-avatar { font-size: 32px; }
+.arch-agent-info h2 { font-size: 15px; font-weight: 700; color: var(--blue); margin: 0 0 4px; }
+.arch-agent-info p  { font-size: 12px; color: var(--text-dim); margin: 0; }
+.arch-progress-wrap { margin-left: auto; min-width: 140px; }
+.arch-progress-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-dim); margin-bottom: 6px; }
+.arch-progress-bar  { height: 8px; background: #dbeafe; border-radius: 99px; overflow: hidden; }
+.arch-progress-fill { height: 100%; background: var(--blue); border-radius: 99px; transition: width .5s; }
+.arch-module-table  { width: 100%; border-collapse: collapse; font-size: 12px; }
+.arch-module-table th { background: #eff6ff; color: #1e40af; font-weight: 700; padding: 7px 10px; text-align: left; border-bottom: 2px solid #bfdbfe; }
+.arch-module-table td { padding: 6px 10px; border-bottom: 1px solid var(--border-soft); vertical-align: top; }
+.arch-module-table tr:last-child td { border-bottom: none; }
+.arch-approval-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  background: linear-gradient(135deg,#fef3c7,#fffbeb);
+  border: 1.5px solid #fcd34d; border-radius: 12px; padding: 16px 20px; gap: 16px;
+}
+.arch-approval-bar.approved { background: linear-gradient(135deg,#dcfce7,#f0fdf4); border-color: #86efac; }
+.arch-approval-text h4 { font-size: 14px; font-weight: 700; color: var(--yellow); margin: 0 0 4px; }
+.arch-approval-bar.approved .arch-approval-text h4 { color: var(--green); }
+.arch-approval-text p  { font-size: 11px; color: var(--text-dim); margin: 0; }
+.arch-approve-btn { background: var(--green); border: none; color: #fff; padding: 8px 18px; border-radius: 8px; cursor: pointer; font-size: 13px; font-family: var(--font); font-weight: 700; transition: background .15s; white-space: nowrap; }
+.arch-approve-btn:hover { background: #15803d; }
+.arch-req-changes-btn { background: #fff; border: 1.5px solid var(--yellow); color: var(--yellow); padding: 7px 14px; border-radius: 8px; cursor: pointer; font-size: 12px; font-family: var(--font); font-weight: 600; transition: all .15s; white-space: nowrap; }
+.arch-req-changes-btn:hover { background: var(--yellow-dim); }
+
+/* ══════════════════════════════════════════════════════════════════════
+   DB SCHEMA CANVAS SCREEN  — Rasool's database schema viewer
+   ══════════════════════════════════════════════════════════════════════ */
+#db-screen {
+  display: none; position: fixed; inset: 0;
+  background: var(--bg); z-index: 200;
+  flex-direction: column; font-family: var(--font);
+}
+#db-screen.open { display: flex; }
+#db-topbar {
+  background: linear-gradient(135deg, #064e3b 0%, #065f46 100%);
+  height: 52px; display: flex; align-items: center;
+  gap: 10px; padding: 0 16px; flex-shrink: 0;
+  box-shadow: 0 2px 10px rgba(6,78,59,.4);
+}
+.db-title { font-size: 15px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px; }
+#db-project-name { opacity: .7; font-size: 13px; font-weight: 400; }
+.db-topbtn {
+  background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.25);
+  color: #fff; padding: 5px 12px; border-radius: 6px; cursor: pointer;
+  font-size: 12px; font-family: var(--font); transition: all .15s; white-space: nowrap;
+}
+.db-topbtn:hover { background: rgba(255,255,255,.22); }
+#db-canvas {
+  flex: 1; overflow-y: auto; padding: 20px 24px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.db-section {
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: 12px; overflow: hidden; box-shadow: var(--shadow-sm);
+}
+.db-section-header {
+  display: flex; align-items: center; gap: 10px; padding: 12px 16px;
+  background: linear-gradient(90deg, #ecfdf5, #fff); border-bottom: 1px solid var(--border);
+}
+.db-section-icon  { font-size: 16px; }
+.db-section-title { font-size: 13px; font-weight: 700; color: var(--text-bright); flex: 1; }
+.db-section-badge { font-size: 10px; background: #d1fae5; color: #065f46; padding: 2px 8px; border-radius: 20px; font-weight: 600; }
+.db-section-body  { padding: 16px; }
+.db-table-card {
+  background: #fff; border: 1.5px solid var(--border); border-radius: 10px;
+  margin-bottom: 12px; overflow: hidden;
+}
+.db-table-card:last-child { margin-bottom: 0; }
+.db-table-name {
+  background: linear-gradient(90deg, #064e3b, #065f46);
+  color: #fff; padding: 8px 14px; font-size: 13px; font-weight: 700;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.db-table-name small { opacity: .65; font-size: 11px; font-weight: 400; }
+.db-col-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.db-col-table th { background: #ecfdf5; color: #065f46; font-weight: 700; padding: 6px 10px; text-align: left; border-bottom: 2px solid #a7f3d0; }
+.db-col-table td { padding: 5px 10px; border-bottom: 1px solid var(--border-soft); font-family: var(--mono); font-size: 11px; }
+.db-col-table tr:last-child td { border-bottom: none; }
+.db-col-table .col-name { color: var(--text-bright); font-weight: 600; }
+.db-col-table .col-type { color: #2563eb; }
+.db-col-table .col-pk   { background: #fef3c7; color: #92400e; padding: 1px 5px; border-radius: 3px; font-size: 10px; font-weight: 700; }
+.db-col-table .col-fk   { background: #dbeafe; color: #1e40af; padding: 1px 5px; border-radius: 3px; font-size: 10px; font-weight: 700; }
+.db-col-table .col-idx  { background: #f3e8ff; color: #6d28d9; padding: 1px 5px; border-radius: 3px; font-size: 10px; font-weight: 700; }
+.db-col-table .col-nn   { color: var(--red); font-size: 10px; font-weight: 700; }
+.db-empty { text-align: center; padding: 40px 20px; color: var(--text-dim); }
+.db-erd-wrap { overflow-x: auto; }
+.db-erd-wrap .mermaid { min-height: 120px; }
+
+/* ══════════════════════════════════════════════════════════════════════
    NEW PROJECT SCREEN  — full-page welcome & project launcher
    ══════════════════════════════════════════════════════════════════════ */
 /* ── Project Hub Screen ─────────────────────────────────────────────────── */
@@ -1645,6 +1822,8 @@ body {
   <button class="topbtn primary" onclick="openNewProjectScreen()">+ New Project</button>
   <button id="btn-launch-agents" class="topbtn success" onclick="launchAgents()" title="Spawn all agent Claude processes">🚀 Launch Agents</button>
   <button class="topbtn" onclick="openUXScreen()" title="Open UX Design Review screen" style="border-color:#c4b5fd;color:#e9d5ff">🎨 UX Design</button>
+  <button class="topbtn" onclick="openArchScreen()" title="Open Architecture Canvas — Vikram's cloud diagram" style="border-color:#93c5fd;color:#bfdbfe">🏗️ Architecture</button>
+  <button class="topbtn" onclick="openDBScreen()" title="Open DB Schema Canvas — Rasool's table structure" style="border-color:#6ee7b7;color:#a7f3d0">🗄️ DB Schema</button>
   <button class="topbtn" onclick="openPermModal()" title="Manage agent tool permissions">🔐 Permissions</button>
   <button class="topbtn success" onclick="activateKeerthi()">🟢 Activate QA</button>
   <button class="topbtn danger"  onclick="stopAll()">⏹ Stop All</button>
@@ -1918,6 +2097,12 @@ body {
 <script>
 'use strict';
 
+// ── Canvas screen flags (declared early to avoid TDZ) ─────────────────────────
+let archScreenOpen  = false;
+let archMermaidRendered = false;
+let dbScreenOpen    = false;
+let dbErdRendered   = false;
+
 // ── Agent metadata ───────────────────────────────────────────────────────────
 const AGENT_META = {
   arjun  : { role: 'PM / Orchestrator', model: 'Opus',   color: '#bc8cff' },
@@ -2098,6 +2283,9 @@ function renderBoard(state) {
   // Render chat -- state.chat is the full {channel, messages:[]} object
   renderChat((state.chat && state.chat.messages) ? state.chat.messages : []);
   updateTypingIndicator(state.agents || {});
+
+  // Update canvas screens if open
+  if (document.getElementById('arch-screen') && document.getElementById('arch-screen').classList.contains('open')) renderArchCanvas();
 }
 
 function normaliseStatus(agentStatus, containerInfo) {
@@ -2284,6 +2472,7 @@ function typeBadge(type) {
   const badges = {
     broadcast: 'badge-broadcast', plan: 'badge-plan', done: 'badge-done',
     blocker: 'badge-blocker', analysis: 'badge-analysis', discovery: 'badge-discovery',
+    'arch-diagram': 'badge-plan', 'db-schema': 'badge-done',
   };
   const cls = badges[type];
   if (!cls) return '';
@@ -2465,11 +2654,18 @@ function renderChat(messages) {
 
     const bubbleText = renderMarkdown(msg.message || '');
 
+    let actionHtml = '';
+    if (msgType === 'arch-diagram') {
+      actionHtml = '<div style="margin-top:8px"><button onclick="openArchScreen()" style="background:#1e40af;border:none;color:#fff;padding:5px 12px;border-radius:6px;cursor:pointer;font-size:11px;font-family:var(--font);font-weight:600">🏗️ Open Architecture Canvas →</button></div>';
+    } else if (msgType === 'db-schema') {
+      actionHtml = '<div style="margin-top:8px"><button onclick="openDBScreen()" style="background:#065f46;border:none;color:#fff;padding:5px 12px;border-radius:6px;cursor:pointer;font-size:11px;font-family:var(--font);font-weight:600">🗄️ Open DB Schema Canvas →</button></div>';
+    }
+
     el.innerHTML =
       avatarHtml +
       '<div class="chat-msg-content">' +
         metaHtml +
-        '<div class="chat-bubble">' + bubbleText + attachHtml + '</div>' +
+        '<div class="chat-bubble">' + bubbleText + attachHtml + actionHtml + '</div>' +
       '</div>';
 
     box.appendChild(el);
@@ -3083,6 +3279,9 @@ function openNewProjectScreen() {
   renderNPExisting(currentState);
   document.getElementById('new-project-screen').classList.add('open');
   loadMCPConfig();
+  loadLLMConfig();
+  loadHybridConfig();
+  loadOpenAIConfig();
 }
 
 function closeNewProjectScreen() {
@@ -3193,8 +3392,10 @@ function maybeShowNewProjectScreen(state) {
   const ap     = (state.activeProject || {}).current;
   const noProj = !ap || ap === 'none' || ap === 'null';
   const isOpen = document.getElementById('new-project-screen').classList.contains('open');
-  const uxOpen = document.getElementById('ux-screen').classList.contains('open');
-  if (uxOpen) return;
+  const uxOpen   = document.getElementById('ux-screen').classList.contains('open');
+  const archOpen = document.getElementById('arch-screen') && document.getElementById('arch-screen').classList.contains('open');
+  const dbOpen   = document.getElementById('db-screen') && document.getElementById('db-screen').classList.contains('open');
+  if (uxOpen || archOpen || dbOpen) return;
 
   // Always re-render the project list so new projects appear immediately
   if (isOpen) renderNPExisting(state);
@@ -3376,6 +3577,11 @@ function submitTdpAnswers(agent) {
     if (next) switchTdpTab(next);
   })
   .catch(e => alert('Network error: ' + e.message));
+}
+
+// ── Mermaid initialisation ────────────────────────────────────────────────────
+if (typeof mermaid !== 'undefined') {
+  mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose' });
 }
 
 // ── Initial load ──────────────────────────────────────────────────────────────
@@ -3698,6 +3904,333 @@ function requestUXChanges() {
   }).then(() => alert('Change request sent to Kavya.')).catch(console.error);
 }
 
+// ════════════════════════════════════════════════════════════════════════════
+// ARCHITECTURE CANVAS
+// ════════════════════════════════════════════════════════════════════════════
+function openArchScreen() {
+  archScreenOpen = true;
+  document.getElementById('arch-screen').classList.add('open');
+  renderArchCanvas();
+}
+
+function closeArchScreen() {
+  archScreenOpen = false;
+  document.getElementById('arch-screen').classList.remove('open');
+}
+
+function renderArchCanvas() {
+  if (!archScreenOpen) return;
+  const req    = (currentState.requirement) || {};
+  const agents = (currentState.agents)      || {};
+  const vikram = agents.vikram     || {};
+  const msgs   = (currentState.chat && currentState.chat.messages) ? currentState.chat.messages : [];
+
+  // Project name
+  document.getElementById('arch-project-name').textContent = req.title ? `— ${req.title}` : '';
+
+  // Vikram status
+  document.getElementById('arch-vikram-task').textContent = vikram.task || 'Not started';
+  const pct = vikram.progress || 0;
+  document.getElementById('arch-vikram-pct').textContent = pct + '%';
+  document.getElementById('arch-vikram-bar').style.width = pct + '%';
+
+  // Phase tag
+  const phaseTag = document.getElementById('arch-phase-tag');
+  if (vikram.status === 'done')    { phaseTag.textContent = '✅ Architecture Complete'; phaseTag.style.background = '#16a34a'; phaseTag.style.borderColor = '#16a34a'; }
+  else if (vikram.status === 'blocked') { phaseTag.textContent = '⏳ Awaiting Approval'; phaseTag.style.background = '#d97706'; phaseTag.style.borderColor = '#d97706'; }
+  else if (vikram.status === 'wip')     { phaseTag.textContent = '🔄 Designing'; phaseTag.style.background = '#2563eb'; phaseTag.style.borderColor = '#2563eb'; }
+  else                                  { phaseTag.textContent = 'Queue'; phaseTag.style.background = ''; phaseTag.style.borderColor = ''; }
+
+  // Arch chat messages — filter to arch-related messages
+  const archMsgs = msgs.filter(m =>
+    m.type === 'arch-diagram' || m.type === 'arch-feedback' ||
+    (m.tags && (m.tags.includes('architecture') || m.tags.includes('arch'))) ||
+    ((m.from || '').toLowerCase() === 'vikram')
+  );
+  const chatBox = document.getElementById('arch-chat-messages');
+  if (archMsgs.length === 0) {
+    chatBox.innerHTML = '<div class="arch-empty-chat">🏗️ No architecture messages yet.<br>Vikram will post the diagram here.</div>';
+  } else {
+    chatBox.innerHTML = archMsgs.map(m => {
+      const s   = (m.from || m.sender || '?').toLowerCase();
+      const cls = s === 'vikram' ? 'from-vikram' : s === 'tarun' ? 'from-tarun' : 'from-other';
+      const t   = m.timestamp ? new Date(m.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : '';
+      return `<div class="arch-chat-bubble ${cls}">
+        <div class="arch-bubble-sender">${escHtml((m.from||'?').toUpperCase())}</div>
+        ${renderMarkdown(m.message||'')}
+        <div class="arch-bubble-time">${t}</div>
+      </div>`;
+    }).join('');
+    chatBox.scrollTop = chatBox.scrollHeight;
+  }
+
+  // Find arch-diagram message with Mermaid content
+  const diagMsg = msgs.slice().reverse().find(m => m.type === 'arch-diagram');
+  const container = document.getElementById('arch-mermaid-container');
+  if (diagMsg && diagMsg.message && !archMermaidRendered) {
+    // Extract mermaid code from message
+    const mermaidMatch = diagMsg.message.match(/```mermaid\n?([\s\S]+?)```/);
+    if (mermaidMatch) {
+      const code = mermaidMatch[1].trim();
+      container.innerHTML = `<div class="mermaid">${escHtml(code)}</div>`;
+      document.getElementById('arch-diagram-badge').textContent = 'Ready';
+      try { mermaid.run({ nodes: container.querySelectorAll('.mermaid') }); } catch(e) {}
+      archMermaidRendered = true;
+    } else {
+      container.innerHTML = `<pre style="font-size:11px;font-family:var(--mono);white-space:pre-wrap;text-align:left">${escHtml(diagMsg.message)}</pre>`;
+      document.getElementById('arch-diagram-badge').textContent = 'Text';
+    }
+  }
+
+  // Approval bar
+  fetch('/api/agent/rasool/db-schema')
+    .then(r => r.json())
+    .then(d => {
+      const bar = document.getElementById('arch-approval-bar');
+      if (d.archApproved) {
+        bar.classList.add('approved');
+        bar.innerHTML = '<div class="arch-approval-text"><h4>✅ Architecture Approved</h4><p>' +
+          (d.archComments ? escHtml(d.archComments) : 'Vikram is building Terraform modules.') +
+          '</p></div>';
+      } else {
+        bar.classList.remove('approved');
+      }
+    }).catch(() => {});
+}
+
+function sendArchFeedback() {
+  const input = document.getElementById('arch-feedback-input');
+  const msg   = input.value.trim();
+  if (!msg) return;
+  fetch('/api/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ from: 'TARUN', role: 'Product Owner', message: msg, type: 'arch-feedback', tags: ['arch-feedback', 'vikram'] }),
+  }).then(() => { input.value = ''; }).catch(console.error);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const el = document.getElementById('arch-feedback-input');
+  if (el) el.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendArchFeedback(); } });
+});
+
+function approveArchitecture() {
+  if (!confirm('Approve this architecture? Vikram will proceed to build the Terraform modules.')) return;
+  fetch('/api/agent/vikram/approve-architecture', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+    .then(r => r.json())
+    .then(d => {
+      if (!d.ok) { alert('Error: ' + (d.error || 'unknown')); return; }
+      const t = document.createElement('div');
+      t.style.cssText = 'position:fixed;top:72px;right:20px;background:#16a34a;color:#fff;padding:12px 20px;border-radius:8px;font-weight:700;z-index:9999;font-size:14px;box-shadow:0 4px 12px rgba(0,0,0,.3)';
+      t.textContent = '✅ Architecture Approved — Vikram is building Terraform modules';
+      document.body.appendChild(t);
+      setTimeout(() => t.remove(), 3500);
+      archMermaidRendered = false;
+      renderArchCanvas();
+    })
+    .catch(e => alert('Network error: ' + e.message));
+}
+
+function requestArchChanges() {
+  const msg = prompt('Describe the architecture changes you want:\n(Vikram will receive this in the team chat)');
+  if (!msg || !msg.trim()) return;
+  fetch('/api/agent/vikram/request-arch-changes', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ comments: msg }),
+  }).then(() => alert('Change request sent to Vikram.')).catch(console.error);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// DB SCHEMA CANVAS
+// ════════════════════════════════════════════════════════════════════════════
+function openDBScreen() {
+  dbScreenOpen = true;
+  dbErdRendered = false;
+  document.getElementById('db-screen').classList.add('open');
+  loadDBSchema();
+}
+
+function closeDBScreen() {
+  dbScreenOpen = false;
+  document.getElementById('db-screen').classList.remove('open');
+}
+
+function loadDBSchema() {
+  if (!dbScreenOpen) return;
+  const req = (currentState.requirement) || {};
+  document.getElementById('db-project-name').textContent = req.title ? `— ${req.title}` : '';
+
+  fetch('/api/agent/rasool/db-schema')
+    .then(r => r.json())
+    .then(d => {
+      const statusTag = document.getElementById('db-status-tag');
+
+      // Full schema markdown
+      const mdEl = document.getElementById('db-schema-md');
+      if (d.schema) {
+        mdEl.textContent = d.schema;
+        statusTag.textContent = '✅ Schema Ready';
+        statusTag.style.background = '#16a34a';
+        statusTag.style.borderColor = '#16a34a';
+      } else {
+        mdEl.textContent = 'No db-schema.md yet. Rasool will generate it when migrations are complete.';
+        statusTag.textContent = 'Pending';
+        statusTag.style.background = '';
+        statusTag.style.borderColor = '';
+      }
+
+      // Parse tables from schema markdown or chat messages
+      renderDBTables(d.schema);
+
+      // ERD from architecture.md or db-schema.md
+      renderDBErd(d.schema || d.arch);
+    })
+    .catch(() => {
+      document.getElementById('db-schema-md').textContent = 'Could not load schema.';
+    });
+}
+
+function renderDBTables(schemaText) {
+  const body  = document.getElementById('db-tables-body');
+  const badge = document.getElementById('db-tables-badge');
+  if (!schemaText) {
+    body.innerHTML = '<div class="db-empty">🗄️ No schema yet.<br>Rasool will post the schema when migrations are ready.</div>';
+    badge.textContent = '0 tables';
+    return;
+  }
+
+  // Parse markdown table definitions: lines like "| column | type | ..."
+  // Look for headings like "### users" or "## Table: users"
+  const tables = [];
+  const lines  = schemaText.split('\n');
+  let cur = null;
+
+  lines.forEach(line => {
+    const tblMatch = line.match(/^#+\s+(?:Table[:\s]+)?`?(\w+)`?\s*(?:—.*)?$/i);
+    if (tblMatch && !line.toLowerCase().includes('schema') && !line.toLowerCase().includes('index') && !line.toLowerCase().includes('relationship')) {
+      if (cur) tables.push(cur);
+      cur = { name: tblMatch[1], desc: '', cols: [] };
+      return;
+    }
+    if (!cur) return;
+
+    // Capture description lines (not markdown headers or table rows)
+    if (line.startsWith('*') || line.startsWith('>')) {
+      cur.desc = (cur.desc + ' ' + line.replace(/^[*>]\s*/, '')).trim();
+    }
+
+    // Parse markdown table rows: | col | type | constraints |
+    const rowMatch = line.match(/^\|\s*([^|]+)\s*\|\s*([^|]+)\s*\|\s*([^|]*)\s*\|/);
+    if (rowMatch && !rowMatch[1].trim().startsWith('-') && !rowMatch[1].toLowerCase().includes('column')) {
+      const colName = rowMatch[1].trim();
+      const colType = rowMatch[2].trim();
+      const colConst = rowMatch[3].trim();
+      if (colName && colType) {
+        cur.cols.push({ name: colName, type: colType, constraints: colConst });
+      }
+    }
+
+    // Also parse inline column definitions: "- id UUID PRIMARY KEY"
+    const inlineMatch = line.match(/^\s*[-•]\s+(\w+)\s+([\w()]+)(.*)/);
+    if (inlineMatch && cur.cols.length === 0) {
+      cur.cols.push({ name: inlineMatch[1], type: inlineMatch[2], constraints: inlineMatch[3].trim() });
+    }
+  });
+  if (cur) tables.push(cur);
+
+  // Also extract from parenthetical definitions e.g. "users (id, email, ...)"
+  if (tables.length === 0) {
+    const tblRegex = /(\w+)\s*\(([^)]+)\)/g;
+    let m;
+    while ((m = tblRegex.exec(schemaText)) !== null) {
+      const name = m[1];
+      if (['Index','Partition','Run','See','Note'].includes(name)) continue;
+      const cols = m[2].split(',').map(c => {
+        const parts = c.trim().split(/\s+/);
+        return { name: parts[0], type: parts[1] || '', constraints: parts.slice(2).join(' ') };
+      });
+      tables.push({ name, desc: '', cols });
+    }
+  }
+
+  badge.textContent = tables.length + ' table' + (tables.length !== 1 ? 's' : '');
+
+  if (tables.length === 0) {
+    body.innerHTML = '<div class="db-empty">Schema text found but no tables could be parsed.<br>Check docs/db-schema.md format.</div>';
+    return;
+  }
+
+  body.innerHTML = tables.map(t => `
+    <div class="db-table-card">
+      <div class="db-table-name">
+        <span>📋 ${escHtml(t.name)}</span>
+        <small>${escHtml(t.desc || '')}</small>
+      </div>
+      <table class="db-col-table">
+        <thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+        <tbody>
+          ${t.cols.length ? t.cols.map(c => {
+            const isPK  = /primary\s*key|PK\b/i.test(c.constraints);
+            const isFK  = /foreign\s*key|FK\b|references/i.test(c.constraints) || /_id$/.test(c.name) && c.name !== 'id';
+            const isNN  = /not\s*null/i.test(c.constraints);
+            const isIdx = /index|indexed/i.test(c.constraints);
+            const tags  = [
+              isPK  ? '<span class="col-pk">PK</span>'  : '',
+              isFK  ? '<span class="col-fk">FK</span>'  : '',
+              isIdx ? '<span class="col-idx">IDX</span>': '',
+              isNN  ? '<span class="col-nn">NOT NULL</span>': '',
+            ].filter(Boolean).join(' ');
+            return `<tr>
+              <td class="col-name">${escHtml(c.name)}</td>
+              <td class="col-type">${escHtml(c.type)}</td>
+              <td>${tags || escHtml(c.constraints)}</td>
+            </tr>`;
+          }).join('') : '<tr><td colspan="3" style="color:var(--text-dim);text-align:center">No columns parsed</td></tr>'}
+        </tbody>
+      </table>
+    </div>
+  `).join('');
+}
+
+function renderDBErd(schemaText) {
+  const container = document.getElementById('db-erd-container');
+  const badge     = document.getElementById('db-erd-badge');
+  if (!schemaText) {
+    container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-dim);font-size:12px">No schema yet.</div>';
+    return;
+  }
+
+  // Try to extract erDiagram block from markdown
+  const erdMatch = schemaText.match(/```(?:mermaid|erDiagram)\s*(erDiagram[\s\S]+?)```/i)
+    || schemaText.match(/(erDiagram[\s\S]{20,}?)(?:```|##)/);
+  if (erdMatch && !dbErdRendered) {
+    const code = erdMatch[1].trim();
+    container.innerHTML = `<div class="mermaid">${escHtml(code)}</div>`;
+    badge.textContent = 'ERD Ready';
+    try { mermaid.run({ nodes: container.querySelectorAll('.mermaid') }); } catch(e) {}
+    dbErdRendered = true;
+    return;
+  }
+
+  // Generate a simple ERD from parsed tables if no diagram found
+  const msgs = (currentState.chat && currentState.chat.messages) ? currentState.chat.messages : [];
+  const dbMsg = msgs.slice().reverse().find(m => m.type === 'db-schema');
+  if (dbMsg && dbMsg.message) {
+    const m2 = dbMsg.message.match(/```mermaid\n?([\s\S]+?)```/);
+    if (m2 && !dbErdRendered) {
+      container.innerHTML = `<div class="mermaid">${escHtml(m2[1].trim())}</div>`;
+      badge.textContent = 'ERD Ready';
+      try { mermaid.run({ nodes: container.querySelectorAll('.mermaid') }); } catch(e) {}
+      dbErdRendered = true;
+      return;
+    }
+  }
+
+  badge.textContent = 'No diagram';
+  container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-dim);font-size:12px">No ERD diagram found in schema.<br>Rasool should include an erDiagram block in db-schema.md.</div>';
+}
+
 // ── MCP Configuration ──────────────────────────────────────────────────────
 let mcpConfig = {};
 
@@ -3761,6 +4294,269 @@ async function loadMCPConfig() {
     set('mcp-aws-region', cfg.aws,    'aws');
     set('mcp-custom-url', cfg.custom, 'custom');
   } catch {}
+}
+
+// ── Local LLM (Ollama) ────────────────────────────────────────────────────
+async function loadLLMConfig() {
+  try {
+    const r = await fetch('/api/llm/config');
+    if (!r.ok) return;
+    const cfg = await r.json();
+    const g = id => document.getElementById(id);
+    if (g('ollama-enabled'))          g('ollama-enabled').checked  = !!cfg.enabled;
+    if (g('ollama-agents'))           g('ollama-agents').checked   = !!cfg.useForAgents;
+    if (g('ollama-endpoint') && cfg.endpoint) g('ollama-endpoint').value = cfg.endpoint;
+    if (g('ollama-model')    && cfg.model)    g('ollama-model').value    = cfg.model;
+    if (g('ollama-feedback-enabled')) g('ollama-feedback-enabled').checked = !!cfg.feedbackLoop;
+    if (g('ollama-max-iter')) {
+      g('ollama-max-iter').value = cfg.maxIterations || 3;
+      const v = g('ollama-max-iter-val'); if (v) v.textContent = cfg.maxIterations || 3;
+    }
+    if (g('ollama-fb-threshold')) {
+      g('ollama-fb-threshold').value = cfg.feedbackThreshold || 75;
+      const v = g('ollama-fb-threshold-val'); if (v) v.textContent = cfg.feedbackThreshold || 75;
+    }
+    const fbControls = g('ollama-feedback-controls');
+    if (fbControls) fbControls.style.display = cfg.feedbackLoop ? 'block' : 'none';
+    updateOllamaCard(cfg.enabled, cfg.useForAgents);
+  } catch {}
+}
+
+function updateOllamaCard(enabled, useForAgents) {
+  const card   = document.getElementById('ollama-card');
+  const status = document.getElementById('ollama-status');
+  const active = enabled || useForAgents;
+  if (card)   card.className = 'np-mcp-card' + (active ? ' connected' : '');
+  if (status) {
+    const parts = [];
+    if (enabled)       parts.push('chat');
+    if (useForAgents)  parts.push('agents');
+    status.textContent = parts.length ? parts.join(' + ') : 'off';
+    status.className = 'np-mcp-status' + (active ? ' ok' : '');
+  }
+}
+
+async function ollamaSave() {
+  const g            = id => document.getElementById(id);
+  const enabled      = g('ollama-enabled')?.checked || false;
+  const useForAgents = g('ollama-agents')?.checked  || false;
+  const endpoint     = g('ollama-endpoint')?.value.trim() || 'http://localhost:11434';
+  const model        = g('ollama-model')?.value.trim()    || 'qwen2.5-coder:7b';
+  const feedbackLoop = g('ollama-feedback-enabled')?.checked || false;
+  const maxIterations     = parseInt(g('ollama-max-iter')?.value     || '3',  10);
+  const feedbackThreshold = parseInt(g('ollama-fb-threshold')?.value || '75', 10);
+  // Toggle feedback controls visibility
+  const fbControls = g('ollama-feedback-controls');
+  if (fbControls) fbControls.style.display = feedbackLoop ? 'block' : 'none';
+  try {
+    await fetch('/api/llm/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ enabled, useForAgents, endpoint, model, feedbackLoop, maxIterations, feedbackThreshold }),
+    });
+    updateOllamaCard(enabled, useForAgents);
+  } catch {}
+}
+
+async function testOllama() {
+  const endpoint = document.getElementById('ollama-endpoint')?.value.trim() || 'http://localhost:11434';
+  const model    = document.getElementById('ollama-model')?.value.trim() || 'llama3.2';
+  const result   = document.getElementById('ollama-result');
+  if (result) result.textContent = 'Testing…';
+  try {
+    const r = await fetch('/api/llm/test', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ endpoint, model }),
+    });
+    const data = await r.json();
+    if (result) {
+      result.textContent = data.ok ? `✓ Connected — ${model} replied: "${data.reply?.substring(0,60)}…"` : `✗ ${data.error}`;
+      result.style.color = data.ok ? 'var(--green)' : 'var(--red, #f87171)';
+    }
+  } catch (e) {
+    if (result) { result.textContent = `✗ ${e.message}`; result.style.color = 'var(--red, #f87171)'; }
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// HYBRID LLM UI — independent from Ollama/Claude settings
+// ════════════════════════════════════════════════════════════════════════════
+async function loadHybridConfig() {
+  try {
+    const r = await fetch('/api/hybrid/config');
+    if (!r.ok) return;
+    const cfg = await r.json();
+    const g = id => document.getElementById(id);
+    if (g('hybrid-enabled'))        g('hybrid-enabled').checked  = !!cfg.enabled;
+    if (g('hybrid-mode'))           g('hybrid-mode').value       = cfg.mode             || 'ollama-first';
+    if (g('hybrid-ollama-endpoint'))g('hybrid-ollama-endpoint').value = cfg.ollamaEndpoint || 'http://localhost:11434';
+    if (g('hybrid-ollama-model'))   g('hybrid-ollama-model').value   = cfg.ollamaModel     || 'qwen2.5-coder:7b';
+    if (g('hybrid-claude-key'))     g('hybrid-claude-key').value     = cfg.claudeApiKey    || '';
+    if (g('hybrid-claude-model'))   g('hybrid-claude-model').value   = cfg.claudeModel     || 'claude-sonnet-4-6';
+    if (g('hybrid-threshold')) {
+      g('hybrid-threshold').value = cfg.qualityThreshold ?? 75;
+      const v = document.getElementById('hybrid-threshold-val');
+      if (v) v.textContent = cfg.qualityThreshold ?? 75;
+    }
+    updateHybridCard(cfg.enabled);
+  } catch {}
+}
+
+function updateHybridCard(enabled) {
+  const card   = document.getElementById('hybrid-card');
+  const status = document.getElementById('hybrid-status');
+  if (card)   { card.style.borderColor = enabled ? '#7c3aed' : '#d4d4ee'; card.style.background = enabled ? '#faf5ff' : ''; }
+  if (status) { status.textContent = enabled ? 'active' : 'off'; status.className = 'np-mcp-status' + (enabled ? ' ok' : ''); }
+}
+
+async function hybridSave() {
+  const g = id => document.getElementById(id);
+  const cfg = {
+    enabled:          g('hybrid-enabled')?.checked        || false,
+    mode:             g('hybrid-mode')?.value              || 'ollama-first',
+    ollamaEndpoint:   g('hybrid-ollama-endpoint')?.value.trim() || 'http://localhost:11434',
+    ollamaModel:      g('hybrid-ollama-model')?.value.trim()    || 'qwen2.5-coder:7b',
+    claudeApiKey:     g('hybrid-claude-key')?.value.trim()      || '',
+    claudeModel:      g('hybrid-claude-model')?.value           || 'claude-sonnet-4-6',
+    qualityThreshold: parseInt(g('hybrid-threshold')?.value || '75', 10),
+    claudeOnFail:     true,
+  };
+  try {
+    await fetch('/api/hybrid/config', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(cfg),
+    });
+    updateHybridCard(cfg.enabled);
+  } catch {}
+}
+
+async function testHybrid() {
+  const g      = id => document.getElementById(id);
+  const result = g('hybrid-result');
+  if (result) result.textContent = '⏳ Testing Ollama + Claude…';
+  try {
+    const r = await fetch('/api/hybrid/test', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ollamaEndpoint: g('hybrid-ollama-endpoint')?.value.trim(),
+        ollamaModel:    g('hybrid-ollama-model')?.value.trim(),
+        claudeApiKey:   g('hybrid-claude-key')?.value.trim(),
+        claudeModel:    g('hybrid-claude-model')?.value,
+      }),
+    });
+    const data = await r.json();
+    const ol = data.results?.ollama;
+    const cl = data.results?.claude;
+    if (result) {
+      result.innerHTML =
+        `🟡 Ollama: ${ol?.ok ? `<span style="color:var(--green)">✓ ${escHtml(ol.reply||'ok')}</span>` : `<span style="color:var(--red)">✗ ${escHtml(ol?.error||'failed')}</span>`}<br>` +
+        `🔵 Claude: ${cl?.ok ? `<span style="color:var(--green)">✓ ${escHtml(cl.reply||'ok')}</span>` : `<span style="color:var(--red)">✗ ${escHtml(cl?.error||'failed')}</span>`}`;
+    }
+  } catch (e) {
+    if (result) { result.textContent = `✗ ${e.message}`; }
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// OPENAI-COMPATIBLE UI — Azure OpenAI / OpenAI / Custom
+// ════════════════════════════════════════════════════════════════════════════
+async function loadOpenAIConfig() {
+  try {
+    const r = await fetch('/api/openai/config');
+    if (!r.ok) return;
+    const cfg = await r.json();
+    const g = id => document.getElementById(id);
+    if (g('openai-enabled'))          g('openai-enabled').checked          = !!cfg.enabled;
+    if (g('openai-provider'))         g('openai-provider').value           = cfg.provider        || 'openai';
+    if (g('openai-endpoint'))         g('openai-endpoint').value           = cfg.endpoint        || '';
+    if (g('openai-model'))            g('openai-model').value              = cfg.model           || 'gpt-4o';
+    if (g('openai-azure-deployment'))  g('openai-azure-deployment').value  = cfg.azureDeployment  || '';
+    if (g('openai-azure-version'))     g('openai-azure-version').value     = cfg.azureApiVersion  || '2024-02-01';
+    if (g('openai-feedback-enabled'))  g('openai-feedback-enabled').checked = !!cfg.feedbackLoop;
+    if (g('openai-max-iter')) {
+      g('openai-max-iter').value = cfg.maxIterations || 3;
+      const v = g('openai-max-iter-val'); if (v) v.textContent = cfg.maxIterations || 3;
+    }
+    if (g('openai-fb-threshold')) {
+      g('openai-fb-threshold').value = cfg.feedbackThreshold || 75;
+      const v = g('openai-fb-threshold-val'); if (v) v.textContent = cfg.feedbackThreshold || 75;
+    }
+    openaiProviderChanged();
+    updateOpenAICard(cfg.enabled);
+  } catch {}
+}
+
+function openaiProviderChanged() {
+  const provider   = document.getElementById('openai-provider')?.value || 'openai';
+  const endpointEl = document.getElementById('openai-endpoint');
+  const azureEl    = document.getElementById('openai-azure-fields');
+  const placeholders = {
+    openai: 'https://api.openai.com/v1',
+    azure:  'https://{resource}.openai.azure.com',
+    custom: 'https://api.groq.com/openai/v1',
+  };
+  if (endpointEl && !endpointEl.value) endpointEl.placeholder = placeholders[provider] || '';
+  if (azureEl) azureEl.style.display = provider === 'azure' ? 'flex' : 'none';
+  openaiSave();
+}
+
+function updateOpenAICard(enabled) {
+  const card   = document.getElementById('openai-card');
+  const status = document.getElementById('openai-status');
+  if (card)   { card.style.borderColor = enabled ? '#16a34a' : '#d4d4ee'; card.style.background = enabled ? '#f0fdf4' : ''; }
+  if (status) { status.textContent = enabled ? 'active' : 'off'; status.className = 'np-mcp-status' + (enabled ? ' ok' : ''); }
+}
+
+async function openaiSave() {
+  const g = id => document.getElementById(id);
+  const cfg = {
+    enabled:           g('openai-enabled')?.checked             || false,
+    provider:          g('openai-provider')?.value              || 'openai',
+    endpoint:          g('openai-endpoint')?.value.trim()       || '',
+    apiKey:            g('openai-key')?.value.trim()            || '',
+    model:             g('openai-model')?.value.trim()          || 'gpt-4o',
+    azureDeployment:   g('openai-azure-deployment')?.value.trim() || '',
+    azureApiVersion:   g('openai-azure-version')?.value.trim()    || '2024-02-01',
+    feedbackLoop:      g('openai-feedback-enabled')?.checked    || false,
+    maxIterations:     parseInt(g('openai-max-iter')?.value     || '3', 10),
+    feedbackThreshold: parseInt(g('openai-fb-threshold')?.value || '75', 10),
+  };
+  try {
+    await fetch('/api/openai/config', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(cfg),
+    });
+    updateOpenAICard(cfg.enabled);
+  } catch {}
+}
+
+async function testOpenAI() {
+  const g      = id => document.getElementById(id);
+  const result = g('openai-result');
+  if (result) result.textContent = '⏳ Testing…';
+  try {
+    const r = await fetch('/api/openai/test', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        provider:        g('openai-provider')?.value,
+        endpoint:        g('openai-endpoint')?.value.trim(),
+        apiKey:          g('openai-key')?.value.trim(),
+        model:           g('openai-model')?.value.trim(),
+        azureDeployment: g('openai-azure-deployment')?.value.trim(),
+        azureApiVersion: g('openai-azure-version')?.value.trim(),
+      }),
+    });
+    const data = await r.json();
+    if (result) {
+      result.textContent = data.ok
+        ? `✓ Connected — ${data.model || ''} replied: "${(data.reply||'').substring(0,60)}"`
+        : `✗ ${data.error}`;
+      result.style.color = data.ok ? 'var(--green)' : 'var(--red,#f87171)';
+    }
+  } catch (e) {
+    if (result) { result.textContent = `✗ ${e.message}`; result.style.color = 'var(--red,#f87171)'; }
+  }
 }
 
 // ── Context Document Upload ────────────────────────────────────────────────
@@ -3937,6 +4733,159 @@ async function npUploadContextFiles(projectId) {
 </div><!-- /#ux-screen -->
 
 <!-- ══════════════════════════════════════════════════════════════════════
+     ARCHITECTURE CANVAS SCREEN OVERLAY
+     Left 1/4 = feedback chat  |  Right 3/4 = arch diagram canvas
+     ══════════════════════════════════════════════════════════════════════ -->
+<div id="arch-screen">
+
+  <div id="arch-topbar">
+    <button class="arch-topbtn" style="font-weight:700" onclick="closeArchScreen()">← Dashboard</button>
+    <div class="divider"></div>
+    <div class="arch-title">🏗️ Architecture Canvas <span id="arch-project-name"></span></div>
+    <div class="spacer"></div>
+    <span id="arch-phase-tag" class="arch-topbtn" style="cursor:default;pointer-events:none;font-size:11px;border-radius:20px">Awaiting Design</span>
+    <button class="arch-topbtn changes-arch" onclick="requestArchChanges()">✏️ Request Changes</button>
+    <button class="arch-topbtn approve-arch" onclick="approveArchitecture()">✅ Approve Architecture</button>
+  </div>
+
+  <div id="arch-body">
+
+    <div id="arch-chat-panel">
+      <div id="arch-chat-header">
+        <h3>💬 Architecture Feedback</h3>
+        <small>Messages between you and Vikram</small>
+      </div>
+      <div id="arch-chat-messages">
+        <div class="arch-empty-chat">🏗️ No architecture messages yet.<br>Vikram will post the diagram here.</div>
+      </div>
+      <div id="arch-chat-input-area">
+        <div style="font-size:10px;color:var(--text-dim);margin-bottom:6px">To: <strong style="color:var(--blue)">Vikram (Cloud Architect)</strong> + team</div>
+        <textarea id="arch-feedback-input" placeholder="Type architecture feedback, approve stack choices, request changes… (Enter to send)"></textarea>
+        <button id="arch-send-feedback" onclick="sendArchFeedback()">Send to Vikram</button>
+      </div>
+    </div>
+
+    <div id="arch-canvas">
+
+      <div class="arch-status-hero">
+        <div class="arch-avatar">🏗️</div>
+        <div class="arch-agent-info">
+          <h2>Vikram — Cloud Architect</h2>
+          <p id="arch-vikram-task">Waiting for project brief…</p>
+        </div>
+        <div class="arch-progress-wrap">
+          <div class="arch-progress-label">
+            <span>Architecture Progress</span>
+            <span id="arch-vikram-pct">0%</span>
+          </div>
+          <div class="arch-progress-bar">
+            <div class="arch-progress-fill" id="arch-vikram-bar" style="width:0%"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="arch-section">
+        <div class="arch-section-header">
+          <span class="arch-section-icon">📐</span>
+          <span class="arch-section-title">Architecture Diagram</span>
+          <span class="arch-section-badge" id="arch-diagram-badge">Pending</span>
+        </div>
+        <div class="arch-section-body">
+          <div id="arch-diagram-wrap">
+            <div id="arch-mermaid-container" style="text-align:center;padding:40px;color:var(--text-dim);font-size:12px">
+              Vikram will post the architecture diagram here.<br>It will render automatically when ready.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="arch-section">
+        <div class="arch-section-header">
+          <span class="arch-section-icon">📦</span>
+          <span class="arch-section-title">Modules Planned</span>
+          <span class="arch-section-badge" id="arch-modules-badge">0 modules</span>
+        </div>
+        <div class="arch-section-body">
+          <table class="arch-module-table" id="arch-module-table">
+            <thead><tr><th>Module</th><th>Purpose</th><th>Resources</th></tr></thead>
+            <tbody id="arch-module-rows"><tr><td colspan="3" style="color:var(--text-dim);text-align:center;padding:16px">No modules yet</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="arch-approval-section">
+        <div class="arch-approval-bar" id="arch-approval-bar">
+          <div class="arch-approval-text">
+            <h4>⏳ Awaiting Your Approval</h4>
+            <p>Review the architecture diagram above and click Approve to start Terraform build.</p>
+          </div>
+          <div style="display:flex;gap:10px;flex-shrink:0">
+            <button class="arch-req-changes-btn" onclick="requestArchChanges()">✏️ Request Changes</button>
+            <button class="arch-approve-btn" onclick="approveArchitecture()">✅ Approve Architecture</button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /#arch-canvas -->
+  </div><!-- /#arch-body -->
+</div><!-- /#arch-screen -->
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     DB SCHEMA CANVAS SCREEN OVERLAY — Rasool's table viewer
+     ══════════════════════════════════════════════════════════════════════ -->
+<div id="db-screen">
+
+  <div id="db-topbar">
+    <button class="db-topbtn" style="font-weight:700" onclick="closeDBScreen()">← Dashboard</button>
+    <div class="divider"></div>
+    <div class="db-title">🗄️ DB Schema Canvas <span id="db-project-name"></span></div>
+    <div class="spacer"></div>
+    <span id="db-status-tag" class="db-topbtn" style="cursor:default;pointer-events:none;font-size:11px;border-radius:20px">Loading…</span>
+  </div>
+
+  <div id="db-canvas">
+
+    <div class="db-section">
+      <div class="db-section-header">
+        <span class="db-section-icon">🔗</span>
+        <span class="db-section-title">Entity Relationship Diagram</span>
+        <span class="db-section-badge" id="db-erd-badge">Pending</span>
+      </div>
+      <div class="db-section-body">
+        <div class="db-erd-wrap">
+          <div id="db-erd-container" style="text-align:center;padding:40px;color:var(--text-dim);font-size:12px">
+            Rasool will post the ER diagram here when migrations are complete.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="db-section">
+      <div class="db-section-header">
+        <span class="db-section-icon">📋</span>
+        <span class="db-section-title">Table Definitions</span>
+        <span class="db-section-badge" id="db-tables-badge">0 tables</span>
+      </div>
+      <div class="db-section-body" id="db-tables-body">
+        <div class="db-empty">🗄️ No schema yet.<br>Rasool will post the schema when migrations are ready.</div>
+      </div>
+    </div>
+
+    <div class="db-section">
+      <div class="db-section-header">
+        <span class="db-section-icon">📄</span>
+        <span class="db-section-title">Full Schema Documentation</span>
+        <span class="db-section-badge">db-schema.md</span>
+      </div>
+      <div class="db-section-body">
+        <div id="db-schema-md" style="font-family:var(--mono);font-size:11px;line-height:1.7;white-space:pre-wrap;color:var(--text);max-height:400px;overflow-y:auto;background:var(--surface2);padding:12px;border-radius:8px">Loading…</div>
+      </div>
+    </div>
+
+  </div><!-- /#db-canvas -->
+</div><!-- /#db-screen -->
+
+<!-- ══════════════════════════════════════════════════════════════════════
      NEW PROJECT SCREEN  — first-run & project launcher
      ══════════════════════════════════════════════════════════════════════ -->
 <div id="new-project-screen">
@@ -4060,6 +5009,202 @@ async function npUploadContextFiles(projectId) {
               </div>
               <input class="np-mcp-input" id="mcp-custom-url" placeholder="http://localhost:8090/mcp" oninput="mcpFieldChanged('custom')">
             </div>
+          </div>
+
+          <!-- Local LLM (Ollama) -->
+          <div class="np-section-divider" style="margin-top:12px">
+            <div class="np-section-title">Local LLM <span class="np-optional-tag">optional — no API key, runs fully offline</span></div>
+            <div class="np-mcp-card" id="ollama-card" style="margin-top:6px">
+              <div class="np-mcp-card-header">
+                <span class="np-mcp-icon">🦙</span>
+                <span class="np-mcp-name">Ollama</span>
+                <span class="np-mcp-status" id="ollama-status" style="margin-left:auto">off</span>
+              </div>
+              <div style="display:flex;gap:6px;margin-top:6px">
+                <input class="np-mcp-input" id="ollama-endpoint" placeholder="http://localhost:11434" value="http://localhost:11434" style="flex:2" oninput="ollamaSave()">
+                <input class="np-mcp-input" id="ollama-model" placeholder="qwen2.5-coder:7b" value="qwen2.5-coder:7b" style="flex:1" oninput="ollamaSave()">
+                <button onclick="testOllama()" style="background:var(--primary);color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:10px;cursor:pointer;white-space:nowrap">Test</button>
+              </div>
+              <div style="display:flex;gap:16px;margin-top:8px">
+                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:10px;color:var(--text-dim)">
+                  <input type="checkbox" id="ollama-enabled" onchange="ollamaSave()" style="width:13px;height:13px;accent-color:var(--primary)">
+                  Use for chat replies
+                </label>
+                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:10px;color:var(--text-dim)">
+                  <input type="checkbox" id="ollama-agents" onchange="ollamaSave()" style="width:13px;height:13px;accent-color:var(--green)">
+                  Use for agent code generation
+                </label>
+              </div>
+              <!-- Feedback Loop -->
+              <div style="margin-top:10px;border-top:1px solid var(--border-soft);padding-top:8px">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                  <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:10px;font-weight:600;color:var(--text)">
+                    <input type="checkbox" id="ollama-feedback-enabled" onchange="ollamaSave()" style="width:13px;height:13px;accent-color:var(--primary)">
+                    Enable Feedback Loop
+                  </label>
+                  <span style="font-size:9px;background:var(--primary-dim);color:var(--primary);border-radius:20px;padding:1px 7px">quality-retry</span>
+                </div>
+                <div id="ollama-feedback-controls" style="display:none;padding-left:4px">
+                  <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
+                    <span style="font-size:10px;color:var(--text-dim);width:90px">Max iterations</span>
+                    <input type="range" id="ollama-max-iter" min="1" max="5" value="3" oninput="document.getElementById('ollama-max-iter-val').textContent=this.value;ollamaSave()" style="flex:1;accent-color:var(--primary)">
+                    <span id="ollama-max-iter-val" style="font-size:10px;color:var(--primary);font-weight:700;width:12px">3</span>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <span style="font-size:10px;color:var(--text-dim);width:90px">Re-try threshold</span>
+                    <input type="range" id="ollama-fb-threshold" min="30" max="95" value="75" oninput="document.getElementById('ollama-fb-threshold-val').textContent=this.value;ollamaSave()" style="flex:1;accent-color:var(--primary)">
+                    <span id="ollama-fb-threshold-val" style="font-size:10px;color:var(--primary);font-weight:700;width:24px">75</span>
+                  </div>
+                  <div style="font-size:9px;color:var(--text-dim);margin-top:4px">Model retries up to max iterations until quality score ≥ threshold.</div>
+                </div>
+              </div>
+              <div id="ollama-result" style="font-size:9px;color:var(--text-dim);margin-top:6px"></div>
+              <div style="font-size:9px;color:var(--text-dim);margin-top:4px">Recommended models for code: <code style="color:var(--primary)">qwen2.5-coder:7b</code> · <code style="color:var(--primary)">deepseek-coder:6.7b</code> · <code style="color:var(--primary)">codellama:13b</code></div>
+            </div>
+
+            <!-- ── Hybrid LLM Card (independent — does not affect Ollama or Claude settings) ── -->
+            <div class="np-mcp-card" id="hybrid-card" style="margin-top:10px;border-color:#7c3aed">
+              <div class="np-mcp-card-header">
+                <span class="np-mcp-icon">🔀</span>
+                <span class="np-mcp-name" style="color:#7c3aed;font-weight:700">Hybrid LLM</span>
+                <span style="font-size:9px;background:#f5f3ff;color:#7c3aed;border-radius:20px;padding:1px 7px;margin-left:6px">NEW</span>
+                <span class="np-mcp-status" id="hybrid-status" style="margin-left:auto">off</span>
+              </div>
+              <div style="font-size:10px;color:var(--text-dim);margin-top:4px;line-height:1.5">
+                Ollama drafts code → quality scored → Claude improves if needed.<br>
+                <em>Completely separate from Ollama-only and Claude-only modes.</em>
+              </div>
+
+              <!-- Mode selector -->
+              <div style="margin-top:8px">
+                <div style="font-size:10px;font-weight:600;color:var(--text);margin-bottom:4px">Mode</div>
+                <select id="hybrid-mode" onchange="hybridSave()" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);color:var(--text);padding:5px 8px;border-radius:6px;font-size:11px;font-family:var(--font)">
+                  <option value="ollama-first">🟡→🔵 Ollama-first — Claude upgrades only if score &lt; threshold</option>
+                  <option value="claude-review">🔀 Claude-review — Ollama drafts, Claude always reviews</option>
+                </select>
+              </div>
+
+              <!-- Ollama layer -->
+              <div style="margin-top:8px;padding:8px;background:#faf5ff;border-radius:6px;border:1px solid #ddd6fe">
+                <div style="font-size:10px;font-weight:700;color:#7c3aed;margin-bottom:5px">🟡 Layer 1 — Ollama (draft)</div>
+                <div style="display:flex;gap:6px">
+                  <input class="np-mcp-input" id="hybrid-ollama-endpoint" placeholder="http://localhost:11434" value="http://localhost:11434" style="flex:2;font-size:10px" oninput="hybridSave()">
+                  <input class="np-mcp-input" id="hybrid-ollama-model" placeholder="qwen2.5-coder:7b" value="qwen2.5-coder:7b" style="flex:1;font-size:10px" oninput="hybridSave()">
+                </div>
+              </div>
+
+              <!-- Claude layer -->
+              <div style="margin-top:6px;padding:8px;background:#eff6ff;border-radius:6px;border:1px solid #bfdbfe">
+                <div style="font-size:10px;font-weight:700;color:#1e40af;margin-bottom:5px">🔵 Layer 2 — Claude (improve)</div>
+                <div style="display:flex;gap:6px">
+                  <input class="np-mcp-input" id="hybrid-claude-key" placeholder="sk-ant-... (or set ANTHROPIC_API_KEY env)" type="password" style="flex:2;font-size:10px" oninput="hybridSave()">
+                  <select id="hybrid-claude-model" onchange="hybridSave()" style="flex:1;background:var(--surface2);border:1.5px solid var(--border);color:var(--text);padding:5px 6px;border-radius:6px;font-size:10px;font-family:var(--font)">
+                    <option value="claude-sonnet-4-6">Sonnet 4.6</option>
+                    <option value="claude-opus-4-6">Opus 4.6</option>
+                    <option value="claude-haiku-4-5">Haiku 4.5</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Quality threshold -->
+              <div style="margin-top:6px;display:flex;align-items:center;gap:10px">
+                <span style="font-size:10px;color:var(--text-dim);white-space:nowrap">Quality threshold</span>
+                <input type="range" id="hybrid-threshold" min="0" max="100" value="75" step="5"
+                       style="flex:1;accent-color:#7c3aed" oninput="document.getElementById('hybrid-threshold-val').textContent=this.value; hybridSave()">
+                <span id="hybrid-threshold-val" style="font-size:11px;font-weight:700;color:#7c3aed;min-width:28px">75</span>
+                <span style="font-size:9px;color:var(--text-dim)">/100</span>
+              </div>
+              <div style="font-size:9px;color:var(--text-dim);margin-top:2px">Ollama score below this → Claude improves the code</div>
+
+              <!-- Enable + test -->
+              <div style="display:flex;align-items:center;gap:10px;margin-top:8px">
+                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:10px;color:var(--text-dim)">
+                  <input type="checkbox" id="hybrid-enabled" onchange="hybridSave()" style="width:13px;height:13px;accent-color:#7c3aed">
+                  Enable Hybrid mode
+                </label>
+                <button onclick="testHybrid()" style="margin-left:auto;background:#7c3aed;color:#fff;border:none;border-radius:6px;padding:4px 12px;font-size:10px;cursor:pointer;white-space:nowrap">Test Both</button>
+              </div>
+              <div id="hybrid-result" style="font-size:9px;color:var(--text-dim);margin-top:6px"></div>
+            </div>
+
+            <!-- ── OpenAI-Compatible Card (Azure OpenAI / OpenAI / custom) ── -->
+            <div class="np-mcp-card" id="openai-card" style="margin-top:10px;border-color:#16a34a">
+              <div class="np-mcp-card-header">
+                <span class="np-mcp-icon">🟢</span>
+                <span class="np-mcp-name" style="color:#15803d;font-weight:700">OpenAI-Compatible</span>
+                <span style="font-size:9px;background:#dcfce7;color:#15803d;border-radius:20px;padding:1px 7px;margin-left:6px">Azure · OpenAI · Custom</span>
+                <span class="np-mcp-status" id="openai-status" style="margin-left:auto">off</span>
+              </div>
+              <div style="font-size:10px;color:var(--text-dim);margin-top:4px;line-height:1.5">
+                Works with Azure OpenAI, standard OpenAI, or any OpenAI-compatible endpoint<br>(Together.ai, Groq, LM Studio, etc.)
+              </div>
+
+              <!-- Provider selector -->
+              <div style="margin-top:8px">
+                <div style="font-size:10px;font-weight:600;color:var(--text);margin-bottom:4px">Provider</div>
+                <select id="openai-provider" onchange="openaiProviderChanged()" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);color:var(--text);padding:5px 8px;border-radius:6px;font-size:11px;font-family:var(--font)">
+                  <option value="openai">🟢 OpenAI (api.openai.com)</option>
+                  <option value="azure">☁️ Azure OpenAI</option>
+                  <option value="custom">🔧 Custom / Compatible endpoint</option>
+                </select>
+              </div>
+
+              <!-- Endpoint + API key -->
+              <div style="margin-top:6px;display:flex;gap:6px">
+                <input class="np-mcp-input" id="openai-endpoint" placeholder="https://api.openai.com/v1" style="flex:2;font-size:10px" oninput="openaiSave()">
+                <input class="np-mcp-input" id="openai-key" type="password" placeholder="API key / Azure key" style="flex:2;font-size:10px" oninput="openaiSave()">
+              </div>
+
+              <!-- Model / Deployment -->
+              <div style="margin-top:6px;display:flex;gap:6px;align-items:center">
+                <input class="np-mcp-input" id="openai-model" placeholder="gpt-4o" value="gpt-4o" style="flex:1;font-size:10px" oninput="openaiSave()">
+                <div id="openai-azure-fields" style="display:none;flex:1;display:flex;gap:6px">
+                  <input class="np-mcp-input" id="openai-azure-deployment" placeholder="deployment name" style="flex:1;font-size:10px" oninput="openaiSave()">
+                  <input class="np-mcp-input" id="openai-azure-version" placeholder="2024-02-01" value="2024-02-01" style="width:90px;font-size:10px" oninput="openaiSave()">
+                </div>
+              </div>
+
+              <!-- Feedback loop -->
+              <div style="margin-top:8px;padding:8px;background:#f0fdf4;border-radius:6px;border:1px solid #86efac">
+                <div style="font-size:10px;font-weight:700;color:#15803d;margin-bottom:6px">🔁 Feedback Loop</div>
+                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:10px;color:var(--text-dim);margin-bottom:6px">
+                  <input type="checkbox" id="openai-feedback-enabled" onchange="openaiSave()" style="width:13px;height:13px;accent-color:#16a34a">
+                  Enable — re-try if output quality is below threshold
+                </label>
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+                  <span style="font-size:10px;color:var(--text-dim);white-space:nowrap">Max iterations</span>
+                  <input type="range" id="openai-max-iter" min="1" max="5" value="3" step="1"
+                    style="flex:1;accent-color:#16a34a"
+                    oninput="document.getElementById('openai-max-iter-val').textContent=this.value; openaiSave()">
+                  <span id="openai-max-iter-val" style="font-size:11px;font-weight:700;color:#15803d;min-width:16px">3</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <span style="font-size:10px;color:var(--text-dim);white-space:nowrap">Re-try threshold</span>
+                  <input type="range" id="openai-fb-threshold" min="0" max="100" value="75" step="5"
+                    style="flex:1;accent-color:#16a34a"
+                    oninput="document.getElementById('openai-fb-threshold-val').textContent=this.value; openaiSave()">
+                  <span id="openai-fb-threshold-val" style="font-size:11px;font-weight:700;color:#15803d;min-width:28px">75</span>
+                  <span style="font-size:9px;color:var(--text-dim)">/100</span>
+                </div>
+                <div style="font-size:9px;color:var(--text-dim);margin-top:4px">Score below threshold → feedback sent back → model improves → repeat</div>
+              </div>
+
+              <!-- Enable + test -->
+              <div style="display:flex;align-items:center;gap:10px;margin-top:8px">
+                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:10px;color:var(--text-dim)">
+                  <input type="checkbox" id="openai-enabled" onchange="openaiSave()" style="width:13px;height:13px;accent-color:#16a34a">
+                  Enable for agent code generation
+                </label>
+                <button onclick="testOpenAI()" style="margin-left:auto;background:#16a34a;color:#fff;border:none;border-radius:6px;padding:4px 12px;font-size:10px;cursor:pointer;white-space:nowrap">Test</button>
+              </div>
+              <div id="openai-result" style="font-size:9px;color:var(--text-dim);margin-top:6px"></div>
+              <div style="font-size:9px;color:var(--text-dim);margin-top:4px">
+                Azure: <code style="color:#15803d">{resource}.openai.azure.com</code> &nbsp;|&nbsp;
+                OpenAI: <code style="color:#15803d">api.openai.com/v1</code> &nbsp;|&nbsp;
+                Groq: <code style="color:#15803d">api.groq.com/openai/v1</code>
+              </div>
+            </div>
+
           </div>
         </div>
 

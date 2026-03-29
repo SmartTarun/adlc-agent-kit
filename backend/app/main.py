@@ -1,5 +1,5 @@
 # Agent: kiran | Sprint: 01 | Date: 2026-03-16
-"""InfraViz FastAPI application entry point."""
+"""CBRE Unified Asset Intelligence Platform FastAPI application entry point."""
 
 import uuid
 
@@ -20,7 +20,7 @@ from app.routers.auth import (
 from app.schemas.auth import UserOut
 
 app = FastAPI(
-    title="InfraViz API",
+    title="CBRE Unified Asset Intelligence Platform API",
     description=(
         "AI-powered IaC generation platform. "
         "Claude claude-sonnet-4-6 generates production-ready Terraform from "
@@ -83,8 +83,8 @@ async def seed_demo_user() -> None:
             demo = User(
                 id=uuid.uuid4(),
                 username="admin",
-                email="admin@infraviz.dev",
-                hashed_password=hash_password("infraviz2026"),
+                email="admin@cbre_platform.dev",
+                hashed_password=hash_password("cbre_platform2026"),
                 is_active=True,
             )
             session.add(demo)

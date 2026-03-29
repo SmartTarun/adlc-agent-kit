@@ -50,7 +50,641 @@ function getAgentModel(agentName) {
   } catch { return 'claude-sonnet-4-6'; }
 }
 
+// ── Local LLM agent runner (Ollama one-shot code generation) ─────────────
+const AGENT_ROLES = {
+  arjun: 'Orchestrator', kavya: 'UX Designer', vikram: 'Cloud Architect',
+  rasool: 'Database Agent', kiran: 'Backend Engineer', rohan: 'Frontend Engineer', keerthi: 'QA Agent',
+};
+
+function setAgentStatus(agentName, status, progress, task, blocker) {
+  const pr = getProjectRoot();
+  const sd = readJSON(path.join(pr, 'agent-status.json')) || {};
+  const am = sd.agents || sd;
+  am[agentName] = { status, progress, task, blocker: blocker || '', updated: new Date().toISOString() };
+  if (sd.agents) sd.agents = am; else Object.assign(sd, am);
+  writeJSON(path.join(pr, 'agent-status.json'), sd);
+  broadcast('update', getFullState());
+}
+
+async function launchAgentLocal(agentName, llmCfg) {
+  const pr         = getProjectRoot();
+  const activeProj = readJSON(path.join(ROOT, 'active-project.json')) || {};
+  const projectId  = path.basename(pr);
+  const today      = new Date().toISOString().split('T')[0];
+  const req        = readJSON(path.join(pr, 'requirement.json')) || {};
+  const logPath    = path.join(LOGS_DIR, `${agentName}.log`);
+  const endpoint   = (llmCfg.endpoint || 'http://localhost:11434').replace(/\/$/, '');
+  const model      = llmCfg.model || 'llama3.2';
+
+  // Feedback loop settings
+  const feedbackEnabled   = !!llmCfg.feedbackLoop;
+  const maxIterations     = Math.min(llmCfg.maxIterations || 3, 5);
+  const feedbackThreshold = llmCfg.feedbackThreshold || 75;
+
+  const promptFile = path.join(ROOT, 'prompts', `${agentName}-prompt.txt`);
+  if (!fs.existsSync(promptFile)) {
+    setAgentStatus(agentName, 'blocked', 0, 'No prompt file found', 'missing prompt');
+    return { ok: false, error: 'no prompt file' };
+  }
+  const promptContent = fs.readFileSync(promptFile, 'utf8');
+
+  const outputInstruction = [
+    '', '=== LOCAL LLM OUTPUT FORMAT (REQUIRED) ===',
+    'Respond with ONLY a raw JSON object (no markdown, no code fences):',
+    '{ "files": [{ "path": "relative/path", "content": "full file content" }],',
+    '  "chat_message": "Short summary (1-2 sentences)",',
+    '  "status": { "task": "what was delivered", "progress": 100 } }',
+    `PROJECT_ROOT: ${pr}`,
+    'Write complete file contents — do NOT truncate or use placeholders.',
+    '=== END OUTPUT FORMAT ===', '',
+  ].join('\n');
+
+  const contextBlock = [
+    '=== RUNTIME CONTEXT ===',
+    `WORKSPACE_ROOT    : ${ROOT}`, `PROJECT_ROOT      : ${pr}`,
+    `PROJECT_ID        : ${projectId}`, `SPRINT            : ${activeProj.sprint || '01'}`,
+    `TODAY             : ${today}`,     `PROJECT_NAME      : ${req.title || 'Unknown'}`,
+    `PATH MAPPING      : /workspace/ → ${ROOT}${path.sep}  |  /projects/${projectId}/ → ${pr}${path.sep}`,
+    '=== END CONTEXT ===', '',
+  ].join('\n');
+
+  const systemPrompt = contextBlock + outputInstruction + promptContent;
+
+  setAgentStatus(agentName, 'wip', 10, `[Ollama] Iter 1/${feedbackEnabled ? maxIterations : 1} — generating…`);
+  fs.appendFileSync(logPath, `[LOCAL LLM] model=${model} feedbackLoop=${feedbackEnabled} maxIter=${maxIterations}\n`);
+  broadcast('agent-log', { agent: agentName,
+    text: `[LOCAL LLM] Model: ${model} | FeedbackLoop: ${feedbackEnabled ? `ON (max ${maxIterations} iters, threshold ${feedbackThreshold}/100)` : 'OFF'}\n` });
+
+  // Ollama keeps conversation history via messages array
+  const messages    = [{ role: 'user', content: systemPrompt }];
+  let   finalParsed = null;
+  let   finalScore  = 0;
+  let   iteration   = 0;
+
+  try {
+    while (iteration < (feedbackEnabled ? maxIterations : 1)) {
+      iteration++;
+      const iterLabel = feedbackEnabled ? ` (iter ${iteration}/${maxIterations})` : '';
+      setAgentStatus(agentName, 'wip', Math.min(10 + (iteration - 1) * 25, 85),
+        `[Ollama] Generating${iterLabel}…`);
+      broadcast('agent-log', { agent: agentName,
+        text: `[LOCAL LLM] ── Iteration ${iteration} / ${feedbackEnabled ? maxIterations : 1} ──\n` });
+
+      const resp = await fetch(`${endpoint}/api/chat`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ model, messages, stream: false, options: { num_ctx: 16384, temperature: 0.2 } }),
+      });
+      if (!resp.ok) throw new Error(`Ollama HTTP ${resp.status}`);
+
+      const rawContent = ((await resp.json()).message?.content || '').trim();
+      const jsonStr    = rawContent.replace(/^```(?:json)?\s*/m, '').replace(/\s*```\s*$/m, '').trim();
+      let   parsed;
+      try   { parsed = JSON.parse(jsonStr); }
+      catch { const m = jsonStr.match(/\{[\s\S]*\}/); if (!m) throw new Error('No valid JSON'); parsed = JSON.parse(m[0]); }
+
+      finalParsed = parsed;
+      finalScore  = scoreOllamaOutput(parsed);
+      broadcast('agent-log', { agent: agentName,
+        text: `[LOCAL LLM] Iter ${iteration} score: ${finalScore}/100 (threshold: ${feedbackThreshold})\n` });
+      fs.appendFileSync(logPath, `[LOCAL LLM] Iter ${iteration} score: ${finalScore}/100\n`);
+
+      // Add assistant reply to history
+      messages.push({ role: 'assistant', content: rawContent });
+
+      if (!feedbackEnabled || finalScore >= feedbackThreshold) break;
+      if (iteration >= maxIterations) {
+        broadcast('agent-log', { agent: agentName,
+          text: `[LOCAL LLM] Max iterations reached. Using best result (score: ${finalScore}).\n` });
+        break;
+      }
+
+      // Add feedback message to conversation
+      const feedback = buildFeedbackPrompt(iteration + 1, finalScore, feedbackThreshold, parsed);
+      messages.push({ role: 'user', content: feedback });
+      broadcast('agent-log', { agent: agentName,
+        text: `[LOCAL LLM] Sending feedback for iteration ${iteration + 1}…\n` });
+      postToChat('SYSTEM', 'System', 'system',
+        `🔄 [${agentName.toUpperCase()}] Ollama feedback loop iter ${iteration}: score ${finalScore}/100 — improving…`,
+        [agentName]);
+    }
+
+    if (!finalParsed) throw new Error('No valid response from Ollama');
+
+    const files   = finalParsed.files || [];
+    let   written = 0;
+    for (const file of files) {
+      if (!file.path || file.content === undefined) continue;
+      const absPath = path.resolve(pr, file.path);
+      if (!absPath.startsWith(pr)) continue;
+      fs.mkdirSync(path.dirname(absPath), { recursive: true });
+      fs.writeFileSync(absPath, file.content, 'utf8');
+      written++;
+      fs.appendFileSync(logPath, `[LOCAL LLM] Wrote: ${file.path}\n`);
+      broadcast('agent-log', { agent: agentName, text: `  ✓ ${file.path}\n` });
+    }
+
+    const iterSummary = feedbackEnabled && iteration > 1 ? ` · ${iteration} iterations · score ${finalScore}/100` : '';
+    const chatMsg     = finalParsed.chat_message || `Generated ${written} file(s).`;
+    postToChat(agentName.toUpperCase(), AGENT_ROLES[agentName] || agentName, 'message',
+      `🦙 [${model}${iterSummary}] ${chatMsg}`, ['tarun']);
+
+    const task = finalParsed.status?.task || `${written} file(s) via ${model}${iterSummary}`;
+    setAgentStatus(agentName, 'done', 100, task);
+    broadcast('update', getFullState());
+    return { ok: true, files: written };
+
+  } catch (e) {
+    const errMsg = e.message;
+    fs.appendFileSync(logPath, `[LOCAL LLM ERROR] ${errMsg}\n`);
+    broadcast('agent-log', { agent: agentName, text: `[LOCAL LLM ERROR] ${errMsg}\n` });
+    postToChat('SYSTEM', 'System', 'system',
+      `❌ Local LLM failed for ${agentName.toUpperCase()}: ${errMsg}`, [agentName]);
+    setAgentStatus(agentName, 'blocked', 0, `Local LLM error: ${errMsg}`, errMsg);
+    return { ok: false, error: errMsg };
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// HYBRID LLM ENGINE — Ollama (draft) → quality score → Claude (improve)
+// Completely independent from launchAgent/launchAgentLocal.
+// Config lives under connections.json → "hybrid" key.
+// ════════════════════════════════════════════════════════════════════════════
+
+function scoreOllamaOutput(parsed) {
+  let score = 0;
+  // 1. Valid JSON with expected shape (30 pts)
+  if (parsed && typeof parsed === 'object') score += 15;
+  if (Array.isArray(parsed.files))          score += 15;
+  // 2. Has actual files (20 pts)
+  const files = parsed.files || [];
+  if (files.length > 0)       score += 10;
+  if (files.length >= 2)      score += 10;
+  // 3. File content quality (30 pts)
+  const avgLines = files.length
+    ? files.reduce((s, f) => s + (f.content || '').split('\n').length, 0) / files.length
+    : 0;
+  if (avgLines > 10)  score += 10;
+  if (avgLines > 30)  score += 10;
+  if (avgLines > 80)  score += 10;
+  // 4. No placeholder patterns (20 pts)
+  const allContent = files.map(f => f.content || '').join('\n');
+  const placeholders = (allContent.match(/TODO|FIXME|pass\b|\.\.\.|\[your |<your /gi) || []).length;
+  if (placeholders === 0) score += 20;
+  else if (placeholders < 3) score += 10;
+  return Math.min(score, 100);
+}
+
+async function callClaudeAPI(prompt, hybridCfg) {
+  const apiKey = hybridCfg.claudeApiKey || process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) throw new Error('No ANTHROPIC_API_KEY set for hybrid Claude layer');
+  const model  = hybridCfg.claudeModel || 'claude-sonnet-4-6';
+  const resp   = await fetch('https://api.anthropic.com/v1/messages', {
+    method:  'POST',
+    headers: {
+      'x-api-key':         apiKey,
+      'anthropic-version': '2023-06-01',
+      'content-type':      'application/json',
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: 8192,
+      messages: [{ role: 'user', content: prompt }],
+    }),
+  });
+  if (!resp.ok) {
+    const err = await resp.text();
+    throw new Error(`Claude API ${resp.status}: ${err.slice(0, 200)}`);
+  }
+  const data = await resp.json();
+  return data.content?.[0]?.text || '';
+}
+
+async function launchAgentHybrid(agentName, hybridCfg) {
+  const pr         = getProjectRoot();
+  const activeProj = readJSON(path.join(ROOT, 'active-project.json')) || {};
+  const projectId  = path.basename(pr);
+  const today      = new Date().toISOString().split('T')[0];
+  const req        = readJSON(path.join(pr, 'requirement.json')) || {};
+  const logPath    = path.join(LOGS_DIR, `${agentName}.log`);
+  const mode       = hybridCfg.mode || 'ollama-first';
+  const threshold  = hybridCfg.qualityThreshold !== undefined ? hybridCfg.qualityThreshold : 75;
+
+  const promptFile = path.join(ROOT, 'prompts', `${agentName}-prompt.txt`);
+  if (!fs.existsSync(promptFile)) {
+    setAgentStatus(agentName, 'blocked', 0, 'No prompt file', 'missing prompt');
+    return { ok: false, error: 'no prompt file' };
+  }
+  const promptContent = fs.readFileSync(promptFile, 'utf8');
+
+  const outputInstruction = [
+    '',
+    '=== HYBRID OUTPUT FORMAT (REQUIRED) ===',
+    'Respond with ONLY a raw JSON object (no markdown fences):',
+    '{',
+    '  "files": [{ "path": "relative/path", "content": "full content" }],',
+    '  "chat_message": "1-2 sentence summary of what was built",',
+    '  "status": { "task": "delivery description", "progress": 100 }',
+    '}',
+    `PROJECT_ROOT: ${pr}`,
+    'Write COMPLETE file contents — no truncation, no placeholders.',
+    '=== END FORMAT ===',
+    '',
+  ].join('\n');
+
+  const contextBlock = [
+    '=== RUNTIME CONTEXT ===',
+    `WORKSPACE_ROOT : ${ROOT}`,
+    `PROJECT_ROOT   : ${pr}`,
+    `PROJECT_ID     : ${projectId}`,
+    `SPRINT         : ${activeProj.sprint || '01'}`,
+    `TODAY          : ${today}`,
+    `PROJECT_NAME   : ${req.title || 'Unknown'}`,
+    '=== END CONTEXT ===', '',
+  ].join('\n');
+
+  const fullPrompt = contextBlock + outputInstruction + promptContent;
+
+  // ── STEP 1: Ollama draft ──────────────────────────────────────────────────
+  setAgentStatus(agentName, 'wip', 15, `[Hybrid] Ollama drafting code (${hybridCfg.ollamaModel})…`);
+  broadcast('agent-log', { agent: agentName, text: `[HYBRID] Step 1: Ollama draft (${hybridCfg.ollamaModel})\n` });
+
+  let ollamaParsed = null;
+  let ollamaScore  = 0;
+  let ollamaError  = null;
+
+  try {
+    const endpoint = (hybridCfg.ollamaEndpoint || 'http://localhost:11434').replace(/\/$/, '');
+    const resp = await fetch(`${endpoint}/api/chat`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({
+        model:    hybridCfg.ollamaModel || 'qwen2.5-coder:7b',
+        messages: [{ role: 'user', content: fullPrompt }],
+        stream:   false,
+        options:  { num_ctx: 16384, temperature: 0.2 },
+      }),
+    });
+    if (!resp.ok) throw new Error(`Ollama HTTP ${resp.status}`);
+    const raw = ((await resp.json()).message?.content || '').trim()
+      .replace(/^```(?:json)?\s*/m, '').replace(/\s*```\s*$/m, '').trim();
+    const match = raw.match(/\{[\s\S]*\}/);
+    ollamaParsed = JSON.parse(match ? match[0] : raw);
+    ollamaScore  = scoreOllamaOutput(ollamaParsed);
+    fs.appendFileSync(logPath, `[HYBRID] Ollama score: ${ollamaScore}/100\n`);
+    broadcast('agent-log', { agent: agentName, text: `[HYBRID] Ollama score: ${ollamaScore}/100 (threshold: ${threshold})\n` });
+  } catch (e) {
+    ollamaError = e.message;
+    fs.appendFileSync(logPath, `[HYBRID] Ollama failed: ${ollamaError}\n`);
+    broadcast('agent-log', { agent: agentName, text: `[HYBRID] Ollama failed: ${ollamaError}\n` });
+  }
+
+  // ── STEP 2: Decide whether Claude is needed ───────────────────────────────
+  const needsClaude = mode === 'claude-review'
+    || (ollamaError && hybridCfg.claudeOnFail !== false)
+    || (ollamaParsed && ollamaScore < threshold);
+
+  let finalParsed = ollamaParsed;
+  let usedLayer   = 'ollama';
+
+  if (needsClaude) {
+    setAgentStatus(agentName, 'wip', 55, `[Hybrid] Claude improving draft (${hybridCfg.claudeModel})…`);
+    broadcast('agent-log', { agent: agentName,
+      text: `[HYBRID] Step 2: Escalating to Claude (${hybridCfg.claudeModel}) — reason: ${ollamaError ? 'ollama-failed' : `score=${ollamaScore}<${threshold}`}\n` });
+
+    try {
+      const improvePrompt = ollamaParsed
+        ? [
+            contextBlock,
+            '=== HYBRID IMPROVEMENT TASK ===',
+            `Ollama generated a draft (quality score: ${ollamaScore}/100). Review and improve it.`,
+            'Fix any issues: incomplete code, placeholders, missing logic, poor structure.',
+            'Return improved output in the same JSON format.',
+            outputInstruction,
+            '=== OLLAMA DRAFT TO IMPROVE ===',
+            JSON.stringify(ollamaParsed, null, 2),
+            '=== END DRAFT ===',
+            promptContent,
+          ].join('\n')
+        : fullPrompt; // Ollama failed entirely — Claude builds from scratch
+
+      const claudeRaw = await callClaudeAPI(improvePrompt, hybridCfg);
+      const claudeStr = claudeRaw.replace(/^```(?:json)?\s*/m, '').replace(/\s*```\s*$/m, '').trim();
+      const m2        = claudeStr.match(/\{[\s\S]*\}/);
+      finalParsed     = JSON.parse(m2 ? m2[0] : claudeStr);
+      usedLayer       = ollamaParsed ? 'hybrid' : 'claude';
+      broadcast('agent-log', { agent: agentName, text: `[HYBRID] Claude improvement applied. Final layer: ${usedLayer}\n` });
+    } catch (e) {
+      broadcast('agent-log', { agent: agentName, text: `[HYBRID] Claude failed: ${e.message}. Using Ollama draft.\n` });
+      // fallback to whatever Ollama gave us
+    }
+  }
+
+  if (!finalParsed) {
+    const errMsg = ollamaError || 'Both Ollama and Claude failed';
+    setAgentStatus(agentName, 'blocked', 0, `Hybrid failed: ${errMsg}`, errMsg);
+    postToChat('SYSTEM', 'System', 'system', `❌ Hybrid LLM failed for ${agentName.toUpperCase()}: ${errMsg}`, [agentName]);
+    return { ok: false, error: errMsg };
+  }
+
+  // ── STEP 3: Write files ───────────────────────────────────────────────────
+  setAgentStatus(agentName, 'wip', 85, '[Hybrid] Writing files…');
+  const files   = finalParsed.files || [];
+  let   written = 0;
+  for (const file of files) {
+    if (!file.path || file.content === undefined) continue;
+    const absPath = path.resolve(pr, file.path);
+    if (!absPath.startsWith(pr)) continue;
+    fs.mkdirSync(path.dirname(absPath), { recursive: true });
+    fs.writeFileSync(absPath, file.content, 'utf8');
+    written++;
+    broadcast('agent-log', { agent: agentName, text: `  ✓ ${file.path}\n` });
+  }
+
+  const layerEmoji = { ollama: '🟡', claude: '🔵', hybrid: '🔀' }[usedLayer] || '🔀';
+  const chatMsg    = finalParsed.chat_message || `Generated ${written} file(s).`;
+  postToChat(
+    agentName.toUpperCase(), AGENT_ROLES[agentName] || agentName, 'message',
+    `${layerEmoji} [Hybrid · ${usedLayer}] ${chatMsg}`, ['tarun'],
+  );
+
+  // Save layer used to agent-status for UI badge
+  const pr2  = getProjectRoot();
+  const sd   = readJSON(path.join(pr2, 'agent-status.json')) || {};
+  const am   = sd.agents || sd;
+  if (am[agentName]) am[agentName].hybridLayer = usedLayer;
+  if (sd.agents) sd.agents = am; else Object.assign(sd, am);
+  writeJSON(path.join(pr2, 'agent-status.json'), sd);
+
+  setAgentStatus(agentName, 'done', 100, finalParsed.status?.task || `${written} file(s) via ${usedLayer}`);
+  return { ok: true, files: written, layer: usedLayer, ollamaScore };
+}
+
+// ── Hybrid config API endpoints (new, isolated) ───────────────────────────
+// ════════════════════════════════════════════════════════════════════════════
+// OPENAI-COMPATIBLE LLM ENGINE
+// Supports: Azure OpenAI + Standard OpenAI + any OpenAI-compatible endpoint
+// (Together.ai, Groq, LM Studio, etc.)
+// Config lives under connections.json → "openaiCompat" key.
+// Completely independent from Ollama, Claude and Hybrid modes.
+// ════════════════════════════════════════════════════════════════════════════
+
+const OPENAI_COMPAT_DEFAULTS = {
+  enabled:         false,
+  provider:        'openai',   // 'openai' | 'azure' | 'custom'
+  endpoint:        'https://api.openai.com/v1',
+  apiKey:          '',
+  model:           'gpt-4o',
+  // Azure-specific
+  azureDeployment: '',
+  azureApiVersion: '2024-02-01',
+  // Feedback loop
+  feedbackLoop:    false,
+  maxIterations:   3,
+  feedbackThreshold: 75,       // re-try if score below this
+};
+
+function buildOpenAICompatRequest(cfg) {
+  const isAzure  = cfg.provider === 'azure' || cfg.endpoint.includes('.openai.azure.com');
+  const base     = cfg.endpoint.replace(/\/$/, '');
+  let   url, headers;
+
+  if (isAzure) {
+    const deployment = cfg.azureDeployment || cfg.model;
+    const apiVersion = cfg.azureApiVersion || '2024-02-01';
+    url     = `${base}/openai/deployments/${deployment}/chat/completions?api-version=${apiVersion}`;
+    headers = { 'Content-Type': 'application/json', 'api-key': cfg.apiKey };
+  } else {
+    // Standard OpenAI or compatible (Together, Groq, LM Studio, etc.)
+    url     = `${base}/chat/completions`;
+    headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${cfg.apiKey}` };
+  }
+  return { url, headers };
+}
+
+function buildFeedbackPrompt(iteration, score, threshold, prevParsed) {
+  const files       = prevParsed.files || [];
+  const issues      = [];
+  const allContent  = files.map(f => f.content || '').join('\n');
+  const avgLines    = files.length
+    ? files.reduce((s, f) => s + (f.content || '').split('\n').length, 0) / files.length : 0;
+  const placeholders = (allContent.match(/TODO|FIXME|pass\b|\.\.\.|\[your |<your /gi) || []).length;
+
+  if (files.length === 0)     issues.push('No files were generated — you must return at least one file.');
+  else if (files.length < 2)  issues.push('Too few files generated — the task likely requires multiple files.');
+  if (avgLines < 20)          issues.push(`File content is too short (avg ${Math.round(avgLines)} lines) — write complete, production-ready implementations.`);
+  if (placeholders > 0)       issues.push(`Found ${placeholders} placeholder(s) (TODO/FIXME/pass/...) — replace ALL with real working code.`);
+
+  const issueList = issues.length ? issues.map((i, n) => `${n + 1}. ${i}`).join('\n') : 'Overall code quality is below the required threshold.';
+
+  return [
+    `=== FEEDBACK LOOP — Iteration ${iteration} ===`,
+    `Your previous response scored ${score}/100 (required: ${threshold}/100).`,
+    '',
+    'Issues found:',
+    issueList,
+    '',
+    'Instructions to improve:',
+    '- Fix every issue listed above.',
+    '- Return the COMPLETE improved JSON response — all files with full content.',
+    '- Do NOT truncate. Do NOT use placeholders.',
+    '- The JSON format is the same as before.',
+    '=== END FEEDBACK ===',
+    '',
+  ].join('\n');
+}
+
+async function callOpenAICompatAPI(url, headers, model, messages, isAzure) {
+  const resp = await fetch(url, {
+    method:  'POST',
+    headers,
+    body: JSON.stringify({
+      model:       isAzure ? undefined : model,
+      messages,
+      temperature: 0.2,
+      max_tokens:  8192,
+    }),
+  });
+  if (!resp.ok) {
+    const errText = await resp.text();
+    throw new Error(`HTTP ${resp.status}: ${errText.slice(0, 200)}`);
+  }
+  const data    = await resp.json();
+  const content = (data.choices?.[0]?.message?.content || '').trim();
+  const jsonStr = content.replace(/^```(?:json)?\s*/m, '').replace(/\s*```\s*$/m, '').trim();
+  let parsed;
+  try   { parsed = JSON.parse(jsonStr); }
+  catch { const m = jsonStr.match(/\{[\s\S]*\}/); if (!m) throw new Error('No valid JSON in response'); parsed = JSON.parse(m[0]); }
+  return { parsed, rawContent: content };
+}
+
+async function launchAgentOpenAICompat(agentName, cfg) {
+  const pr         = getProjectRoot();
+  const activeProj = readJSON(path.join(ROOT, 'active-project.json')) || {};
+  const projectId  = path.basename(pr);
+  const today      = new Date().toISOString().split('T')[0];
+  const req        = readJSON(path.join(pr, 'requirement.json')) || {};
+  const logPath    = path.join(LOGS_DIR, `${agentName}.log`);
+  const modelLabel = cfg.provider === 'azure' ? `azure/${cfg.azureDeployment || cfg.model}` : cfg.model;
+  const isAzure    = cfg.provider === 'azure' || (cfg.endpoint || '').includes('.openai.azure.com');
+
+  // Feedback loop settings
+  const feedbackEnabled   = !!cfg.feedbackLoop;
+  const maxIterations     = Math.min(cfg.maxIterations || 3, 5);
+  const feedbackThreshold = cfg.feedbackThreshold || 75;
+
+  const promptFile = path.join(ROOT, 'prompts', `${agentName}-prompt.txt`);
+  if (!fs.existsSync(promptFile)) {
+    setAgentStatus(agentName, 'blocked', 0, 'No prompt file', 'missing prompt');
+    return { ok: false, error: 'no prompt file' };
+  }
+  const promptContent = fs.readFileSync(promptFile, 'utf8');
+
+  const outputInstruction = [
+    '', '=== OUTPUT FORMAT (REQUIRED) ===',
+    'Respond with ONLY a raw JSON object (no markdown fences):',
+    '{ "files": [{ "path": "relative/path", "content": "full file content" }],',
+    '  "chat_message": "1-2 sentence summary",',
+    '  "status": { "task": "what was delivered", "progress": 100 } }',
+    `PROJECT_ROOT: ${pr}`,
+    'Write COMPLETE file contents — no truncation, no TODOs, no placeholders.',
+    '=== END FORMAT ===', '',
+  ].join('\n');
+
+  const contextBlock = [
+    '=== RUNTIME CONTEXT ===',
+    `WORKSPACE_ROOT : ${ROOT}`, `PROJECT_ROOT   : ${pr}`,
+    `PROJECT_ID     : ${projectId}`, `SPRINT         : ${activeProj.sprint || '01'}`,
+    `TODAY          : ${today}`,    `PROJECT_NAME   : ${req.title || 'Unknown'}`,
+    '=== END CONTEXT ===', '',
+  ].join('\n');
+
+  const systemPrompt   = contextBlock + outputInstruction + promptContent;
+  const { url, headers } = buildOpenAICompatRequest(cfg);
+
+  setAgentStatus(agentName, 'wip', 10, `[OpenAI] Iteration 1/${feedbackEnabled ? maxIterations : 1} — generating…`);
+  fs.appendFileSync(logPath, `[OPENAI-COMPAT] Starting — model=${modelLabel} feedbackLoop=${feedbackEnabled} maxIter=${maxIterations}\n`);
+  broadcast('agent-log', { agent: agentName, text: `[OPENAI] Model: ${modelLabel} | FeedbackLoop: ${feedbackEnabled ? `ON (max ${maxIterations} iterations, threshold ${feedbackThreshold}/100)` : 'OFF'}\n` });
+
+  // ── Feedback loop: multi-turn conversation ────────────────────────────────
+  const messages    = [{ role: 'user', content: systemPrompt }];
+  let   finalParsed = null;
+  let   finalScore  = 0;
+  let   iteration   = 0;
+
+  try {
+    while (iteration < (feedbackEnabled ? maxIterations : 1)) {
+      iteration++;
+      const iterLabel = feedbackEnabled ? ` (iter ${iteration}/${maxIterations})` : '';
+      setAgentStatus(agentName, 'wip', Math.min(10 + (iteration - 1) * 25, 85),
+        `[OpenAI] Generating${iterLabel}…`);
+      broadcast('agent-log', { agent: agentName,
+        text: `[OPENAI] ── Iteration ${iteration} / ${feedbackEnabled ? maxIterations : 1} ──\n` });
+
+      const { parsed, rawContent } = await callOpenAICompatAPI(url, headers, cfg.model, messages, isAzure);
+      fs.appendFileSync(logPath, `[OPENAI] Iter ${iteration}: response ${rawContent.length} chars\n`);
+
+      finalParsed  = parsed;
+      finalScore   = scoreOllamaOutput(parsed);
+      broadcast('agent-log', { agent: agentName,
+        text: `[OPENAI] Iter ${iteration} score: ${finalScore}/100 (threshold: ${feedbackThreshold})\n` });
+      fs.appendFileSync(logPath, `[OPENAI] Iter ${iteration} score: ${finalScore}/100\n`);
+
+      // Add assistant response to conversation history
+      messages.push({ role: 'assistant', content: rawContent });
+
+      // Stop if quality is good enough or feedback loop disabled
+      if (!feedbackEnabled || finalScore >= feedbackThreshold) break;
+      if (iteration >= maxIterations) {
+        broadcast('agent-log', { agent: agentName,
+          text: `[OPENAI] Max iterations reached (${maxIterations}). Using best result (score: ${finalScore}).\n` });
+        break;
+      }
+
+      // Build feedback message and add to conversation
+      const feedback = buildFeedbackPrompt(iteration + 1, finalScore, feedbackThreshold, parsed);
+      messages.push({ role: 'user', content: feedback });
+      broadcast('agent-log', { agent: agentName,
+        text: `[OPENAI] Score below threshold — sending feedback for iteration ${iteration + 1}…\n` });
+
+      // Post intermediate status to chat
+      postToChat('SYSTEM', 'System', 'system',
+        `🔄 [${agentName.toUpperCase()}] Feedback loop iteration ${iteration}: score ${finalScore}/100 — improving…`,
+        [agentName]);
+    }
+
+    if (!finalParsed) throw new Error('No valid response from model');
+
+    // ── Write final files ───────────────────────────────────────────────────
+    const files   = finalParsed.files || [];
+    let   written = 0;
+    for (const file of files) {
+      if (!file.path || file.content === undefined) continue;
+      const absPath = path.resolve(pr, file.path);
+      if (!absPath.startsWith(pr)) continue;
+      fs.mkdirSync(path.dirname(absPath), { recursive: true });
+      fs.writeFileSync(absPath, file.content, 'utf8');
+      written++;
+      broadcast('agent-log', { agent: agentName, text: `  ✓ ${file.path}\n` });
+    }
+
+    const providerEmoji  = cfg.provider === 'azure' ? '☁️' : cfg.provider === 'custom' ? '🔧' : '🟢';
+    const iterSummary    = feedbackEnabled && iteration > 1 ? ` · ${iteration} iterations · final score ${finalScore}/100` : '';
+    const chatMsg        = finalParsed.chat_message || `Generated ${written} file(s).`;
+    postToChat(agentName.toUpperCase(), AGENT_ROLES[agentName] || agentName, 'message',
+      `${providerEmoji} [${modelLabel}${iterSummary}] ${chatMsg}`, ['tarun']);
+
+    setAgentStatus(agentName, 'done', 100,
+      finalParsed.status?.task || `${written} file(s) via ${modelLabel}${iterSummary}`);
+    broadcast('update', getFullState());
+    return { ok: true, files: written };
+
+  } catch (e) {
+    fs.appendFileSync(logPath, `[OPENAI-COMPAT ERROR] ${e.message}\n`);
+    broadcast('agent-log', { agent: agentName, text: `[OPENAI ERROR] ${e.message}\n` });
+    postToChat('SYSTEM', 'System', 'system',
+      `❌ OpenAI-compat failed for ${agentName.toUpperCase()}: ${e.message}`, [agentName]);
+    setAgentStatus(agentName, 'blocked', 0, `OpenAI error: ${e.message}`, e.message);
+    return { ok: false, error: e.message };
+  }
+}
+
+const HYBRID_DEFAULTS = {
+  enabled:          false,
+  mode:             'ollama-first',   // 'ollama-first' | 'claude-review' | 'router'
+  ollamaEndpoint:   'http://localhost:11434',
+  ollamaModel:      'qwen2.5-coder:7b',
+  claudeModel:      'claude-sonnet-4-6',
+  qualityThreshold: 75,
+  claudeOnFail:     true,
+};
+
 function launchAgent(agentName) {
+  const connCfg = readJSON(path.join(ROOT, 'connections.json')) || {};
+
+  // ── OpenAI-compatible mode (Azure / OpenAI / custom) — isolated ──────────
+  const oaiCfg = connCfg.openaiCompat || {};
+  if (oaiCfg.enabled) {
+    const merged = Object.assign({}, OPENAI_COMPAT_DEFAULTS, oaiCfg);
+    launchAgentOpenAICompat(agentName, merged);
+    return { ok: true, mode: 'openai-compat' };
+  }
+
+  // ── NEW: Hybrid mode — checked independently, never touches other modes ──
+  const hybridCfg = connCfg.hybrid || {};
+  if (hybridCfg.enabled) {
+    const merged = Object.assign({}, HYBRID_DEFAULTS, hybridCfg);
+    launchAgentHybrid(agentName, merged);
+    return { ok: true, mode: 'hybrid' };
+  }
+
+  // ── Existing: Ollama-only (unchanged) ───────────────────────────────────
+  const llmCfg = connCfg.localLLM || {};
+  if (llmCfg.enabled && llmCfg.useForAgents) {
+    launchAgentLocal(agentName, llmCfg);
+    return { ok: true, mode: 'local-llm' };
+  }
+
   const existing = agentProcesses[agentName];
   if (existing && existing.proc && existing.proc.exitCode === null) {
     return { ok: false, error: 'already running' };
@@ -62,19 +696,44 @@ function launchAgent(agentName) {
   const model   = getAgentModel(agentName);
   const logPath = path.join(LOGS_DIR, `${agentName}.log`);
 
+  // Resolve project root so agents know where to read/write files
+  const pr          = getProjectRoot();
+  const activeProj  = readJSON(path.join(ROOT, 'active-project.json')) || {};
+  const projectId   = path.basename(pr);
+  const today       = new Date().toISOString().split('T')[0];
+
+  // Prepend a context block so agents always know real paths regardless of prompt placeholders
+  const contextBlock = [
+    '=== RUNTIME CONTEXT (injected by dashboard-server — read this first) ===',
+    `WORKSPACE_ROOT    : ${ROOT}`,
+    `PROJECT_ROOT      : ${pr}`,
+    `PROJECT_ID        : ${projectId}`,
+    `ACTIVE_PROJECT_ID : ${activeProj.id || ''}`,
+    `SPRINT            : ${activeProj.sprint || '01'}`,
+    `TODAY             : ${today}`,
+    '',
+    'PATH MAPPING (all prompts use these aliases — resolve to real paths above):',
+    `  /workspace/  →  ${ROOT}${path.sep}`,
+    `  /projects/${projectId}/  →  ${pr}${path.sep}`,
+    '',
+    'IMPORTANT: Use the WORKSPACE_ROOT and PROJECT_ROOT paths above for ALL file reads/writes.',
+    'Do NOT use /workspace/ or /projects/ literally — translate to the real paths shown above.',
+    '=== END RUNTIME CONTEXT ===',
+    '',
+  ].join('\n');
+
   const proc = spawn('claude', [
     '--print',
     '--model', model,
     '--allowedTools', 'Bash,Read,Write,Edit,Glob,Grep,WebFetch',
   ], { cwd: ROOT, shell: true, stdio: ['pipe', 'pipe', 'pipe'] });
 
-  proc.stdin.write(promptContent);
+  proc.stdin.write(contextBlock + promptContent);
   proc.stdin.end();
 
   agentProcesses[agentName] = { proc, pid: proc.pid, startedAt: new Date().toISOString() };
 
   // Mark agent as wip immediately — write flat format so getFullState() normalises cleanly
-  const pr = getProjectRoot();
   const statusData = readJSON(path.join(pr, 'agent-status.json')) || {};
   const agentsMap = statusData.agents || statusData;
   agentsMap[agentName] = { status: 'wip', progress: 5, task: 'Agent starting…', blocker: '', updated: new Date().toISOString() };
@@ -218,6 +877,7 @@ function startWatching() {
     try { fs.readdirSync(memDir).forEach(f => targets.push('agent-memory/' + f)); } catch {}
   }
 
+  // Watch files in the active project folder
   targets.forEach(rel => {
     const abs = path.join(pr, rel);
     if (!fs.existsSync(abs)) return;
@@ -238,6 +898,31 @@ function startWatching() {
       watchers.push(w);
     } catch {}
   });
+
+  // Also watch ROOT agent-status.json and group-chat.json when project is in a subfolder
+  // — agents write to ROOT (their cwd), so we must watch there too
+  if (pr !== ROOT) {
+    ['agent-status.json', 'group-chat.json'].forEach(rel => {
+      const abs = path.join(ROOT, rel);
+      if (!fs.existsSync(abs)) return;
+      try {
+        const debounceMs = rel === 'group-chat.json' ? 50 : 300;
+        const w = fs.watch(abs, () => {
+          setTimeout(() => {
+            try {
+              const content = fs.readFileSync(abs, 'utf8');
+              if (content !== fileCache[abs]) {
+                fileCache[abs] = content;
+                broadcast('update', getFullState());
+                console.log(`[${new Date().toLocaleTimeString()}] ROOT Changed: ${rel} -> pushed to ${clients.length} client(s)`);
+              }
+            } catch {}
+          }, debounceMs);
+        });
+        watchers.push(w);
+      } catch {}
+    });
+  }
 }
 
 // Connected SSE clients
@@ -264,9 +949,22 @@ const CHAT_DASHBOARD_WINDOW = 50;
 
 function getFullState() {
   const pr         = getProjectRoot();
-  const rawStatus  = readJSON(path.join(pr, 'agent-status.json')) || {};
-  // Normalise: support both { agents: {...} } (new format) and flat { arjun: {...} } (legacy)
-  const agents     = rawStatus.agents || rawStatus;
+
+  // Merge agent status from both project folder AND root.
+  // Agents write to ROOT (their cwd), dashboard reads from project folder.
+  // We merge both, preferring the entry with the more recent `updated` timestamp.
+  const projectStatus = readJSON(path.join(pr, 'agent-status.json')) || {};
+  const rootStatus    = pr !== ROOT ? (readJSON(path.join(ROOT, 'agent-status.json')) || {}) : {};
+  const projectAgents = projectStatus.agents || projectStatus;
+  const rootAgents    = rootStatus.agents    || rootStatus;
+  const agents = { ...projectAgents };
+  for (const [name, rootEntry] of Object.entries(rootAgents)) {
+    const projEntry = agents[name];
+    if (!projEntry) { agents[name] = rootEntry; continue; }
+    const rootTime = rootEntry.updated ? new Date(rootEntry.updated).getTime() : 0;
+    const projTime = projEntry.updated ? new Date(projEntry.updated).getTime() : 0;
+    if (rootTime > projTime) agents[name] = rootEntry;
+  }
   const rawChat    = readJSON(path.join(pr, 'group-chat.json'))   || { channel: 'team-panchayat-general', messages: [] };
   const req        = readJSON(path.join(pr, 'requirement.json'))  || {};
   const memory     = {};
@@ -288,6 +986,48 @@ function getFullState() {
   };
 
   return { agents, chat, req, memory, activeProject, projects, timestamp: new Date().toISOString() };
+}
+
+// Respond to Tarun's chat message using a local Ollama LLM
+async function respondWithOllama(userMessage, llmCfg) {
+  try {
+    const pr          = getProjectRoot();
+    const req         = readJSON(path.join(pr, 'requirement.json')) || {};
+    const statusData  = readJSON(path.join(pr, 'agent-status.json')) || {};
+    const agents      = statusData.agents || statusData;
+    const projectName = req.title || 'the project';
+    const agentLines  = Object.entries(agents)
+      .map(([n, s]) => `  ${n}: ${s.status} (${s.progress || 0}%) — ${s.task || ''}`)
+      .join('\n');
+
+    const systemPrompt =
+      `You are ARJUN, PM of Team Panchayat working on "${projectName}". ` +
+      `Reply in 2-3 short sentences. Be direct, professional, and use plain text (no markdown).\n` +
+      `Current agent status:\n${agentLines}`;
+
+    const endpoint = (llmCfg.endpoint || 'http://localhost:11434').replace(/\/$/, '');
+    const model    = llmCfg.model || 'llama3.2';
+
+    const resp = await fetch(`${endpoint}/api/chat`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({
+        model,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user',   content: userMessage  },
+        ],
+        stream: false,
+      }),
+    });
+    if (!resp.ok) return;
+    const data  = await resp.json();
+    const reply = (data.message?.content || '').trim();
+    if (reply) {
+      postToChat('ARJUN', 'Orchestrator', 'message', `[Local LLM · ${model}] ${reply}`, ['tarun']);
+      broadcast('update', getFullState());
+    }
+  } catch { /* Ollama not available — silently skip */ }
 }
 
 function postToChat(from, role, type, message, tags) {
@@ -322,6 +1062,77 @@ function getHtml() {
 }
 // Warm the cache on startup
 getHtml();
+
+// ── Auto-configure from environment variables (Docker mode) ─────────────────
+// When OLLAMA_ENDPOINT is set (e.g. in docker-compose.ollama.yml),
+// pre-write connections.json so the dashboard is ready without manual setup.
+(function autoConfigFromEnv() {
+  const ollamaEndpoint  = process.env.OLLAMA_ENDPOINT;
+  const ollamaModel     = process.env.OLLAMA_MODEL     || 'qwen2.5-coder:7b';
+  const useForAgents    = process.env.OLLAMA_USE_FOR_AGENTS === 'true';
+  const useForChat      = process.env.OLLAMA_USE_FOR_CHAT   === 'true';
+  const llmMode         = process.env.LLM_MODE          || 'claude';
+
+  if (!ollamaEndpoint) return; // Claude mode — no auto-config needed
+
+  const connPath = path.join(ROOT, 'connections.json');
+  const existing = readJSON(connPath) || {};
+
+  // Only write if not already set to avoid overwriting user customisations
+  if (existing.localLLM && existing.localLLM.endpoint === ollamaEndpoint) return;
+
+  existing.localLLM = {
+    enabled:      true,
+    endpoint:     ollamaEndpoint,
+    model:        ollamaModel,
+    useForAgents: useForAgents,
+    useForChat:   useForChat,
+  };
+  writeJSON(connPath, existing);
+  console.log(`[AutoConfig] Ollama configured: ${ollamaEndpoint} model=${ollamaModel} agents=${useForAgents} chat=${useForChat}`);
+})();
+
+// ── Auto-configure Hybrid mode from environment (docker-compose.hybrid.yml) ──
+(function autoConfigHybridFromEnv() {
+  if (process.env.HYBRID_ENABLED !== 'true') return;
+  const connPath = path.join(ROOT, 'connections.json');
+  const existing = readJSON(connPath) || {};
+  if (existing.hybrid && existing.hybrid.enabled) return; // already set by user
+  existing.hybrid = {
+    enabled:          true,
+    mode:             process.env.HYBRID_MODE             || 'ollama-first',
+    ollamaEndpoint:   process.env.HYBRID_OLLAMA_ENDPOINT  || 'http://ollama:11434',
+    ollamaModel:      process.env.HYBRID_OLLAMA_MODEL     || 'qwen2.5-coder:7b',
+    claudeModel:      process.env.HYBRID_CLAUDE_MODEL     || 'claude-sonnet-4-6',
+    qualityThreshold: parseInt(process.env.HYBRID_QUALITY_THRESHOLD || '75', 10),
+    claudeOnFail:     true,
+  };
+  writeJSON(connPath, existing);
+  const h = existing.hybrid;
+  console.log(`[AutoConfig] Hybrid LLM configured: mode=${h.mode} threshold=${h.qualityThreshold} ollama=${h.ollamaModel} claude=${h.claudeModel}`);
+})();
+
+// ── Auto-configure OpenAI-compatible mode from environment ───────────────────
+(function autoConfigOpenAIFromEnv() {
+  const oaiEnabled  = process.env.OPENAI_COMPAT_ENABLED === 'true';
+  if (!oaiEnabled) return;
+  const connPath = path.join(ROOT, 'connections.json');
+  const existing = readJSON(connPath) || {};
+  if (existing.openaiCompat && existing.openaiCompat.enabled) return;
+  const provider = process.env.OPENAI_PROVIDER || 'openai'; // 'openai' | 'azure' | 'custom'
+  existing.openaiCompat = {
+    enabled:         true,
+    provider,
+    endpoint:        process.env.OPENAI_ENDPOINT        || (provider === 'azure' ? '' : 'https://api.openai.com/v1'),
+    apiKey:          process.env.OPENAI_API_KEY          || process.env.AZURE_OPENAI_KEY || '',
+    model:           process.env.OPENAI_MODEL            || 'gpt-4o',
+    azureDeployment: process.env.AZURE_DEPLOYMENT        || '',
+    azureApiVersion: process.env.AZURE_API_VERSION       || '2024-02-01',
+  };
+  writeJSON(connPath, existing);
+  const c = existing.openaiCompat;
+  console.log(`[AutoConfig] OpenAI-compat configured: provider=${c.provider} endpoint=${c.endpoint} model=${c.model}`);
+})();
 
 // Cache getProjects() — only invalidates on project switch or every 10s
 let projectsCache = null;
@@ -522,6 +1333,216 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
+  // -- API: Local LLM config (GET + POST) ---------------------------
+  if (pathname === '/api/llm/config') {
+    cors(res);
+    const CONN_FILE = path.join(ROOT, 'connections.json');
+    if (req.method === 'GET') {
+      const cfg = (readJSON(CONN_FILE) || {}).localLLM || {};
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        enabled:           cfg.enabled           || false,
+        useForAgents:      cfg.useForAgents      || false,
+        endpoint:          cfg.endpoint          || 'http://localhost:11434',
+        model:             cfg.model             || 'qwen2.5-coder:7b',
+        feedbackLoop:      cfg.feedbackLoop      || false,
+        maxIterations:     cfg.maxIterations     || 3,
+        feedbackThreshold: cfg.feedbackThreshold || 75,
+      }));
+      return;
+    }
+    if (req.method === 'POST') {
+      try {
+        const body     = JSON.parse(await readBody(req));
+        const existing = readJSON(CONN_FILE) || {};
+        existing.localLLM = {
+          enabled:           body.enabled           !== undefined ? body.enabled           : (existing.localLLM?.enabled           || false),
+          useForAgents:      body.useForAgents      !== undefined ? body.useForAgents      : (existing.localLLM?.useForAgents      || false),
+          endpoint:          body.endpoint          || existing.localLLM?.endpoint         || 'http://localhost:11434',
+          model:             body.model             || existing.localLLM?.model            || 'qwen2.5-coder:7b',
+          feedbackLoop:      body.feedbackLoop      !== undefined ? body.feedbackLoop      : (existing.localLLM?.feedbackLoop      || false),
+          maxIterations:     body.maxIterations     !== undefined ? body.maxIterations     : (existing.localLLM?.maxIterations     || 3),
+          feedbackThreshold: body.feedbackThreshold !== undefined ? body.feedbackThreshold : (existing.localLLM?.feedbackThreshold || 75),
+        };
+        writeJSON(CONN_FILE, existing);
+        const modes = [existing.localLLM.enabled && 'chat', existing.localLLM.useForAgents && 'agents'].filter(Boolean);
+        const status = modes.length ? `active for: ${modes.join(' + ')}` : 'disabled';
+        postToChat('SYSTEM', 'System', 'system',
+          `🦙 Local LLM (${existing.localLLM.model}) ${status}. Endpoint: ${existing.localLLM.endpoint}`,
+          ['tarun']);
+        broadcast('update', getFullState());
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true, config: existing.localLLM }));
+      } catch (e) { res.writeHead(400); res.end(JSON.stringify({ error: e.message })); }
+      return;
+    }
+  }
+
+  // -- API: Test Ollama connection -----------------------------------
+  if (pathname === '/api/llm/test' && req.method === 'POST') {
+    cors(res);
+    try {
+      const body     = JSON.parse(await readBody(req));
+      const endpoint = (body.endpoint || 'http://localhost:11434').replace(/\/$/, '');
+      const model    = body.model || 'llama3.2';
+      const r = await fetch(`${endpoint}/api/chat`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ model, messages: [{ role: 'user', content: 'ping' }], stream: false }),
+      });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const data = await r.json();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, reply: data.message?.content || 'ok' }));
+    } catch (e) {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: e.message }));
+    }
+    return;
+  }
+
+  // -- API: Hybrid LLM config (GET/POST) ─────────────────────────
+  if (pathname === '/api/hybrid/config') {
+    cors(res);
+    if (req.method === 'GET') {
+      const cfg = (readJSON(CONN_FILE) || {}).hybrid || {};
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(Object.assign({}, HYBRID_DEFAULTS, cfg)));
+      return;
+    }
+    if (req.method === 'POST') {
+      try {
+        const body     = JSON.parse(await readBody(req));
+        const existing = readJSON(CONN_FILE) || {};
+        existing.hybrid = Object.assign({}, HYBRID_DEFAULTS, existing.hybrid || {}, body);
+        writeJSON(CONN_FILE, existing);
+        const h = existing.hybrid;
+        const modeLabel = { 'ollama-first': 'Ollama-first → Claude upgrade', 'claude-review': 'Ollama draft → Claude always reviews', 'router': 'Router by complexity' }[h.mode] || h.mode;
+        if (h.enabled) {
+          postToChat('SYSTEM', 'System', 'system',
+            `🔀 Hybrid LLM enabled — Mode: ${modeLabel} | Threshold: ${h.qualityThreshold}/100 | Ollama: ${h.ollamaModel} → Claude: ${h.claudeModel}`,
+            ['tarun']);
+        }
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true, config: existing.hybrid }));
+      } catch (e) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: e.message }));
+      }
+      return;
+    }
+  }
+
+  // -- API: Hybrid LLM test (ping both Ollama + Claude) -----------
+  if (pathname === '/api/hybrid/test' && req.method === 'POST') {
+    cors(res);
+    try {
+      const body    = JSON.parse(await readBody(req));
+      const results = { ollama: null, claude: null };
+
+      // Test Ollama
+      try {
+        const ep  = (body.ollamaEndpoint || 'http://localhost:11434').replace(/\/$/, '');
+        const r   = await fetch(`${ep}/api/chat`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model: body.ollamaModel || 'qwen2.5-coder:7b',
+            messages: [{ role: 'user', content: 'ping' }], stream: false }),
+        });
+        results.ollama = r.ok ? { ok: true, reply: ((await r.json()).message?.content || 'ok').slice(0, 80) }
+                               : { ok: false, error: `HTTP ${r.status}` };
+      } catch (e) { results.ollama = { ok: false, error: e.message }; }
+
+      // Test Claude
+      try {
+        const apiKey = body.claudeApiKey || process.env.ANTHROPIC_API_KEY;
+        if (!apiKey) throw new Error('No ANTHROPIC_API_KEY');
+        const r = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+          body: JSON.stringify({ model: body.claudeModel || 'claude-sonnet-4-6', max_tokens: 32,
+            messages: [{ role: 'user', content: 'ping' }] }),
+        });
+        const d = await r.json();
+        results.claude = r.ok ? { ok: true, reply: d.content?.[0]?.text?.slice(0, 80) || 'ok' }
+                               : { ok: false, error: d.error?.message || `HTTP ${r.status}` };
+      } catch (e) { results.claude = { ok: false, error: e.message }; }
+
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, results }));
+    } catch (e) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: e.message }));
+    }
+    return;
+  }
+
+  // -- API: OpenAI-compat config (GET/POST) -----------------------
+  if (pathname === '/api/openai/config') {
+    cors(res);
+    if (req.method === 'GET') {
+      const cfg = (readJSON(CONN_FILE) || {}).openaiCompat || {};
+      const safe = Object.assign({}, OPENAI_COMPAT_DEFAULTS, cfg);
+      delete safe.apiKey; // never return key to browser
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(safe));
+      return;
+    }
+    if (req.method === 'POST') {
+      try {
+        const body     = JSON.parse(await readBody(req));
+        const existing = readJSON(CONN_FILE) || {};
+        existing.openaiCompat = Object.assign({}, OPENAI_COMPAT_DEFAULTS, existing.openaiCompat || {}, body);
+        writeJSON(CONN_FILE, existing);
+        const c = existing.openaiCompat;
+        if (c.enabled) {
+          const label = c.provider === 'azure' ? `Azure OpenAI (${c.azureDeployment || c.model})` : `OpenAI (${c.model})`;
+          postToChat('SYSTEM', 'System', 'system',
+            `🟢 ${label} enabled — endpoint: ${c.endpoint}`, ['tarun']);
+        }
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true }));
+      } catch (e) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: e.message }));
+      }
+      return;
+    }
+  }
+
+  // -- API: OpenAI-compat test ------------------------------------
+  if (pathname === '/api/openai/test' && req.method === 'POST') {
+    cors(res);
+    try {
+      const body = JSON.parse(await readBody(req));
+      const cfg  = Object.assign({}, OPENAI_COMPAT_DEFAULTS, body);
+      const { url, headers } = buildOpenAICompatRequest(cfg);
+      const r = await fetch(url, {
+        method:  'POST',
+        headers,
+        body: JSON.stringify({
+          model:       cfg.provider === 'azure' ? undefined : cfg.model,
+          messages:    [{ role: 'user', content: 'Say "pong" only.' }],
+          max_tokens:  10,
+          temperature: 0,
+        }),
+      });
+      if (!r.ok) {
+        const errText = await r.text();
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: false, error: `HTTP ${r.status}: ${errText.slice(0, 150)}` }));
+        return;
+      }
+      const data  = await r.json();
+      const reply = data.choices?.[0]?.message?.content?.trim() || 'ok';
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, reply, model: data.model || cfg.model }));
+    } catch (e) {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: e.message }));
+    }
+    return;
+  }
+
   // -- API: context file upload ------------------------------------
   if (pathname === '/api/project/upload-context' && req.method === 'POST') {
     cors(res);
@@ -626,6 +1647,12 @@ const server = http.createServer(async (req, res) => {
       broadcast('chat-message', msg);
 
       // Auto-relaunch any agent mentioned by name in Tarun's message
+      // Auto-respond via local LLM when no agent is being mentioned
+      if (msg.from === 'TARUN' && msg.message) {
+        const llmCfg = (readJSON(path.join(ROOT, 'connections.json')) || {}).localLLM || {};
+        if (llmCfg.enabled) respondWithOllama(msg.message, llmCfg);
+      }
+
       if (msg.from === 'TARUN' && msg.message) {
         const mentioned = AGENTS.filter(a => a !== 'keerthi' &&
           new RegExp(`\\b${a}\\b`, 'i').test(msg.message));
@@ -806,6 +1833,74 @@ const server = http.createServer(async (req, res) => {
 
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ ok: true }));
+    } catch (e) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: e.message }));
+    }
+    return;
+  }
+
+  // -- API: Vikram approve architecture ---------------------------
+  if (pathname === '/api/agent/vikram/approve-architecture' && req.method === 'POST') {
+    cors(res);
+    try {
+      const body = await readBody(req);
+      const data = JSON.parse(body || '{}');
+      const pr   = getProjectRoot();
+      writeJSON(path.join(pr, 'arch-approved.json'), {
+        approved: true, approvedAt: new Date().toISOString(),
+        approvedBy: 'Tarun', comments: data.comments || '',
+      });
+      postToChat('TARUN', 'Product Owner', 'broadcast',
+        '✅ Architecture approved! Vikram — please proceed with Terraform/Docker implementation.',
+        ['architecture', 'approved']);
+      launchAgent('vikram');
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true }));
+    } catch (e) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: e.message }));
+    }
+    return;
+  }
+
+  // -- API: Vikram request architecture changes -------------------
+  if (pathname === '/api/agent/vikram/request-arch-changes' && req.method === 'POST') {
+    cors(res);
+    try {
+      const body = await readBody(req);
+      const data = JSON.parse(body || '{}');
+      const pr   = getProjectRoot();
+      const approvedPath = path.join(pr, 'arch-approved.json');
+      if (fs.existsSync(approvedPath)) fs.unlinkSync(approvedPath);
+      postToChat('TARUN', 'Product Owner', 'feedback',
+        `🔄 Architecture changes requested: ${data.comments || 'Please revise the architecture.'}`,
+        ['architecture', 'changes-requested', 'vikram']);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true }));
+    } catch (e) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: e.message }));
+    }
+    return;
+  }
+
+  // -- API: Rasool DB schema (read docs/db-schema.md) -------------
+  if (pathname === '/api/agent/rasool/db-schema' && req.method === 'GET') {
+    cors(res);
+    try {
+      const pr         = getProjectRoot();
+      const schemaPath = path.join(pr, 'docs', 'db-schema.md');
+      const archPath   = path.join(pr, 'docs', 'architecture.md');
+      const approved   = readJSON(path.join(pr, 'arch-approved.json'));
+      const schema = fs.existsSync(schemaPath) ? fs.readFileSync(schemaPath, 'utf8') : null;
+      const arch   = fs.existsSync(archPath)   ? fs.readFileSync(archPath, 'utf8')   : null;
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        schema, arch,
+        archApproved: !!(approved && approved.approved),
+        archComments: (approved && approved.comments) || '',
+      }));
     } catch (e) {
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: e.message }));
@@ -1052,6 +2147,8 @@ server.listen(PORT, () => {
   console.log(`  Projects:      GET  ${dashUrl}/api/projects`);
   console.log(`  Switch Proj:   POST ${dashUrl}/api/switch-project`);
   console.log(`  Next Project:  POST ${dashUrl}/api/next-project`);
+  console.log(`  Arch Approve:  POST ${dashUrl}/api/agent/vikram/approve-architecture`);
+  console.log(`  DB Schema:     GET  ${dashUrl}/api/agent/rasool/db-schema`);
   console.log(`\n  Active project: ${getProjectRoot()}`);
   console.log(`  Watching project files for live updates...`);
   console.log('  Press Ctrl+C to stop\n');
