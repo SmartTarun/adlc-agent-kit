@@ -415,6 +415,147 @@ async function launchAgentHybrid(agentName, hybridCfg) {
 }
 
 // ── Hybrid config API endpoints (new, isolated) ───────────────────────────
+// ════════════════════════════════════════════════════════════════════════════
+// OPENAI-COMPATIBLE LLM ENGINE
+// Supports: Azure OpenAI + Standard OpenAI + any OpenAI-compatible endpoint
+// (Together.ai, Groq, LM Studio, etc.)
+// Config lives under connections.json → "openaiCompat" key.
+// Completely independent from Ollama, Claude and Hybrid modes.
+// ════════════════════════════════════════════════════════════════════════════
+
+const OPENAI_COMPAT_DEFAULTS = {
+  enabled:    false,
+  provider:   'openai',                // 'openai' | 'azure' | 'custom'
+  endpoint:   'https://api.openai.com/v1',
+  apiKey:     '',
+  model:      'gpt-4o',
+  // Azure-specific
+  azureDeployment: '',
+  azureApiVersion: '2024-02-01',
+};
+
+function buildOpenAICompatRequest(cfg) {
+  const isAzure  = cfg.provider === 'azure' || cfg.endpoint.includes('.openai.azure.com');
+  const base     = cfg.endpoint.replace(/\/$/, '');
+  let   url, headers;
+
+  if (isAzure) {
+    const deployment = cfg.azureDeployment || cfg.model;
+    const apiVersion = cfg.azureApiVersion || '2024-02-01';
+    url     = `${base}/openai/deployments/${deployment}/chat/completions?api-version=${apiVersion}`;
+    headers = { 'Content-Type': 'application/json', 'api-key': cfg.apiKey };
+  } else {
+    // Standard OpenAI or compatible (Together, Groq, LM Studio, etc.)
+    url     = `${base}/chat/completions`;
+    headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${cfg.apiKey}` };
+  }
+  return { url, headers };
+}
+
+async function launchAgentOpenAICompat(agentName, cfg) {
+  const pr         = getProjectRoot();
+  const activeProj = readJSON(path.join(ROOT, 'active-project.json')) || {};
+  const projectId  = path.basename(pr);
+  const today      = new Date().toISOString().split('T')[0];
+  const req        = readJSON(path.join(pr, 'requirement.json')) || {};
+  const logPath    = path.join(LOGS_DIR, `${agentName}.log`);
+  const modelLabel = cfg.provider === 'azure' ? `azure/${cfg.azureDeployment || cfg.model}` : cfg.model;
+
+  const promptFile = path.join(ROOT, 'prompts', `${agentName}-prompt.txt`);
+  if (!fs.existsSync(promptFile)) {
+    setAgentStatus(agentName, 'blocked', 0, 'No prompt file', 'missing prompt');
+    return { ok: false, error: 'no prompt file' };
+  }
+  const promptContent = fs.readFileSync(promptFile, 'utf8');
+
+  const outputInstruction = [
+    '',
+    '=== OUTPUT FORMAT (REQUIRED) ===',
+    'Respond with ONLY a raw JSON object (no markdown fences):',
+    '{',
+    '  "files": [{ "path": "relative/path", "content": "full file content" }],',
+    '  "chat_message": "1-2 sentence summary",',
+    '  "status": { "task": "what was delivered", "progress": 100 }',
+    '}',
+    `PROJECT_ROOT: ${pr}`,
+    'Write COMPLETE file contents — no truncation, no TODOs, no placeholders.',
+    '=== END FORMAT ===', '',
+  ].join('\n');
+
+  const contextBlock = [
+    '=== RUNTIME CONTEXT ===',
+    `WORKSPACE_ROOT : ${ROOT}`, `PROJECT_ROOT   : ${pr}`,
+    `PROJECT_ID     : ${projectId}`, `SPRINT         : ${activeProj.sprint || '01'}`,
+    `TODAY          : ${today}`,    `PROJECT_NAME   : ${req.title || 'Unknown'}`,
+    '=== END CONTEXT ===', '',
+  ].join('\n');
+
+  const fullPrompt = contextBlock + outputInstruction + promptContent;
+
+  setAgentStatus(agentName, 'wip', 10, `[OpenAI] Generating code (${modelLabel})…`);
+
+  try {
+    const { url, headers } = buildOpenAICompatRequest(cfg);
+    fs.appendFileSync(logPath, `[OPENAI-COMPAT] Calling ${url} model=${modelLabel}\n`);
+    broadcast('agent-log', { agent: agentName, text: `[OPENAI] Calling ${modelLabel} at ${url.split('?')[0]}…\n` });
+
+    const resp = await fetch(url, {
+      method:  'POST',
+      headers,
+      body: JSON.stringify({
+        model:       cfg.provider === 'azure' ? undefined : cfg.model, // Azure uses deployment in URL
+        messages:    [{ role: 'user', content: fullPrompt }],
+        temperature: 0.2,
+        max_tokens:  8192,
+      }),
+    });
+
+    if (!resp.ok) {
+      const errText = await resp.text();
+      throw new Error(`HTTP ${resp.status}: ${errText.slice(0, 200)}`);
+    }
+
+    const data    = await resp.json();
+    const content = (data.choices?.[0]?.message?.content || '').trim();
+    fs.appendFileSync(logPath, `[OPENAI-COMPAT] Response received (${content.length} chars)\n`);
+    broadcast('agent-log', { agent: agentName, text: `[OPENAI] Response received (${content.length} chars). Parsing…\n` });
+
+    const jsonStr = content.replace(/^```(?:json)?\s*/m, '').replace(/\s*```\s*$/m, '').trim();
+    let parsed;
+    try   { parsed = JSON.parse(jsonStr); }
+    catch { const m = jsonStr.match(/\{[\s\S]*\}/); if (!m) throw new Error('No valid JSON'); parsed = JSON.parse(m[0]); }
+
+    const files   = parsed.files || [];
+    let   written = 0;
+    for (const file of files) {
+      if (!file.path || file.content === undefined) continue;
+      const absPath = path.resolve(pr, file.path);
+      if (!absPath.startsWith(pr)) continue;
+      fs.mkdirSync(path.dirname(absPath), { recursive: true });
+      fs.writeFileSync(absPath, file.content, 'utf8');
+      written++;
+      broadcast('agent-log', { agent: agentName, text: `  ✓ ${file.path}\n` });
+    }
+
+    const providerEmoji = cfg.provider === 'azure' ? '☁️' : cfg.provider === 'custom' ? '🔧' : '🟢';
+    const chatMsg = parsed.chat_message || `Generated ${written} file(s).`;
+    postToChat(agentName.toUpperCase(), AGENT_ROLES[agentName] || agentName, 'message',
+      `${providerEmoji} [${modelLabel}] ${chatMsg}`, ['tarun']);
+
+    setAgentStatus(agentName, 'done', 100, parsed.status?.task || `${written} file(s) via ${modelLabel}`);
+    broadcast('update', getFullState());
+    return { ok: true, files: written };
+
+  } catch (e) {
+    fs.appendFileSync(logPath, `[OPENAI-COMPAT ERROR] ${e.message}\n`);
+    broadcast('agent-log', { agent: agentName, text: `[OPENAI ERROR] ${e.message}\n` });
+    postToChat('SYSTEM', 'System', 'system',
+      `❌ OpenAI-compat failed for ${agentName.toUpperCase()}: ${e.message}`, [agentName]);
+    setAgentStatus(agentName, 'blocked', 0, `OpenAI error: ${e.message}`, e.message);
+    return { ok: false, error: e.message };
+  }
+}
+
 const HYBRID_DEFAULTS = {
   enabled:          false,
   mode:             'ollama-first',   // 'ollama-first' | 'claude-review' | 'router'
@@ -427,6 +568,14 @@ const HYBRID_DEFAULTS = {
 
 function launchAgent(agentName) {
   const connCfg = readJSON(path.join(ROOT, 'connections.json')) || {};
+
+  // ── OpenAI-compatible mode (Azure / OpenAI / custom) — isolated ──────────
+  const oaiCfg = connCfg.openaiCompat || {};
+  if (oaiCfg.enabled) {
+    const merged = Object.assign({}, OPENAI_COMPAT_DEFAULTS, oaiCfg);
+    launchAgentOpenAICompat(agentName, merged);
+    return { ok: true, mode: 'openai-compat' };
+  }
 
   // ── NEW: Hybrid mode — checked independently, never touches other modes ──
   const hybridCfg = connCfg.hybrid || {};
@@ -870,6 +1019,28 @@ getHtml();
   console.log(`[AutoConfig] Hybrid LLM configured: mode=${h.mode} threshold=${h.qualityThreshold} ollama=${h.ollamaModel} claude=${h.claudeModel}`);
 })();
 
+// ── Auto-configure OpenAI-compatible mode from environment ───────────────────
+(function autoConfigOpenAIFromEnv() {
+  const oaiEnabled  = process.env.OPENAI_COMPAT_ENABLED === 'true';
+  if (!oaiEnabled) return;
+  const connPath = path.join(ROOT, 'connections.json');
+  const existing = readJSON(connPath) || {};
+  if (existing.openaiCompat && existing.openaiCompat.enabled) return;
+  const provider = process.env.OPENAI_PROVIDER || 'openai'; // 'openai' | 'azure' | 'custom'
+  existing.openaiCompat = {
+    enabled:         true,
+    provider,
+    endpoint:        process.env.OPENAI_ENDPOINT        || (provider === 'azure' ? '' : 'https://api.openai.com/v1'),
+    apiKey:          process.env.OPENAI_API_KEY          || process.env.AZURE_OPENAI_KEY || '',
+    model:           process.env.OPENAI_MODEL            || 'gpt-4o',
+    azureDeployment: process.env.AZURE_DEPLOYMENT        || '',
+    azureApiVersion: process.env.AZURE_API_VERSION       || '2024-02-01',
+  };
+  writeJSON(connPath, existing);
+  const c = existing.openaiCompat;
+  console.log(`[AutoConfig] OpenAI-compat configured: provider=${c.provider} endpoint=${c.endpoint} model=${c.model}`);
+})();
+
 // Cache getProjects() — only invalidates on project switch or every 10s
 let projectsCache = null;
 let projectsCacheAt = 0;
@@ -1202,6 +1373,73 @@ const server = http.createServer(async (req, res) => {
     } catch (e) {
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: e.message }));
+    }
+    return;
+  }
+
+  // -- API: OpenAI-compat config (GET/POST) -----------------------
+  if (pathname === '/api/openai/config') {
+    cors(res);
+    if (req.method === 'GET') {
+      const cfg = (readJSON(CONN_FILE) || {}).openaiCompat || {};
+      const safe = Object.assign({}, OPENAI_COMPAT_DEFAULTS, cfg);
+      delete safe.apiKey; // never return key to browser
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(safe));
+      return;
+    }
+    if (req.method === 'POST') {
+      try {
+        const body     = JSON.parse(await readBody(req));
+        const existing = readJSON(CONN_FILE) || {};
+        existing.openaiCompat = Object.assign({}, OPENAI_COMPAT_DEFAULTS, existing.openaiCompat || {}, body);
+        writeJSON(CONN_FILE, existing);
+        const c = existing.openaiCompat;
+        if (c.enabled) {
+          const label = c.provider === 'azure' ? `Azure OpenAI (${c.azureDeployment || c.model})` : `OpenAI (${c.model})`;
+          postToChat('SYSTEM', 'System', 'system',
+            `🟢 ${label} enabled — endpoint: ${c.endpoint}`, ['tarun']);
+        }
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true }));
+      } catch (e) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: e.message }));
+      }
+      return;
+    }
+  }
+
+  // -- API: OpenAI-compat test ------------------------------------
+  if (pathname === '/api/openai/test' && req.method === 'POST') {
+    cors(res);
+    try {
+      const body = JSON.parse(await readBody(req));
+      const cfg  = Object.assign({}, OPENAI_COMPAT_DEFAULTS, body);
+      const { url, headers } = buildOpenAICompatRequest(cfg);
+      const r = await fetch(url, {
+        method:  'POST',
+        headers,
+        body: JSON.stringify({
+          model:       cfg.provider === 'azure' ? undefined : cfg.model,
+          messages:    [{ role: 'user', content: 'Say "pong" only.' }],
+          max_tokens:  10,
+          temperature: 0,
+        }),
+      });
+      if (!r.ok) {
+        const errText = await r.text();
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: false, error: `HTTP ${r.status}: ${errText.slice(0, 150)}` }));
+        return;
+      }
+      const data  = await r.json();
+      const reply = data.choices?.[0]?.message?.content?.trim() || 'ok';
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, reply, model: data.model || cfg.model }));
+    } catch (e) {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: e.message }));
     }
     return;
   }

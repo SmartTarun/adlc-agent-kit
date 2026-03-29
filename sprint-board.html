@@ -3281,6 +3281,7 @@ function openNewProjectScreen() {
   loadMCPConfig();
   loadLLMConfig();
   loadHybridConfig();
+  loadOpenAIConfig();
 }
 
 function closeNewProjectScreen() {
@@ -4442,6 +4443,95 @@ async function testHybrid() {
   }
 }
 
+// ════════════════════════════════════════════════════════════════════════════
+// OPENAI-COMPATIBLE UI — Azure OpenAI / OpenAI / Custom
+// ════════════════════════════════════════════════════════════════════════════
+async function loadOpenAIConfig() {
+  try {
+    const r = await fetch('/api/openai/config');
+    if (!r.ok) return;
+    const cfg = await r.json();
+    const g = id => document.getElementById(id);
+    if (g('openai-enabled'))          g('openai-enabled').checked          = !!cfg.enabled;
+    if (g('openai-provider'))         g('openai-provider').value           = cfg.provider        || 'openai';
+    if (g('openai-endpoint'))         g('openai-endpoint').value           = cfg.endpoint        || '';
+    if (g('openai-model'))            g('openai-model').value              = cfg.model           || 'gpt-4o';
+    if (g('openai-azure-deployment')) g('openai-azure-deployment').value   = cfg.azureDeployment || '';
+    if (g('openai-azure-version'))    g('openai-azure-version').value      = cfg.azureApiVersion || '2024-02-01';
+    openaiProviderChanged();
+    updateOpenAICard(cfg.enabled);
+  } catch {}
+}
+
+function openaiProviderChanged() {
+  const provider   = document.getElementById('openai-provider')?.value || 'openai';
+  const endpointEl = document.getElementById('openai-endpoint');
+  const azureEl    = document.getElementById('openai-azure-fields');
+  const placeholders = {
+    openai: 'https://api.openai.com/v1',
+    azure:  'https://{resource}.openai.azure.com',
+    custom: 'https://api.groq.com/openai/v1',
+  };
+  if (endpointEl && !endpointEl.value) endpointEl.placeholder = placeholders[provider] || '';
+  if (azureEl) azureEl.style.display = provider === 'azure' ? 'flex' : 'none';
+  openaiSave();
+}
+
+function updateOpenAICard(enabled) {
+  const card   = document.getElementById('openai-card');
+  const status = document.getElementById('openai-status');
+  if (card)   { card.style.borderColor = enabled ? '#16a34a' : '#d4d4ee'; card.style.background = enabled ? '#f0fdf4' : ''; }
+  if (status) { status.textContent = enabled ? 'active' : 'off'; status.className = 'np-mcp-status' + (enabled ? ' ok' : ''); }
+}
+
+async function openaiSave() {
+  const g = id => document.getElementById(id);
+  const cfg = {
+    enabled:         g('openai-enabled')?.checked          || false,
+    provider:        g('openai-provider')?.value            || 'openai',
+    endpoint:        g('openai-endpoint')?.value.trim()     || '',
+    apiKey:          g('openai-key')?.value.trim()          || '',
+    model:           g('openai-model')?.value.trim()        || 'gpt-4o',
+    azureDeployment: g('openai-azure-deployment')?.value.trim() || '',
+    azureApiVersion: g('openai-azure-version')?.value.trim()    || '2024-02-01',
+  };
+  try {
+    await fetch('/api/openai/config', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(cfg),
+    });
+    updateOpenAICard(cfg.enabled);
+  } catch {}
+}
+
+async function testOpenAI() {
+  const g      = id => document.getElementById(id);
+  const result = g('openai-result');
+  if (result) result.textContent = '⏳ Testing…';
+  try {
+    const r = await fetch('/api/openai/test', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        provider:        g('openai-provider')?.value,
+        endpoint:        g('openai-endpoint')?.value.trim(),
+        apiKey:          g('openai-key')?.value.trim(),
+        model:           g('openai-model')?.value.trim(),
+        azureDeployment: g('openai-azure-deployment')?.value.trim(),
+        azureApiVersion: g('openai-azure-version')?.value.trim(),
+      }),
+    });
+    const data = await r.json();
+    if (result) {
+      result.textContent = data.ok
+        ? `✓ Connected — ${data.model || ''} replied: "${(data.reply||'').substring(0,60)}"`
+        : `✗ ${data.error}`;
+      result.style.color = data.ok ? 'var(--green)' : 'var(--red,#f87171)';
+    }
+  } catch (e) {
+    if (result) { result.textContent = `✗ ${e.message}`; result.style.color = 'var(--red,#f87171)'; }
+  }
+}
+
 // ── Context Document Upload ────────────────────────────────────────────────
 let npUploadedFiles = [];
 
@@ -4985,6 +5075,59 @@ async function npUploadContextFiles(projectId) {
                 <button onclick="testHybrid()" style="margin-left:auto;background:#7c3aed;color:#fff;border:none;border-radius:6px;padding:4px 12px;font-size:10px;cursor:pointer;white-space:nowrap">Test Both</button>
               </div>
               <div id="hybrid-result" style="font-size:9px;color:var(--text-dim);margin-top:6px"></div>
+            </div>
+
+            <!-- ── OpenAI-Compatible Card (Azure OpenAI / OpenAI / custom) ── -->
+            <div class="np-mcp-card" id="openai-card" style="margin-top:10px;border-color:#16a34a">
+              <div class="np-mcp-card-header">
+                <span class="np-mcp-icon">🟢</span>
+                <span class="np-mcp-name" style="color:#15803d;font-weight:700">OpenAI-Compatible</span>
+                <span style="font-size:9px;background:#dcfce7;color:#15803d;border-radius:20px;padding:1px 7px;margin-left:6px">Azure · OpenAI · Custom</span>
+                <span class="np-mcp-status" id="openai-status" style="margin-left:auto">off</span>
+              </div>
+              <div style="font-size:10px;color:var(--text-dim);margin-top:4px;line-height:1.5">
+                Works with Azure OpenAI, standard OpenAI, or any OpenAI-compatible endpoint<br>(Together.ai, Groq, LM Studio, etc.)
+              </div>
+
+              <!-- Provider selector -->
+              <div style="margin-top:8px">
+                <div style="font-size:10px;font-weight:600;color:var(--text);margin-bottom:4px">Provider</div>
+                <select id="openai-provider" onchange="openaiProviderChanged()" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);color:var(--text);padding:5px 8px;border-radius:6px;font-size:11px;font-family:var(--font)">
+                  <option value="openai">🟢 OpenAI (api.openai.com)</option>
+                  <option value="azure">☁️ Azure OpenAI</option>
+                  <option value="custom">🔧 Custom / Compatible endpoint</option>
+                </select>
+              </div>
+
+              <!-- Endpoint + API key -->
+              <div style="margin-top:6px;display:flex;gap:6px">
+                <input class="np-mcp-input" id="openai-endpoint" placeholder="https://api.openai.com/v1" style="flex:2;font-size:10px" oninput="openaiSave()">
+                <input class="np-mcp-input" id="openai-key" type="password" placeholder="API key / Azure key" style="flex:2;font-size:10px" oninput="openaiSave()">
+              </div>
+
+              <!-- Model / Deployment -->
+              <div style="margin-top:6px;display:flex;gap:6px;align-items:center">
+                <input class="np-mcp-input" id="openai-model" placeholder="gpt-4o" value="gpt-4o" style="flex:1;font-size:10px" oninput="openaiSave()">
+                <div id="openai-azure-fields" style="display:none;flex:1;display:flex;gap:6px">
+                  <input class="np-mcp-input" id="openai-azure-deployment" placeholder="deployment name" style="flex:1;font-size:10px" oninput="openaiSave()">
+                  <input class="np-mcp-input" id="openai-azure-version" placeholder="2024-02-01" value="2024-02-01" style="width:90px;font-size:10px" oninput="openaiSave()">
+                </div>
+              </div>
+
+              <!-- Enable + test -->
+              <div style="display:flex;align-items:center;gap:10px;margin-top:8px">
+                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:10px;color:var(--text-dim)">
+                  <input type="checkbox" id="openai-enabled" onchange="openaiSave()" style="width:13px;height:13px;accent-color:#16a34a">
+                  Enable for agent code generation
+                </label>
+                <button onclick="testOpenAI()" style="margin-left:auto;background:#16a34a;color:#fff;border:none;border-radius:6px;padding:4px 12px;font-size:10px;cursor:pointer;white-space:nowrap">Test</button>
+              </div>
+              <div id="openai-result" style="font-size:9px;color:var(--text-dim);margin-top:6px"></div>
+              <div style="font-size:9px;color:var(--text-dim);margin-top:4px">
+                Azure: <code style="color:#15803d">{resource}.openai.azure.com</code> &nbsp;|&nbsp;
+                OpenAI: <code style="color:#15803d">api.openai.com/v1</code> &nbsp;|&nbsp;
+                Groq: <code style="color:#15803d">api.groq.com/openai/v1</code>
+              </div>
             </div>
 
           </div>
