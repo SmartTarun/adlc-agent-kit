@@ -5,6 +5,7 @@
       "name": "Dashboard Server",
       "runtimeExecutable": "node",
       "runtimeArgs": ["dashboard-server.js"],
+      "cwd": "C:/Users/admin/Downloads/ADLC-Agent-Kit",
       "port": 3000
     },
     {
