@@ -1143,6 +1143,74 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  // -- API: Vikram approve architecture ---------------------------
+  if (pathname === '/api/agent/vikram/approve-architecture' && req.method === 'POST') {
+    cors(res);
+    try {
+      const body = await readBody(req);
+      const data = JSON.parse(body || '{}');
+      const pr   = getProjectRoot();
+      writeJSON(path.join(pr, 'arch-approved.json'), {
+        approved: true, approvedAt: new Date().toISOString(),
+        approvedBy: 'Tarun', comments: data.comments || '',
+      });
+      postToChat('TARUN', 'Product Owner', 'broadcast',
+        '✅ Architecture approved! Vikram — please proceed with Terraform/Docker implementation.',
+        ['architecture', 'approved']);
+      launchAgent('vikram');
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true }));
+    } catch (e) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: e.message }));
+    }
+    return;
+  }
+
+  // -- API: Vikram request architecture changes -------------------
+  if (pathname === '/api/agent/vikram/request-arch-changes' && req.method === 'POST') {
+    cors(res);
+    try {
+      const body = await readBody(req);
+      const data = JSON.parse(body || '{}');
+      const pr   = getProjectRoot();
+      const approvedPath = path.join(pr, 'arch-approved.json');
+      if (fs.existsSync(approvedPath)) fs.unlinkSync(approvedPath);
+      postToChat('TARUN', 'Product Owner', 'feedback',
+        `🔄 Architecture changes requested: ${data.comments || 'Please revise the architecture.'}`,
+        ['architecture', 'changes-requested', 'vikram']);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true }));
+    } catch (e) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: e.message }));
+    }
+    return;
+  }
+
+  // -- API: Rasool DB schema (read docs/db-schema.md) -------------
+  if (pathname === '/api/agent/rasool/db-schema' && req.method === 'GET') {
+    cors(res);
+    try {
+      const pr         = getProjectRoot();
+      const schemaPath = path.join(pr, 'docs', 'db-schema.md');
+      const archPath   = path.join(pr, 'docs', 'architecture.md');
+      const approved   = readJSON(path.join(pr, 'arch-approved.json'));
+      const schema = fs.existsSync(schemaPath) ? fs.readFileSync(schemaPath, 'utf8') : null;
+      const arch   = fs.existsSync(archPath)   ? fs.readFileSync(archPath, 'utf8')   : null;
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        schema, arch,
+        archApproved: !!(approved && approved.approved),
+        archComments: (approved && approved.comments) || '',
+      }));
+    } catch (e) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: e.message }));
+    }
+    return;
+  }
+
   // -- API: list all projects -------------------------------------
   if (pathname === '/api/projects' && req.method === 'GET') {
     cors(res);
@@ -1382,6 +1450,8 @@ server.listen(PORT, () => {
   console.log(`  Projects:      GET  ${dashUrl}/api/projects`);
   console.log(`  Switch Proj:   POST ${dashUrl}/api/switch-project`);
   console.log(`  Next Project:  POST ${dashUrl}/api/next-project`);
+  console.log(`  Arch Approve:  POST ${dashUrl}/api/agent/vikram/approve-architecture`);
+  console.log(`  DB Schema:     GET  ${dashUrl}/api/agent/rasool/db-schema`);
   console.log(`\n  Active project: ${getProjectRoot()}`);
   console.log(`  Watching project files for live updates...`);
   console.log('  Press Ctrl+C to stop\n');
