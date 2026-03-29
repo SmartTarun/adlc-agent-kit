@@ -199,9 +199,245 @@ async function launchAgentLocal(agentName, llmCfg) {
   }
 }
 
+// ════════════════════════════════════════════════════════════════════════════
+// HYBRID LLM ENGINE — Ollama (draft) → quality score → Claude (improve)
+// Completely independent from launchAgent/launchAgentLocal.
+// Config lives under connections.json → "hybrid" key.
+// ════════════════════════════════════════════════════════════════════════════
+
+function scoreOllamaOutput(parsed) {
+  let score = 0;
+  // 1. Valid JSON with expected shape (30 pts)
+  if (parsed && typeof parsed === 'object') score += 15;
+  if (Array.isArray(parsed.files))          score += 15;
+  // 2. Has actual files (20 pts)
+  const files = parsed.files || [];
+  if (files.length > 0)       score += 10;
+  if (files.length >= 2)      score += 10;
+  // 3. File content quality (30 pts)
+  const avgLines = files.length
+    ? files.reduce((s, f) => s + (f.content || '').split('\n').length, 0) / files.length
+    : 0;
+  if (avgLines > 10)  score += 10;
+  if (avgLines > 30)  score += 10;
+  if (avgLines > 80)  score += 10;
+  // 4. No placeholder patterns (20 pts)
+  const allContent = files.map(f => f.content || '').join('\n');
+  const placeholders = (allContent.match(/TODO|FIXME|pass\b|\.\.\.|\[your |<your /gi) || []).length;
+  if (placeholders === 0) score += 20;
+  else if (placeholders < 3) score += 10;
+  return Math.min(score, 100);
+}
+
+async function callClaudeAPI(prompt, hybridCfg) {
+  const apiKey = hybridCfg.claudeApiKey || process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) throw new Error('No ANTHROPIC_API_KEY set for hybrid Claude layer');
+  const model  = hybridCfg.claudeModel || 'claude-sonnet-4-6';
+  const resp   = await fetch('https://api.anthropic.com/v1/messages', {
+    method:  'POST',
+    headers: {
+      'x-api-key':         apiKey,
+      'anthropic-version': '2023-06-01',
+      'content-type':      'application/json',
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: 8192,
+      messages: [{ role: 'user', content: prompt }],
+    }),
+  });
+  if (!resp.ok) {
+    const err = await resp.text();
+    throw new Error(`Claude API ${resp.status}: ${err.slice(0, 200)}`);
+  }
+  const data = await resp.json();
+  return data.content?.[0]?.text || '';
+}
+
+async function launchAgentHybrid(agentName, hybridCfg) {
+  const pr         = getProjectRoot();
+  const activeProj = readJSON(path.join(ROOT, 'active-project.json')) || {};
+  const projectId  = path.basename(pr);
+  const today      = new Date().toISOString().split('T')[0];
+  const req        = readJSON(path.join(pr, 'requirement.json')) || {};
+  const logPath    = path.join(LOGS_DIR, `${agentName}.log`);
+  const mode       = hybridCfg.mode || 'ollama-first';
+  const threshold  = hybridCfg.qualityThreshold !== undefined ? hybridCfg.qualityThreshold : 75;
+
+  const promptFile = path.join(ROOT, 'prompts', `${agentName}-prompt.txt`);
+  if (!fs.existsSync(promptFile)) {
+    setAgentStatus(agentName, 'blocked', 0, 'No prompt file', 'missing prompt');
+    return { ok: false, error: 'no prompt file' };
+  }
+  const promptContent = fs.readFileSync(promptFile, 'utf8');
+
+  const outputInstruction = [
+    '',
+    '=== HYBRID OUTPUT FORMAT (REQUIRED) ===',
+    'Respond with ONLY a raw JSON object (no markdown fences):',
+    '{',
+    '  "files": [{ "path": "relative/path", "content": "full content" }],',
+    '  "chat_message": "1-2 sentence summary of what was built",',
+    '  "status": { "task": "delivery description", "progress": 100 }',
+    '}',
+    `PROJECT_ROOT: ${pr}`,
+    'Write COMPLETE file contents — no truncation, no placeholders.',
+    '=== END FORMAT ===',
+    '',
+  ].join('\n');
+
+  const contextBlock = [
+    '=== RUNTIME CONTEXT ===',
+    `WORKSPACE_ROOT : ${ROOT}`,
+    `PROJECT_ROOT   : ${pr}`,
+    `PROJECT_ID     : ${projectId}`,
+    `SPRINT         : ${activeProj.sprint || '01'}`,
+    `TODAY          : ${today}`,
+    `PROJECT_NAME   : ${req.title || 'Unknown'}`,
+    '=== END CONTEXT ===', '',
+  ].join('\n');
+
+  const fullPrompt = contextBlock + outputInstruction + promptContent;
+
+  // ── STEP 1: Ollama draft ──────────────────────────────────────────────────
+  setAgentStatus(agentName, 'wip', 15, `[Hybrid] Ollama drafting code (${hybridCfg.ollamaModel})…`);
+  broadcast('agent-log', { agent: agentName, text: `[HYBRID] Step 1: Ollama draft (${hybridCfg.ollamaModel})\n` });
+
+  let ollamaParsed = null;
+  let ollamaScore  = 0;
+  let ollamaError  = null;
+
+  try {
+    const endpoint = (hybridCfg.ollamaEndpoint || 'http://localhost:11434').replace(/\/$/, '');
+    const resp = await fetch(`${endpoint}/api/chat`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({
+        model:    hybridCfg.ollamaModel || 'qwen2.5-coder:7b',
+        messages: [{ role: 'user', content: fullPrompt }],
+        stream:   false,
+        options:  { num_ctx: 16384, temperature: 0.2 },
+      }),
+    });
+    if (!resp.ok) throw new Error(`Ollama HTTP ${resp.status}`);
+    const raw = ((await resp.json()).message?.content || '').trim()
+      .replace(/^```(?:json)?\s*/m, '').replace(/\s*```\s*$/m, '').trim();
+    const match = raw.match(/\{[\s\S]*\}/);
+    ollamaParsed = JSON.parse(match ? match[0] : raw);
+    ollamaScore  = scoreOllamaOutput(ollamaParsed);
+    fs.appendFileSync(logPath, `[HYBRID] Ollama score: ${ollamaScore}/100\n`);
+    broadcast('agent-log', { agent: agentName, text: `[HYBRID] Ollama score: ${ollamaScore}/100 (threshold: ${threshold})\n` });
+  } catch (e) {
+    ollamaError = e.message;
+    fs.appendFileSync(logPath, `[HYBRID] Ollama failed: ${ollamaError}\n`);
+    broadcast('agent-log', { agent: agentName, text: `[HYBRID] Ollama failed: ${ollamaError}\n` });
+  }
+
+  // ── STEP 2: Decide whether Claude is needed ───────────────────────────────
+  const needsClaude = mode === 'claude-review'
+    || (ollamaError && hybridCfg.claudeOnFail !== false)
+    || (ollamaParsed && ollamaScore < threshold);
+
+  let finalParsed = ollamaParsed;
+  let usedLayer   = 'ollama';
+
+  if (needsClaude) {
+    setAgentStatus(agentName, 'wip', 55, `[Hybrid] Claude improving draft (${hybridCfg.claudeModel})…`);
+    broadcast('agent-log', { agent: agentName,
+      text: `[HYBRID] Step 2: Escalating to Claude (${hybridCfg.claudeModel}) — reason: ${ollamaError ? 'ollama-failed' : `score=${ollamaScore}<${threshold}`}\n` });
+
+    try {
+      const improvePrompt = ollamaParsed
+        ? [
+            contextBlock,
+            '=== HYBRID IMPROVEMENT TASK ===',
+            `Ollama generated a draft (quality score: ${ollamaScore}/100). Review and improve it.`,
+            'Fix any issues: incomplete code, placeholders, missing logic, poor structure.',
+            'Return improved output in the same JSON format.',
+            outputInstruction,
+            '=== OLLAMA DRAFT TO IMPROVE ===',
+            JSON.stringify(ollamaParsed, null, 2),
+            '=== END DRAFT ===',
+            promptContent,
+          ].join('\n')
+        : fullPrompt; // Ollama failed entirely — Claude builds from scratch
+
+      const claudeRaw = await callClaudeAPI(improvePrompt, hybridCfg);
+      const claudeStr = claudeRaw.replace(/^```(?:json)?\s*/m, '').replace(/\s*```\s*$/m, '').trim();
+      const m2        = claudeStr.match(/\{[\s\S]*\}/);
+      finalParsed     = JSON.parse(m2 ? m2[0] : claudeStr);
+      usedLayer       = ollamaParsed ? 'hybrid' : 'claude';
+      broadcast('agent-log', { agent: agentName, text: `[HYBRID] Claude improvement applied. Final layer: ${usedLayer}\n` });
+    } catch (e) {
+      broadcast('agent-log', { agent: agentName, text: `[HYBRID] Claude failed: ${e.message}. Using Ollama draft.\n` });
+      // fallback to whatever Ollama gave us
+    }
+  }
+
+  if (!finalParsed) {
+    const errMsg = ollamaError || 'Both Ollama and Claude failed';
+    setAgentStatus(agentName, 'blocked', 0, `Hybrid failed: ${errMsg}`, errMsg);
+    postToChat('SYSTEM', 'System', 'system', `❌ Hybrid LLM failed for ${agentName.toUpperCase()}: ${errMsg}`, [agentName]);
+    return { ok: false, error: errMsg };
+  }
+
+  // ── STEP 3: Write files ───────────────────────────────────────────────────
+  setAgentStatus(agentName, 'wip', 85, '[Hybrid] Writing files…');
+  const files   = finalParsed.files || [];
+  let   written = 0;
+  for (const file of files) {
+    if (!file.path || file.content === undefined) continue;
+    const absPath = path.resolve(pr, file.path);
+    if (!absPath.startsWith(pr)) continue;
+    fs.mkdirSync(path.dirname(absPath), { recursive: true });
+    fs.writeFileSync(absPath, file.content, 'utf8');
+    written++;
+    broadcast('agent-log', { agent: agentName, text: `  ✓ ${file.path}\n` });
+  }
+
+  const layerEmoji = { ollama: '🟡', claude: '🔵', hybrid: '🔀' }[usedLayer] || '🔀';
+  const chatMsg    = finalParsed.chat_message || `Generated ${written} file(s).`;
+  postToChat(
+    agentName.toUpperCase(), AGENT_ROLES[agentName] || agentName, 'message',
+    `${layerEmoji} [Hybrid · ${usedLayer}] ${chatMsg}`, ['tarun'],
+  );
+
+  // Save layer used to agent-status for UI badge
+  const pr2  = getProjectRoot();
+  const sd   = readJSON(path.join(pr2, 'agent-status.json')) || {};
+  const am   = sd.agents || sd;
+  if (am[agentName]) am[agentName].hybridLayer = usedLayer;
+  if (sd.agents) sd.agents = am; else Object.assign(sd, am);
+  writeJSON(path.join(pr2, 'agent-status.json'), sd);
+
+  setAgentStatus(agentName, 'done', 100, finalParsed.status?.task || `${written} file(s) via ${usedLayer}`);
+  return { ok: true, files: written, layer: usedLayer, ollamaScore };
+}
+
+// ── Hybrid config API endpoints (new, isolated) ───────────────────────────
+const HYBRID_DEFAULTS = {
+  enabled:          false,
+  mode:             'ollama-first',   // 'ollama-first' | 'claude-review' | 'router'
+  ollamaEndpoint:   'http://localhost:11434',
+  ollamaModel:      'qwen2.5-coder:7b',
+  claudeModel:      'claude-sonnet-4-6',
+  qualityThreshold: 75,
+  claudeOnFail:     true,
+};
+
 function launchAgent(agentName) {
-  // Route to local LLM runner if enabled for agents
-  const llmCfg = (readJSON(path.join(ROOT, 'connections.json')) || {}).localLLM || {};
+  const connCfg = readJSON(path.join(ROOT, 'connections.json')) || {};
+
+  // ── NEW: Hybrid mode — checked independently, never touches other modes ──
+  const hybridCfg = connCfg.hybrid || {};
+  if (hybridCfg.enabled) {
+    const merged = Object.assign({}, HYBRID_DEFAULTS, hybridCfg);
+    launchAgentHybrid(agentName, merged);
+    return { ok: true, mode: 'hybrid' };
+  }
+
+  // ── Existing: Ollama-only (unchanged) ───────────────────────────────────
+  const llmCfg = connCfg.localLLM || {};
   if (llmCfg.enabled && llmCfg.useForAgents) {
     launchAgentLocal(agentName, llmCfg);
     return { ok: true, mode: 'local-llm' };
@@ -614,6 +850,26 @@ getHtml();
   console.log(`[AutoConfig] Ollama configured: ${ollamaEndpoint} model=${ollamaModel} agents=${useForAgents} chat=${useForChat}`);
 })();
 
+// ── Auto-configure Hybrid mode from environment (docker-compose.hybrid.yml) ──
+(function autoConfigHybridFromEnv() {
+  if (process.env.HYBRID_ENABLED !== 'true') return;
+  const connPath = path.join(ROOT, 'connections.json');
+  const existing = readJSON(connPath) || {};
+  if (existing.hybrid && existing.hybrid.enabled) return; // already set by user
+  existing.hybrid = {
+    enabled:          true,
+    mode:             process.env.HYBRID_MODE             || 'ollama-first',
+    ollamaEndpoint:   process.env.HYBRID_OLLAMA_ENDPOINT  || 'http://ollama:11434',
+    ollamaModel:      process.env.HYBRID_OLLAMA_MODEL     || 'qwen2.5-coder:7b',
+    claudeModel:      process.env.HYBRID_CLAUDE_MODEL     || 'claude-sonnet-4-6',
+    qualityThreshold: parseInt(process.env.HYBRID_QUALITY_THRESHOLD || '75', 10),
+    claudeOnFail:     true,
+  };
+  writeJSON(connPath, existing);
+  const h = existing.hybrid;
+  console.log(`[AutoConfig] Hybrid LLM configured: mode=${h.mode} threshold=${h.qualityThreshold} ollama=${h.ollamaModel} claude=${h.claudeModel}`);
+})();
+
 // Cache getProjects() — only invalidates on project switch or every 10s
 let projectsCache = null;
 let projectsCacheAt = 0;
@@ -871,6 +1127,81 @@ const server = http.createServer(async (req, res) => {
     } catch (e) {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ ok: false, error: e.message }));
+    }
+    return;
+  }
+
+  // -- API: Hybrid LLM config (GET/POST) ─────────────────────────
+  if (pathname === '/api/hybrid/config') {
+    cors(res);
+    if (req.method === 'GET') {
+      const cfg = (readJSON(CONN_FILE) || {}).hybrid || {};
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(Object.assign({}, HYBRID_DEFAULTS, cfg)));
+      return;
+    }
+    if (req.method === 'POST') {
+      try {
+        const body     = JSON.parse(await readBody(req));
+        const existing = readJSON(CONN_FILE) || {};
+        existing.hybrid = Object.assign({}, HYBRID_DEFAULTS, existing.hybrid || {}, body);
+        writeJSON(CONN_FILE, existing);
+        const h = existing.hybrid;
+        const modeLabel = { 'ollama-first': 'Ollama-first → Claude upgrade', 'claude-review': 'Ollama draft → Claude always reviews', 'router': 'Router by complexity' }[h.mode] || h.mode;
+        if (h.enabled) {
+          postToChat('SYSTEM', 'System', 'system',
+            `🔀 Hybrid LLM enabled — Mode: ${modeLabel} | Threshold: ${h.qualityThreshold}/100 | Ollama: ${h.ollamaModel} → Claude: ${h.claudeModel}`,
+            ['tarun']);
+        }
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true, config: existing.hybrid }));
+      } catch (e) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: e.message }));
+      }
+      return;
+    }
+  }
+
+  // -- API: Hybrid LLM test (ping both Ollama + Claude) -----------
+  if (pathname === '/api/hybrid/test' && req.method === 'POST') {
+    cors(res);
+    try {
+      const body    = JSON.parse(await readBody(req));
+      const results = { ollama: null, claude: null };
+
+      // Test Ollama
+      try {
+        const ep  = (body.ollamaEndpoint || 'http://localhost:11434').replace(/\/$/, '');
+        const r   = await fetch(`${ep}/api/chat`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model: body.ollamaModel || 'qwen2.5-coder:7b',
+            messages: [{ role: 'user', content: 'ping' }], stream: false }),
+        });
+        results.ollama = r.ok ? { ok: true, reply: ((await r.json()).message?.content || 'ok').slice(0, 80) }
+                               : { ok: false, error: `HTTP ${r.status}` };
+      } catch (e) { results.ollama = { ok: false, error: e.message }; }
+
+      // Test Claude
+      try {
+        const apiKey = body.claudeApiKey || process.env.ANTHROPIC_API_KEY;
+        if (!apiKey) throw new Error('No ANTHROPIC_API_KEY');
+        const r = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+          body: JSON.stringify({ model: body.claudeModel || 'claude-sonnet-4-6', max_tokens: 32,
+            messages: [{ role: 'user', content: 'ping' }] }),
+        });
+        const d = await r.json();
+        results.claude = r.ok ? { ok: true, reply: d.content?.[0]?.text?.slice(0, 80) || 'ok' }
+                               : { ok: false, error: d.error?.message || `HTTP ${r.status}` };
+      } catch (e) { results.claude = { ok: false, error: e.message }; }
+
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, results }));
+    } catch (e) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: e.message }));
     }
     return;
   }

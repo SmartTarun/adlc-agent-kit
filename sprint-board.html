@@ -3280,6 +3280,7 @@ function openNewProjectScreen() {
   document.getElementById('new-project-screen').classList.add('open');
   loadMCPConfig();
   loadLLMConfig();
+  loadHybridConfig();
 }
 
 function closeNewProjectScreen() {
@@ -4362,6 +4363,85 @@ async function testOllama() {
   }
 }
 
+// ════════════════════════════════════════════════════════════════════════════
+// HYBRID LLM UI — independent from Ollama/Claude settings
+// ════════════════════════════════════════════════════════════════════════════
+async function loadHybridConfig() {
+  try {
+    const r = await fetch('/api/hybrid/config');
+    if (!r.ok) return;
+    const cfg = await r.json();
+    const g = id => document.getElementById(id);
+    if (g('hybrid-enabled'))        g('hybrid-enabled').checked  = !!cfg.enabled;
+    if (g('hybrid-mode'))           g('hybrid-mode').value       = cfg.mode             || 'ollama-first';
+    if (g('hybrid-ollama-endpoint'))g('hybrid-ollama-endpoint').value = cfg.ollamaEndpoint || 'http://localhost:11434';
+    if (g('hybrid-ollama-model'))   g('hybrid-ollama-model').value   = cfg.ollamaModel     || 'qwen2.5-coder:7b';
+    if (g('hybrid-claude-key'))     g('hybrid-claude-key').value     = cfg.claudeApiKey    || '';
+    if (g('hybrid-claude-model'))   g('hybrid-claude-model').value   = cfg.claudeModel     || 'claude-sonnet-4-6';
+    if (g('hybrid-threshold')) {
+      g('hybrid-threshold').value = cfg.qualityThreshold ?? 75;
+      const v = document.getElementById('hybrid-threshold-val');
+      if (v) v.textContent = cfg.qualityThreshold ?? 75;
+    }
+    updateHybridCard(cfg.enabled);
+  } catch {}
+}
+
+function updateHybridCard(enabled) {
+  const card   = document.getElementById('hybrid-card');
+  const status = document.getElementById('hybrid-status');
+  if (card)   { card.style.borderColor = enabled ? '#7c3aed' : '#d4d4ee'; card.style.background = enabled ? '#faf5ff' : ''; }
+  if (status) { status.textContent = enabled ? 'active' : 'off'; status.className = 'np-mcp-status' + (enabled ? ' ok' : ''); }
+}
+
+async function hybridSave() {
+  const g = id => document.getElementById(id);
+  const cfg = {
+    enabled:          g('hybrid-enabled')?.checked        || false,
+    mode:             g('hybrid-mode')?.value              || 'ollama-first',
+    ollamaEndpoint:   g('hybrid-ollama-endpoint')?.value.trim() || 'http://localhost:11434',
+    ollamaModel:      g('hybrid-ollama-model')?.value.trim()    || 'qwen2.5-coder:7b',
+    claudeApiKey:     g('hybrid-claude-key')?.value.trim()      || '',
+    claudeModel:      g('hybrid-claude-model')?.value           || 'claude-sonnet-4-6',
+    qualityThreshold: parseInt(g('hybrid-threshold')?.value || '75', 10),
+    claudeOnFail:     true,
+  };
+  try {
+    await fetch('/api/hybrid/config', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(cfg),
+    });
+    updateHybridCard(cfg.enabled);
+  } catch {}
+}
+
+async function testHybrid() {
+  const g      = id => document.getElementById(id);
+  const result = g('hybrid-result');
+  if (result) result.textContent = '⏳ Testing Ollama + Claude…';
+  try {
+    const r = await fetch('/api/hybrid/test', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ollamaEndpoint: g('hybrid-ollama-endpoint')?.value.trim(),
+        ollamaModel:    g('hybrid-ollama-model')?.value.trim(),
+        claudeApiKey:   g('hybrid-claude-key')?.value.trim(),
+        claudeModel:    g('hybrid-claude-model')?.value,
+      }),
+    });
+    const data = await r.json();
+    const ol = data.results?.ollama;
+    const cl = data.results?.claude;
+    if (result) {
+      result.innerHTML =
+        `🟡 Ollama: ${ol?.ok ? `<span style="color:var(--green)">✓ ${escHtml(ol.reply||'ok')}</span>` : `<span style="color:var(--red)">✗ ${escHtml(ol?.error||'failed')}</span>`}<br>` +
+        `🔵 Claude: ${cl?.ok ? `<span style="color:var(--green)">✓ ${escHtml(cl.reply||'ok')}</span>` : `<span style="color:var(--red)">✗ ${escHtml(cl?.error||'failed')}</span>`}`;
+    }
+  } catch (e) {
+    if (result) { result.textContent = `✗ ${e.message}`; }
+  }
+}
+
 // ── Context Document Upload ────────────────────────────────────────────────
 let npUploadedFiles = [];
 
@@ -4841,6 +4921,72 @@ async function npUploadContextFiles(projectId) {
               <div id="ollama-result" style="font-size:9px;color:var(--text-dim);margin-top:6px"></div>
               <div style="font-size:9px;color:var(--text-dim);margin-top:4px">Recommended models for code: <code style="color:var(--primary)">qwen2.5-coder:7b</code> · <code style="color:var(--primary)">deepseek-coder:6.7b</code> · <code style="color:var(--primary)">codellama:13b</code></div>
             </div>
+
+            <!-- ── Hybrid LLM Card (independent — does not affect Ollama or Claude settings) ── -->
+            <div class="np-mcp-card" id="hybrid-card" style="margin-top:10px;border-color:#7c3aed">
+              <div class="np-mcp-card-header">
+                <span class="np-mcp-icon">🔀</span>
+                <span class="np-mcp-name" style="color:#7c3aed;font-weight:700">Hybrid LLM</span>
+                <span style="font-size:9px;background:#f5f3ff;color:#7c3aed;border-radius:20px;padding:1px 7px;margin-left:6px">NEW</span>
+                <span class="np-mcp-status" id="hybrid-status" style="margin-left:auto">off</span>
+              </div>
+              <div style="font-size:10px;color:var(--text-dim);margin-top:4px;line-height:1.5">
+                Ollama drafts code → quality scored → Claude improves if needed.<br>
+                <em>Completely separate from Ollama-only and Claude-only modes.</em>
+              </div>
+
+              <!-- Mode selector -->
+              <div style="margin-top:8px">
+                <div style="font-size:10px;font-weight:600;color:var(--text);margin-bottom:4px">Mode</div>
+                <select id="hybrid-mode" onchange="hybridSave()" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);color:var(--text);padding:5px 8px;border-radius:6px;font-size:11px;font-family:var(--font)">
+                  <option value="ollama-first">🟡→🔵 Ollama-first — Claude upgrades only if score &lt; threshold</option>
+                  <option value="claude-review">🔀 Claude-review — Ollama drafts, Claude always reviews</option>
+                </select>
+              </div>
+
+              <!-- Ollama layer -->
+              <div style="margin-top:8px;padding:8px;background:#faf5ff;border-radius:6px;border:1px solid #ddd6fe">
+                <div style="font-size:10px;font-weight:700;color:#7c3aed;margin-bottom:5px">🟡 Layer 1 — Ollama (draft)</div>
+                <div style="display:flex;gap:6px">
+                  <input class="np-mcp-input" id="hybrid-ollama-endpoint" placeholder="http://localhost:11434" value="http://localhost:11434" style="flex:2;font-size:10px" oninput="hybridSave()">
+                  <input class="np-mcp-input" id="hybrid-ollama-model" placeholder="qwen2.5-coder:7b" value="qwen2.5-coder:7b" style="flex:1;font-size:10px" oninput="hybridSave()">
+                </div>
+              </div>
+
+              <!-- Claude layer -->
+              <div style="margin-top:6px;padding:8px;background:#eff6ff;border-radius:6px;border:1px solid #bfdbfe">
+                <div style="font-size:10px;font-weight:700;color:#1e40af;margin-bottom:5px">🔵 Layer 2 — Claude (improve)</div>
+                <div style="display:flex;gap:6px">
+                  <input class="np-mcp-input" id="hybrid-claude-key" placeholder="sk-ant-... (or set ANTHROPIC_API_KEY env)" type="password" style="flex:2;font-size:10px" oninput="hybridSave()">
+                  <select id="hybrid-claude-model" onchange="hybridSave()" style="flex:1;background:var(--surface2);border:1.5px solid var(--border);color:var(--text);padding:5px 6px;border-radius:6px;font-size:10px;font-family:var(--font)">
+                    <option value="claude-sonnet-4-6">Sonnet 4.6</option>
+                    <option value="claude-opus-4-6">Opus 4.6</option>
+                    <option value="claude-haiku-4-5">Haiku 4.5</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Quality threshold -->
+              <div style="margin-top:6px;display:flex;align-items:center;gap:10px">
+                <span style="font-size:10px;color:var(--text-dim);white-space:nowrap">Quality threshold</span>
+                <input type="range" id="hybrid-threshold" min="0" max="100" value="75" step="5"
+                       style="flex:1;accent-color:#7c3aed" oninput="document.getElementById('hybrid-threshold-val').textContent=this.value; hybridSave()">
+                <span id="hybrid-threshold-val" style="font-size:11px;font-weight:700;color:#7c3aed;min-width:28px">75</span>
+                <span style="font-size:9px;color:var(--text-dim)">/100</span>
+              </div>
+              <div style="font-size:9px;color:var(--text-dim);margin-top:2px">Ollama score below this → Claude improves the code</div>
+
+              <!-- Enable + test -->
+              <div style="display:flex;align-items:center;gap:10px;margin-top:8px">
+                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:10px;color:var(--text-dim)">
+                  <input type="checkbox" id="hybrid-enabled" onchange="hybridSave()" style="width:13px;height:13px;accent-color:#7c3aed">
+                  Enable Hybrid mode
+                </label>
+                <button onclick="testHybrid()" style="margin-left:auto;background:#7c3aed;color:#fff;border:none;border-radius:6px;padding:4px 12px;font-size:10px;cursor:pointer;white-space:nowrap">Test Both</button>
+              </div>
+              <div id="hybrid-result" style="font-size:9px;color:var(--text-dim);margin-top:6px"></div>
+            </div>
+
           </div>
         </div>
 
