@@ -1,9 +1,9 @@
 {
-  "current": "projects/proj-1711605600",
-  "updatedAt": "2026-03-28T06:04:39.571Z",
-  "id": "REQ-1774677064124",
-  "name": "CBRE Unified Asset Intelligence Platform",
-  "sprint": "",
-  "status": "pending_analysis",
-  "description": "Build a full-stack commercial real estate intelligence dashboard for CBRE. The platform has 5 screens: (1) Portfolio Overview — shows total properties, occupancy rate, NOI, cap rate, and asset value across Office, Retail, and Industrial property types. (2) Predictive Lease Risk Engine — AI-scored tenant table with risk levels (High/Medium/Low), lease expiry countdown, and broker action recommendations. (3) ESG & Carbon Tracker — monthly CO2 emissions chart per building with a 2030 net-zero target line and energy intensity KPIs. (4) Tenant Experience Hub — space utilization heatmap, satisfaction scores, and open maintenance tickets. (5) AI Deal Assistant — chat panel powered by Claude where users ask questions about properties and get instant insights. Data sources: RentCast API (property records, rental estimates, US commercial market data), EIA CBECS dataset (commercial building energy consumption CSV), US Census ACS API (neighborhood demographics), Kaggle Commercial Occupancy Dataset CSV (room-level occupancy sensor data). All data stored in PostgreSQL. A Python ETL scheduler pulls RentCast API every hour to simulate real-time updates. Use React 18 + TypeScript + Recharts, FastAPI backend, PostgreSQL with SQLAlchemy + Alembic, dark mode, CBRE brand color #006A4D."
+  "current": "projects/proj-1774759444",
+  "updatedAt": "2026-03-29T10:05:00.000Z",
+  "id": "REQ-1774759444000",
+  "name": "Smart Resume Screener",
+  "sprint": "02",
+  "status": "in_sprint",
+  "description": "AI-powered resume screening tool. Recruiter pastes a job description + candidate resumes, Claude scores each resume 0-100 with matched skills, gaps, and hire recommendation. 2 screens: Upload & Screen + Results Dashboard. FastAPI + SQLite + React 18 + Claude."
 }
