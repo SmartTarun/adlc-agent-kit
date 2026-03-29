@@ -585,6 +585,35 @@ function getHtml() {
 // Warm the cache on startup
 getHtml();
 
+// ── Auto-configure from environment variables (Docker mode) ─────────────────
+// When OLLAMA_ENDPOINT is set (e.g. in docker-compose.ollama.yml),
+// pre-write connections.json so the dashboard is ready without manual setup.
+(function autoConfigFromEnv() {
+  const ollamaEndpoint  = process.env.OLLAMA_ENDPOINT;
+  const ollamaModel     = process.env.OLLAMA_MODEL     || 'qwen2.5-coder:7b';
+  const useForAgents    = process.env.OLLAMA_USE_FOR_AGENTS === 'true';
+  const useForChat      = process.env.OLLAMA_USE_FOR_CHAT   === 'true';
+  const llmMode         = process.env.LLM_MODE          || 'claude';
+
+  if (!ollamaEndpoint) return; // Claude mode — no auto-config needed
+
+  const connPath = path.join(ROOT, 'connections.json');
+  const existing = readJSON(connPath) || {};
+
+  // Only write if not already set to avoid overwriting user customisations
+  if (existing.localLLM && existing.localLLM.endpoint === ollamaEndpoint) return;
+
+  existing.localLLM = {
+    enabled:      true,
+    endpoint:     ollamaEndpoint,
+    model:        ollamaModel,
+    useForAgents: useForAgents,
+    useForChat:   useForChat,
+  };
+  writeJSON(connPath, existing);
+  console.log(`[AutoConfig] Ollama configured: ${ollamaEndpoint} model=${ollamaModel} agents=${useForAgents} chat=${useForChat}`);
+})();
+
 // Cache getProjects() — only invalidates on project switch or every 10s
 let projectsCache = null;
 let projectsCacheAt = 0;
