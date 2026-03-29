@@ -100,7 +100,6 @@ function launchAgent(agentName) {
   agentProcesses[agentName] = { proc, pid: proc.pid, startedAt: new Date().toISOString() };
 
   // Mark agent as wip immediately — write flat format so getFullState() normalises cleanly
-  const pr = getProjectRoot();
   const statusData = readJSON(path.join(pr, 'agent-status.json')) || {};
   const agentsMap = statusData.agents || statusData;
   agentsMap[agentName] = { status: 'wip', progress: 5, task: 'Agent starting…', blocker: '', updated: new Date().toISOString() };
