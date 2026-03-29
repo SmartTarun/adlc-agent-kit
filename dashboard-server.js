@@ -1768,7 +1768,23 @@ const server = http.createServer(async (req, res) => {
         sprintPlan:      '',
         approvedByTarun: false,
       };
-      const pr = getProjectRoot();
+
+      // For new_project: create a dedicated project folder under projects/
+      let pr = getProjectRoot();
+      let projectSlug = null;
+      if (data.type === 'new_project' && data.title) {
+        projectSlug = data.title
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-+|-+$/g, '')
+          .substring(0, 50)
+          + '-' + Date.now();
+        const projectsDir = path.join(ROOT, 'projects');
+        if (!fs.existsSync(projectsDir)) fs.mkdirSync(projectsDir, { recursive: true });
+        pr = path.join(projectsDir, projectSlug);
+        fs.mkdirSync(pr, { recursive: true });
+      }
+
       writeJSON(path.join(pr, 'requirement.json'), reqObj);
 
       // Reset agent statuses
@@ -1782,6 +1798,14 @@ const server = http.createServer(async (req, res) => {
         };
       });
       writeJSON(path.join(pr, 'agent-status.json'), statusData);
+
+      // Switch active project to the new folder (must happen after files are written)
+      if (projectSlug) {
+        switchActiveProject('projects/' + projectSlug, {
+          name:   data.title,
+          sprint: data.sprint || '01',
+        });
+      }
 
       // Post to group chat
       postToChat('TARUN', 'Product Owner', 'requirement',
@@ -1798,7 +1822,7 @@ const server = http.createServer(async (req, res) => {
         ['analysis-started', 'all-agents']);
 
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ ok: true, requirementId: req_id }));
+      res.end(JSON.stringify({ ok: true, requirementId: req_id, projectId: projectSlug || path.basename(pr) }));
     } catch (e) {
       res.writeHead(400, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: e.message }));
