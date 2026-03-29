@@ -218,6 +218,7 @@ function startWatching() {
     try { fs.readdirSync(memDir).forEach(f => targets.push('agent-memory/' + f)); } catch {}
   }
 
+  // Watch files in the active project folder
   targets.forEach(rel => {
     const abs = path.join(pr, rel);
     if (!fs.existsSync(abs)) return;
@@ -238,6 +239,31 @@ function startWatching() {
       watchers.push(w);
     } catch {}
   });
+
+  // Also watch ROOT agent-status.json and group-chat.json when project is in a subfolder
+  // — agents write to ROOT (their cwd), so we must watch there too
+  if (pr !== ROOT) {
+    ['agent-status.json', 'group-chat.json'].forEach(rel => {
+      const abs = path.join(ROOT, rel);
+      if (!fs.existsSync(abs)) return;
+      try {
+        const debounceMs = rel === 'group-chat.json' ? 50 : 300;
+        const w = fs.watch(abs, () => {
+          setTimeout(() => {
+            try {
+              const content = fs.readFileSync(abs, 'utf8');
+              if (content !== fileCache[abs]) {
+                fileCache[abs] = content;
+                broadcast('update', getFullState());
+                console.log(`[${new Date().toLocaleTimeString()}] ROOT Changed: ${rel} -> pushed to ${clients.length} client(s)`);
+              }
+            } catch {}
+          }, debounceMs);
+        });
+        watchers.push(w);
+      } catch {}
+    });
+  }
 }
 
 // Connected SSE clients
@@ -264,9 +290,22 @@ const CHAT_DASHBOARD_WINDOW = 50;
 
 function getFullState() {
   const pr         = getProjectRoot();
-  const rawStatus  = readJSON(path.join(pr, 'agent-status.json')) || {};
-  // Normalise: support both { agents: {...} } (new format) and flat { arjun: {...} } (legacy)
-  const agents     = rawStatus.agents || rawStatus;
+
+  // Merge agent status from both project folder AND root.
+  // Agents write to ROOT (their cwd), dashboard reads from project folder.
+  // We merge both, preferring the entry with the more recent `updated` timestamp.
+  const projectStatus = readJSON(path.join(pr, 'agent-status.json')) || {};
+  const rootStatus    = pr !== ROOT ? (readJSON(path.join(ROOT, 'agent-status.json')) || {}) : {};
+  const projectAgents = projectStatus.agents || projectStatus;
+  const rootAgents    = rootStatus.agents    || rootStatus;
+  const agents = { ...projectAgents };
+  for (const [name, rootEntry] of Object.entries(rootAgents)) {
+    const projEntry = agents[name];
+    if (!projEntry) { agents[name] = rootEntry; continue; }
+    const rootTime = rootEntry.updated ? new Date(rootEntry.updated).getTime() : 0;
+    const projTime = projEntry.updated ? new Date(projEntry.updated).getTime() : 0;
+    if (rootTime > projTime) agents[name] = rootEntry;
+  }
   const rawChat    = readJSON(path.join(pr, 'group-chat.json'))   || { channel: 'team-panchayat-general', messages: [] };
   const req        = readJSON(path.join(pr, 'requirement.json'))  || {};
   const memory     = {};
