@@ -1823,6 +1823,15 @@ const server = http.createServer(async (req, res) => {
 
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ ok: true, requirementId: req_id, projectId: projectSlug || path.basename(pr) }));
+
+      // Auto-launch Arjun (PM/Orchestrator) immediately after project creation
+      // so discovery kicks off without needing to click "Launch Agents"
+      setTimeout(() => {
+        postToChat('SYSTEM', 'System', 'system',
+          `🤖 Auto-launching ARJUN to begin discovery for "${reqObj.title}"…`,
+          ['auto-launch', 'arjun']);
+        launchAgent('arjun');
+      }, 500);
     } catch (e) {
       res.writeHead(400, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: e.message }));
