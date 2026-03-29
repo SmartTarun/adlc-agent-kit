@@ -122,6 +122,30 @@ body {
 .topbtn.approve:hover { background: #15803d; }
 @keyframes pulse-green { 0%,100%{box-shadow:0 0 0 0 rgba(22,163,74,.6)} 50%{box-shadow:0 0 0 6px rgba(22,163,74,0)} }
 
+/* ── More menu dropdown ──────────────────────────────────────────────── */
+#more-menu-wrap { position: relative; }
+#more-menu-btn  { font-size: 14px; padding: 5px 10px; letter-spacing: .04em; }
+#more-menu-dropdown {
+  display: none; position: absolute; top: calc(100% + 8px); right: 0;
+  background: #1e1b4b; border: 1px solid rgba(255,255,255,.18);
+  border-radius: 10px; padding: 6px; min-width: 180px; z-index: 500;
+  box-shadow: 0 8px 32px rgba(0,0,0,.5);
+}
+#more-menu-dropdown.open { display: flex; flex-direction: column; gap: 3px; }
+.more-menu-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 12px; border-radius: 7px; cursor: pointer;
+  font-size: 12px; color: rgba(255,255,255,.85); font-family: var(--font);
+  border: none; background: none; width: 100%; text-align: left;
+  transition: background .12s;
+}
+.more-menu-item:hover { background: rgba(255,255,255,.12); color: #fff; }
+.more-menu-item.danger { color: #fca5a5; }
+.more-menu-item.danger:hover { background: rgba(220,38,38,.2); }
+.more-menu-item.success { color: #86efac; }
+.more-menu-item.success:hover { background: rgba(22,163,74,.2); }
+.more-menu-sep { height: 1px; background: rgba(255,255,255,.1); margin: 3px 0; }
+
 /* Project switcher */
 #project-switcher {
   display: flex;
@@ -1815,6 +1839,8 @@ body {
   <div class="divider"></div>
   <div id="uptime">⏱ 00:00:00</div>
   <div class="spacer"></div>
+  <div id="sse-status">● Connecting...</div>
+  <div class="divider"></div>
   <div id="project-switcher">
     <label>Project:</label>
     <select id="project-select" onchange="onProjectSelectChange(this.value)" title="Switch active project">
@@ -1822,16 +1848,24 @@ body {
     </select>
   </div>
   <div class="divider"></div>
-  <div id="sse-status">● Connecting...</div>
   <button id="btn-approve-next" class="topbtn approve" onclick="approveAndStartNext()" style="display:none" title="Mark this project done and start the next requirement">✅ Approve &amp; Start Next</button>
   <button class="topbtn primary" onclick="openNewProjectScreen()">+ New Project</button>
   <button id="btn-launch-agents" class="topbtn success" onclick="launchAgents()" title="Spawn all agent Claude processes">🚀 Launch Agents</button>
-  <button class="topbtn" onclick="openUXScreen()" title="Open UX Design Review screen" style="border-color:#c4b5fd;color:#e9d5ff">🎨 UX Design</button>
-  <button class="topbtn" onclick="openArchScreen()" title="Open Architecture Canvas — Vikram's cloud diagram" style="border-color:#93c5fd;color:#bfdbfe">🏗️ Architecture</button>
-  <button class="topbtn" onclick="openDBScreen()" title="Open DB Schema Canvas — Rasool's table structure" style="border-color:#6ee7b7;color:#a7f3d0">🗄️ DB Schema</button>
-  <button class="topbtn" onclick="openPermModal()" title="Manage agent tool permissions">🔐 Permissions</button>
-  <button class="topbtn success" onclick="activateKeerthi()">🟢 Activate QA</button>
-  <button class="topbtn danger"  onclick="stopAll()">⏹ Stop All</button>
+
+  <!-- ⋯ More menu — secondary actions -->
+  <div id="more-menu-wrap">
+    <button id="more-menu-btn" class="topbtn" onclick="toggleMoreMenu()" title="More actions">⋯</button>
+    <div id="more-menu-dropdown">
+      <button class="more-menu-item" onclick="openUXScreen();closeMoreMenu()">🎨 UX Design</button>
+      <button class="more-menu-item" onclick="openArchScreen();closeMoreMenu()">🏗️ Architecture</button>
+      <button class="more-menu-item" onclick="openDBScreen();closeMoreMenu()">🗄️ DB Schema</button>
+      <div class="more-menu-sep"></div>
+      <button class="more-menu-item" onclick="openPermModal();closeMoreMenu()">🔐 Permissions</button>
+      <button class="more-menu-item success" onclick="activateKeerthi();closeMoreMenu()">🟢 Activate QA</button>
+      <div class="more-menu-sep"></div>
+      <button class="more-menu-item danger" onclick="stopAll();closeMoreMenu()">⏹ Stop All</button>
+    </div>
+  </div>
 </div>
 
 <!-- ══════════════════════════════════════════════════════════════════════
@@ -2858,6 +2892,21 @@ function restartAgent(name) {
     })
     .catch(e => alert('Error: ' + e.message));
 }
+
+// ── More menu ─────────────────────────────────────────────────────────────
+function toggleMoreMenu() {
+  const dd = document.getElementById('more-menu-dropdown');
+  if (dd) dd.classList.toggle('open');
+}
+function closeMoreMenu() {
+  const dd = document.getElementById('more-menu-dropdown');
+  if (dd) dd.classList.remove('open');
+}
+// Close more menu when clicking anywhere outside it
+document.addEventListener('click', function(e) {
+  const wrap = document.getElementById('more-menu-wrap');
+  if (wrap && !wrap.contains(e.target)) closeMoreMenu();
+});
 
 function activateKeerthi() {
   if (!confirm('Activate Keerthi QA agent? Make sure all 5 developers are done.')) return;
