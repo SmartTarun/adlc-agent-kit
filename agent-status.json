@@ -1,51 +1,58 @@
 {
   "arjun": {
-    "status": "done",
-    "progress": 100,
-    "task": "Sprint-01 orchestration complete — all 5 agents DONE, Keerthi QA PASS, ready to deploy.",
+    "role": "Orchestrator",
+    "status": "wip",
+    "progress": 5,
+    "task": "Project selection — awaiting Tarun's direction for Team Panchayat E2E Test Sprint 04",
     "blocker": "",
-    "updated": "2026-03-29T00:00:00.000Z"
+    "updated": "2026-03-29T12:00:00.000Z"
   },
   "kavya": {
-    "status": "done",
-    "progress": 100,
-    "task": "Design tokens + component spec delivered (CBRE Unified Asset Intelligence Platform)",
+    "role": "UX Designer",
+    "status": "queue",
+    "progress": 0,
+    "task": "Design tokens + component spec for Smart Resume Screener",
     "blocker": "",
-    "updated": "2026-03-28T07:06:40.127Z"
+    "updated": "2026-03-29T10:05:00.000Z"
   },
   "vikram": {
-    "status": "done",
-    "progress": 100,
-    "task": "All 7 CBRE Terraform modules + root infra/cbre/ delivered (cbre_vpc, cbre_iam, cbre_rds, cbre_ecs, cbre_alb, cbre_secrets, cbre_frontend). Handoffs ready for Rasool, Kiran, Rohan.",
+    "role": "Cloud Architect",
+    "status": "queue",
+    "progress": 0,
+    "task": "Not required for Sprint-02 — Docker Compose only, no Terraform",
     "blocker": "",
-    "updated": "2026-03-28T08:11:08.888Z"
+    "updated": "2026-03-29T10:05:00.000Z"
   },
   "rasool": {
-    "status": "done",
-    "progress": 100,
-    "task": "DB migrations delivered — 0001 (8 INFRAVIZ tables) + 0002 (11 CBRE tables, 35 indexes). docs/db-schema.md complete. Kiran unblocked.",
+    "role": "Database Agent",
+    "status": "queue",
+    "progress": 0,
+    "task": "SQLite migrations — screening_sessions + resume_submissions tables",
     "blocker": "",
-    "updated": "2026-03-28T08:10:53.345Z"
+    "updated": "2026-03-29T10:05:00.000Z"
   },
   "kiran": {
-    "status": "done",
-    "progress": 100,
-    "task": "Multi-DB + live DB connection support delivered: config.py (db_auth_method, SSL paths, aws_region, db_dialect), database.py (dialect auto-detect, IAM token via boto3 do_connect event, SSL context), /api/v1/health/db endpoint (db_type, connection_status, auth_method). requirements.txt updated (boto3, aiosqlite, aiomysql, aioodbc, cx_Oracle).",
-    "blocker": "",
-    "updated": "2026-03-28T08:14:54.777Z"
+    "role": "Backend Developer",
+    "status": "queue",
+    "progress": 0,
+    "task": "FastAPI backend — 6 endpoints + Claude scoring. Blocked on Rasool migration.",
+    "blocker": "Rasool migration",
+    "updated": "2026-03-29T10:05:00.000Z"
   },
   "rohan": {
-    "status": "done",
-    "progress": 100,
-    "task": "CBRE frontend complete: 5 screen pages (PortfolioOverviewPage, LeaseRiskPage, ESGPage, TenantPage, AIDealAssistantPage) + CSS modules + App.tsx updated with /cbre/* routes, default route set to /cbre/portfolio.",
-    "blocker": "",
-    "updated": "2026-03-28T07:20:50.570Z"
+    "role": "Frontend Developer",
+    "status": "queue",
+    "progress": 0,
+    "task": "2 screens: Upload & Screen + Results Dashboard. Blocked on Kavya tokens.",
+    "blocker": "Kavya tokens",
+    "updated": "2026-03-29T10:05:00.000Z"
   },
   "keerthi": {
-    "status": "done",
-    "progress": 100,
-    "task": "QA complete — all 5 agent deliverables passed. docs/qa-report.md written. Sprint-01 cleared for ship.",
-    "blocker": "",
-    "updated": "2026-03-28T07:43:26.036Z"
+    "role": "QA Engineer",
+    "status": "queue",
+    "progress": 0,
+    "task": "Waiting for all 4 agents to complete before QA activation",
+    "blocker": "All agents must be done",
+    "updated": "2026-03-29T10:05:00.000Z"
   }
 }

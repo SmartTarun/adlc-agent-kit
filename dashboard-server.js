@@ -100,12 +100,31 @@ async function launchAgentLocal(agentName, llmCfg) {
   ].join('\n');
 
   const contextBlock = [
-    '=== RUNTIME CONTEXT ===',
-    `WORKSPACE_ROOT    : ${ROOT}`, `PROJECT_ROOT      : ${pr}`,
-    `PROJECT_ID        : ${projectId}`, `SPRINT            : ${activeProj.sprint || '01'}`,
-    `TODAY             : ${today}`,     `PROJECT_NAME      : ${req.title || 'Unknown'}`,
-    `PATH MAPPING      : /workspace/ → ${ROOT}${path.sep}  |  /projects/${projectId}/ → ${pr}${path.sep}`,
-    '=== END CONTEXT ===', '',
+    '=== RUNTIME CONTEXT (injected by dashboard-server — read this first) ===',
+    `WORKSPACE_ROOT    : ${ROOT}`,
+    `PROJECT_ROOT      : ${pr}`,
+    `PROJECT_ID        : ${projectId}`,
+    `PROJECT_NAME      : ${activeProj.name || req.title || projectId}`,
+    `SPRINT            : ${activeProj.sprint || req.sprint || '01'}`,
+    `TODAY             : ${today}`,
+    '',
+    '── KEY FILES (use these exact paths — do NOT guess) ──',
+    `  requirement.json  : ${path.join(pr, 'requirement.json')}`,
+    `  agent-status.json : ${path.join(pr, 'agent-status.json')}`,
+    `  group-chat.json   : ${path.join(pr, 'group-chat.json')}`,
+    `  active-project    : ${path.join(ROOT, 'active-project.json')}`,
+    '',
+    '── CURRENT REQUIREMENT SNAPSHOT ──',
+    `  title            : ${req.title || '(none)'}`,
+    `  type             : ${req.type || '(none)'}`,
+    `  status           : ${req.status || '(none)'}`,
+    `  sprint           : ${req.sprint || '(none)'}`,
+    `  discoveryComplete: ${req.discoveryComplete || false}`,
+    `  approvedByTarun  : ${req.approvedByTarun || false}`,
+    '',
+    'IMPORTANT: Always read/write requirement.json, agent-status.json and group-chat.json',
+    'from PROJECT_ROOT shown above — NOT from /workspace/ root.',
+    '=== END RUNTIME CONTEXT ===', '',
   ].join('\n');
 
   const systemPrompt = contextBlock + outputInstruction + promptContent;
@@ -293,14 +312,31 @@ async function launchAgentHybrid(agentName, hybridCfg) {
   ].join('\n');
 
   const contextBlock = [
-    '=== RUNTIME CONTEXT ===',
-    `WORKSPACE_ROOT : ${ROOT}`,
-    `PROJECT_ROOT   : ${pr}`,
-    `PROJECT_ID     : ${projectId}`,
-    `SPRINT         : ${activeProj.sprint || '01'}`,
-    `TODAY          : ${today}`,
-    `PROJECT_NAME   : ${req.title || 'Unknown'}`,
-    '=== END CONTEXT ===', '',
+    '=== RUNTIME CONTEXT (injected by dashboard-server — read this first) ===',
+    `WORKSPACE_ROOT    : ${ROOT}`,
+    `PROJECT_ROOT      : ${pr}`,
+    `PROJECT_ID        : ${projectId}`,
+    `PROJECT_NAME      : ${activeProj.name || req.title || projectId}`,
+    `SPRINT            : ${activeProj.sprint || req.sprint || '01'}`,
+    `TODAY             : ${today}`,
+    '',
+    '── KEY FILES (use these exact paths — do NOT guess) ──',
+    `  requirement.json  : ${path.join(pr, 'requirement.json')}`,
+    `  agent-status.json : ${path.join(pr, 'agent-status.json')}`,
+    `  group-chat.json   : ${path.join(pr, 'group-chat.json')}`,
+    `  active-project    : ${path.join(ROOT, 'active-project.json')}`,
+    '',
+    '── CURRENT REQUIREMENT SNAPSHOT ──',
+    `  title            : ${req.title || '(none)'}`,
+    `  type             : ${req.type || '(none)'}`,
+    `  status           : ${req.status || '(none)'}`,
+    `  sprint           : ${req.sprint || '(none)'}`,
+    `  discoveryComplete: ${req.discoveryComplete || false}`,
+    `  approvedByTarun  : ${req.approvedByTarun || false}`,
+    '',
+    'IMPORTANT: Always read/write requirement.json, agent-status.json and group-chat.json',
+    'from PROJECT_ROOT shown above — NOT from /workspace/ root.',
+    '=== END RUNTIME CONTEXT ===', '',
   ].join('\n');
 
   const fullPrompt = contextBlock + outputInstruction + promptContent;
@@ -552,11 +588,31 @@ async function launchAgentOpenAICompat(agentName, cfg) {
   ].join('\n');
 
   const contextBlock = [
-    '=== RUNTIME CONTEXT ===',
-    `WORKSPACE_ROOT : ${ROOT}`, `PROJECT_ROOT   : ${pr}`,
-    `PROJECT_ID     : ${projectId}`, `SPRINT         : ${activeProj.sprint || '01'}`,
-    `TODAY          : ${today}`,    `PROJECT_NAME   : ${req.title || 'Unknown'}`,
-    '=== END CONTEXT ===', '',
+    '=== RUNTIME CONTEXT (injected by dashboard-server — read this first) ===',
+    `WORKSPACE_ROOT    : ${ROOT}`,
+    `PROJECT_ROOT      : ${pr}`,
+    `PROJECT_ID        : ${projectId}`,
+    `PROJECT_NAME      : ${activeProj.name || req.title || projectId}`,
+    `SPRINT            : ${activeProj.sprint || req.sprint || '01'}`,
+    `TODAY             : ${today}`,
+    '',
+    '── KEY FILES (use these exact paths — do NOT guess) ──',
+    `  requirement.json  : ${path.join(pr, 'requirement.json')}`,
+    `  agent-status.json : ${path.join(pr, 'agent-status.json')}`,
+    `  group-chat.json   : ${path.join(pr, 'group-chat.json')}`,
+    `  active-project    : ${path.join(ROOT, 'active-project.json')}`,
+    '',
+    '── CURRENT REQUIREMENT SNAPSHOT ──',
+    `  title            : ${req.title || '(none)'}`,
+    `  type             : ${req.type || '(none)'}`,
+    `  status           : ${req.status || '(none)'}`,
+    `  sprint           : ${req.sprint || '(none)'}`,
+    `  discoveryComplete: ${req.discoveryComplete || false}`,
+    `  approvedByTarun  : ${req.approvedByTarun || false}`,
+    '',
+    'IMPORTANT: Always read/write requirement.json, agent-status.json and group-chat.json',
+    'from PROJECT_ROOT shown above — NOT from /workspace/ root.',
+    '=== END RUNTIME CONTEXT ===', '',
   ].join('\n');
 
   const systemPrompt   = contextBlock + outputInstruction + promptContent;
@@ -703,21 +759,36 @@ function launchAgent(agentName) {
   const today       = new Date().toISOString().split('T')[0];
 
   // Prepend a context block so agents always know real paths regardless of prompt placeholders
+  const req2 = readJSON(path.join(pr, 'requirement.json')) || {};
   const contextBlock = [
     '=== RUNTIME CONTEXT (injected by dashboard-server — read this first) ===',
     `WORKSPACE_ROOT    : ${ROOT}`,
     `PROJECT_ROOT      : ${pr}`,
     `PROJECT_ID        : ${projectId}`,
-    `ACTIVE_PROJECT_ID : ${activeProj.id || ''}`,
-    `SPRINT            : ${activeProj.sprint || '01'}`,
+    `PROJECT_NAME      : ${activeProj.name || req2.title || projectId}`,
+    `SPRINT            : ${activeProj.sprint || req2.sprint || '01'}`,
     `TODAY             : ${today}`,
     '',
-    'PATH MAPPING (all prompts use these aliases — resolve to real paths above):',
+    '── KEY FILES (use these exact paths — do NOT guess) ──',
+    `  requirement.json  : ${path.join(pr, 'requirement.json')}`,
+    `  agent-status.json : ${path.join(pr, 'agent-status.json')}`,
+    `  group-chat.json   : ${path.join(pr, 'group-chat.json')}`,
+    `  active-project    : ${path.join(ROOT, 'active-project.json')}`,
+    '',
+    '── PATH ALIASES (for prompts that use /workspace/ or /projects/) ──',
     `  /workspace/  →  ${ROOT}${path.sep}`,
     `  /projects/${projectId}/  →  ${pr}${path.sep}`,
     '',
-    'IMPORTANT: Use the WORKSPACE_ROOT and PROJECT_ROOT paths above for ALL file reads/writes.',
-    'Do NOT use /workspace/ or /projects/ literally — translate to the real paths shown above.',
+    '── CURRENT REQUIREMENT SNAPSHOT ──',
+    `  title            : ${req2.title || '(none)'}`,
+    `  type             : ${req2.type || '(none)'}`,
+    `  status           : ${req2.status || '(none)'}`,
+    `  sprint           : ${req2.sprint || '(none)'}`,
+    `  discoveryComplete: ${req2.discoveryComplete || false}`,
+    `  approvedByTarun  : ${req2.approvedByTarun || false}`,
+    '',
+    'IMPORTANT: Always read/write requirement.json, agent-status.json and group-chat.json',
+    'from PROJECT_ROOT shown above — NOT from /workspace/ root.',
     '=== END RUNTIME CONTEXT ===',
     '',
   ].join('\n');
@@ -1823,6 +1894,15 @@ const server = http.createServer(async (req, res) => {
 
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ ok: true, requirementId: req_id, projectId: projectSlug || path.basename(pr) }));
+
+      // Auto-launch Arjun (PM/Orchestrator) immediately after project creation
+      // so discovery kicks off without needing to click "Launch Agents"
+      setTimeout(() => {
+        postToChat('SYSTEM', 'System', 'system',
+          `🤖 Auto-launching ARJUN to begin discovery for "${reqObj.title}"…`,
+          ['auto-launch', 'arjun']);
+        launchAgent('arjun');
+      }, 500);
     } catch (e) {
       res.writeHead(400, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: e.message }));

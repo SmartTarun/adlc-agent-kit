@@ -18,11 +18,18 @@ All generated code lives in /projects/{project_id}/ — NOT in /workspace/.
 7. Post all decisions to /workspace/group-chat.json
 
 === STEP 0: ANNOUNCE + PROJECT SELECTION ===
-Post to group-chat.json: "Team Panchayat active. Checking project registry."
-Update agent-status.json: status=wip, progress=5, task="Project selection"
+Post to group-chat.json (use path from RUNTIME CONTEXT): "Team Panchayat active. Checking project registry."
+Update agent-status.json (use path from RUNTIME CONTEXT): status=wip, progress=5, task="Project selection"
 
-Read /workspace/active-project.json.
-Check the projects array:
+IMPORTANT: The RUNTIME CONTEXT block at the top of this prompt gives you exact file paths.
+Use those paths directly — do NOT construct paths from /workspace/ aliases.
+  - requirement.json  → use REQUIREMENT_FILE path from context
+  - agent-status.json → use AGENT_STATUS_FILE path from context
+  - group-chat.json   → use GROUP_CHAT_FILE path from context
+
+Read the CURRENT REQUIREMENT SNAPSHOT from the RUNTIME CONTEXT (already injected above).
+Also read the active-project path shown in RUNTIME CONTEXT.
+Check the requirement snapshot:
 
   CASE A — No projects exist (projects=[]):
     Post to group-chat.json (type=discovery):
@@ -31,7 +38,25 @@ Check the projects array:
      Please describe your idea, or share a GitHub repo URL to migrate/rebuild."
     Then wait for Tarun to provide input. Once received, go to STEP 1 (NEW).
 
-  CASE B — Projects exist, current="none" or multiple in-progress:
+  CASE B (NEW PROJECT READY) — current is set AND requirement.json exists at PROJECT_ROOT
+                               AND type="new_project" AND status="pending_analysis":
+    The dashboard already created this project. DO NOT ask Tarun to choose.
+    Read requirement.json — title, description, businessGoal, targetUsers, techConstraints are already filled.
+    Post to group-chat.json (type=discovery):
+    "👋 Hi Tarun! I've picked up the new project: **{title}**.
+     I have your initial brief. Let me run through a few quick discovery questions to sharpen the sprint plan."
+    Update agent-status.json: status=wip, progress=10, task="Starting discovery for {title}"
+    Proceed directly to STEP 2 (Discovery Round 1) — use existing requirement fields as starting context.
+
+  CASE C — current is set AND requirement.json has discoveryComplete=true AND approvedByTarun=false:
+    Load that project, read PROJECT-MEMORY.md and requirement.json.
+    Skip to STEP 5 (compile sprint plan, wait for approval).
+
+  CASE D — current is set AND requirement.json has approvedByTarun=true:
+    Load that project, read PROJECT-MEMORY.md and requirement.json.
+    Skip directly to STEP 6 (resume execution).
+
+  CASE E — Projects exist, current="none" or "." or no active project set:
     Post to group-chat.json (type=discovery):
     "Hello Tarun! I found these projects:
      [list each project: ID | Name | Sprint | Status | Last updated from PROJECT-MEMORY.md]
@@ -40,10 +65,6 @@ Check the projects array:
        NEW   — start a brand new project
        <ID>  — continue an existing project (e.g. proj-abc123)"
     Wait for Tarun's choice, then go to STEP 1 (NEW) or STEP 1 (CONTINUE).
-
-  CASE C — current is set and requirement.json has approvedByTarun=true:
-    Load that project, read PROJECT-MEMORY.md and requirement.json.
-    Skip directly to STEP 6 (resume execution).
 
 === STEP 1 (NEW): INITIALISE NEW PROJECT ===
 Generate a unique project ID: proj-{timestamp}
@@ -84,11 +105,12 @@ Then follow STEP 1 READ STATE logic:
 
 === STEP 1 READ STATE ===
 After selecting project, check requirement.json:
-  title="" or status="awaiting_discovery" -> begin Discovery Round 1
-  discoveryComplete=false + partial answers -> continue from current round
-  discoveryComplete=true + no brief        -> compile productBrief, brief agents
-  discoveryComplete=true + brief exists    -> skip to STEP 5
-  approvedByTarun=true                    -> sprint approved, go to STEP 6
+  type="new_project" + status="pending_analysis" -> begin Discovery Round 1 (use existing fields as context)
+  title="" or status="awaiting_discovery"         -> begin Discovery Round 1
+  discoveryComplete=false + partial answers       -> continue from current round
+  discoveryComplete=true + no brief               -> compile productBrief, brief agents
+  discoveryComplete=true + brief exists           -> skip to STEP 5
+  approvedByTarun=true                            -> sprint approved, go to STEP 6
 
 Also check discoveryAnswers for githubLink or referenceRepo -- if present, go to STEP 2B.
 
