@@ -2319,6 +2319,9 @@ function renderBoard(state) {
   document.getElementById('count-wip').textContent   = wCount;
   document.getElementById('count-done').textContent  = dCount;
 
+  // Update launch button label based on project progress
+  updateLaunchBtn();
+
   // Render chat -- state.chat is the full {channel, messages:[]} object
   renderChat((state.chat && state.chat.messages) ? state.chat.messages : []);
   updateTypingIndicator(state.agents || {});
@@ -2399,6 +2402,14 @@ function buildCard(name, agentStatus, containerInfo) {
         }
         ${containerState === 'running'
           ? `<button class="card-btn restart-btn" onclick="restartAgent('${name}')" title="Restart container">↺</button>`
+          : ''
+        }
+        ${['queue','standby','blocked'].includes(status)
+          ? `<button class="card-btn run-btn" onclick="launchAgents(['${name}'])" title="Run this agent now" style="border-color:#86efac;color:#4ade80">▶ Run</button>`
+          : ''
+        }
+        ${status === 'done'
+          ? `<button class="card-btn" onclick="launchAgents(['${name}'])" title="Re-run this agent" style="opacity:0.65;border-color:var(--text-dim);color:var(--text-dim)">↺ Re-run</button>`
           : ''
         }
         <button class="card-btn logs-btn" onclick="openLogPanel('${name}')" title="View live logs">📋 Logs</button>
@@ -2928,26 +2939,67 @@ function stopAll() {
     });
 }
 
-function launchAgents(agents) {
-  const targets = agents || null;
-  const label = targets ? targets.join(', ') : 'all agents';
-  if (!confirm(`Launch ${label}?\n\nThis will spawn Claude processes for each agent using their prompt files.`)) return;
+function getIncompleteAgents() {
+  const agentStatuses = (currentState && currentState.agents) || {};
+  const req = (currentState && (currentState.req || currentState.requirement)) || {};
+  const allAgents = ['arjun','vikram','rasool','kavya','kiran','rohan','keerthi'];
+
+  // If discovery not done — only Arjun is needed
+  if (!req.discoveryComplete) return ['arjun'];
+
+  // If sprint not approved — analysis agents (everyone except Keerthi)
+  if (!req.approvedByTarun) return allAgents.filter(a => a !== 'keerthi');
+
+  // Sprint approved — return only agents that are not yet done
+  const incomplete = allAgents.filter(a => {
+    const s = (agentStatuses[a] || {}).status;
+    return !s || !['done'].includes(s);
+  });
+  return incomplete.length ? incomplete : allAgents; // fallback: all
+}
+
+function updateLaunchBtn() {
   const btn = document.getElementById('btn-launch-agents');
+  if (!btn) return;
+  const agentStatuses = (currentState && currentState.agents) || {};
+  const anyDone = Object.values(agentStatuses).some(a => a.status === 'done');
+  const allDone = Object.values(agentStatuses).every(a => a.status === 'done');
+  if (allDone) {
+    btn.textContent = '↺ Re-run All';
+    btn.title = 'Re-run all agents from scratch';
+  } else if (anyDone) {
+    btn.textContent = '🔄 Resume Project';
+    btn.title = 'Resume — launch only incomplete agents';
+  } else {
+    btn.textContent = '🚀 Launch Agents';
+    btn.title = 'Spawn all agent Claude processes';
+  }
+}
+
+function launchAgents(agents) {
+  const btn = document.getElementById('btn-launch-agents');
+  // If no specific agents given, smart-select based on project state
+  const targets = agents || getIncompleteAgents();
+  const label = targets.join(', ');
+  const isResume = !agents && (currentState && currentState.agents &&
+    Object.values(currentState.agents).some(a => a.status === 'done'));
+  const action = isResume ? 'Resume' : 'Launch';
+  if (!confirm(`${action}: ${label}?\n\nThis will spawn Claude processes for these agents using their prompt files.`)) return;
   if (btn) { btn.disabled = true; btn.textContent = '⏳ Launching…'; }
   fetch('/api/launch-agents', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(targets ? { agents: targets } : {}),
+    body: JSON.stringify({ agents: targets }),
   })
     .then(r => r.json())
     .then(d => {
-      if (btn) { btn.disabled = false; btn.textContent = '🚀 Launch Agents'; }
+      if (btn) { btn.disabled = false; updateLaunchBtn(); }
       if (!d.ok) { alert('Error: ' + (d.error || 'unknown')); return; }
       const failed = Object.entries(d.results || {}).filter(([, r]) => !r.ok).map(([a, r]) => `${a}: ${r.error}`);
       if (failed.length) alert('Some agents could not start:\n' + failed.join('\n'));
     })
     .catch(e => {
-      if (btn) { btn.disabled = false; btn.textContent = '🚀 Launch Agents'; }
+      if (btn) { btn.disabled = false; updateLaunchBtn(); }
       alert('Network error: ' + e.message);
     });
 }
