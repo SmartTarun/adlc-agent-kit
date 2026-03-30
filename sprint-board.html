@@ -2143,6 +2143,7 @@ let dbScreenOpen    = false;
 let dbErdRendered   = false;
 
 // ── Agent metadata ───────────────────────────────────────────────────────────
+// Model labels are updated dynamically via updateAgentModelLabels() when LLM config loads
 const AGENT_META = {
   arjun  : { role: 'PM / Orchestrator', model: 'Opus',   color: '#bc8cff' },
   vikram : { role: 'Cloud Architect',   model: 'Sonnet', color: '#f85149' },
@@ -2152,6 +2153,26 @@ const AGENT_META = {
   rohan  : { role: 'Frontend Engineer', model: 'Sonnet', color: '#388bfd' },
   keerthi: { role: 'QA Agent',          model: 'Sonnet', color: '#3fb950' },
 };
+
+// Update model labels on agent cards based on active LLM mode
+function updateAgentModelLabels(llmCfg) {
+  let label = '';
+  if (llmCfg.hybrid && llmCfg.hybrid.enabled) {
+    const ollamaModel = (llmCfg.hybrid.ollamaModel || 'ollama').split(':')[0];
+    label = `${ollamaModel}→Claude`;
+  } else if (llmCfg.openaiCompat && llmCfg.openaiCompat.enabled) {
+    label = (llmCfg.openaiCompat.model || 'OpenAI').split('/').pop().substring(0, 12);
+  } else if (llmCfg.localLLM && llmCfg.localLLM.enabled && llmCfg.localLLM.useForAgents) {
+    label = (llmCfg.localLLM.model || 'Ollama').split(':')[0];
+  }
+  if (label) {
+    Object.keys(AGENT_META).forEach(a => { AGENT_META[a].model = label; });
+  } else {
+    // Claude CLI mode — restore defaults
+    AGENT_META.arjun.model = 'Opus';
+    ['vikram','rasool','kavya','kiran','rohan','keerthi'].forEach(a => { AGENT_META[a].model = 'Sonnet'; });
+  }
+}
 
 // ── State ────────────────────────────────────────────────────────────────────
 let currentState   = {};
@@ -4425,6 +4446,9 @@ async function loadLLMConfig() {
     const fbControls = g('ollama-feedback-controls');
     if (fbControls) fbControls.style.display = cfg.feedbackLoop ? 'block' : 'none';
     updateOllamaCard(cfg.enabled, cfg.useForAgents);
+    // Update agent card model labels to reflect active LLM mode
+    updateAgentModelLabels({ localLLM: { enabled: cfg.enabled, useForAgents: cfg.useForAgents, model: cfg.model } });
+    if (currentState && Object.keys(currentState).length) renderBoard(currentState);
   } catch {}
 }
 
@@ -4461,6 +4485,9 @@ async function ollamaSave() {
       body: JSON.stringify({ enabled, useForAgents, endpoint, model, feedbackLoop, maxIterations, feedbackThreshold }),
     });
     updateOllamaCard(enabled, useForAgents);
+    // Update model labels on agent cards immediately
+    updateAgentModelLabels({ localLLM: { enabled, useForAgents, model } });
+    if (currentState && Object.keys(currentState).length) renderBoard(currentState);
   } catch {}
 }
 
