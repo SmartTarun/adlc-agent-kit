@@ -951,23 +951,7 @@ function startWatching() {
     try { fs.readdirSync(memDir).forEach(f => targets.push('agent-memory/' + f)); } catch {}
   }
 
-<<<<<<< HEAD
-  // Ensure core files exist so the watcher can attach
-  const defaults = {
-    'group-chat.json':  { channel: 'team-panchayat-general', messages: [] },
-    'agent-status.json': {},
-    'requirement.json':  {},
-  };
-  Object.entries(defaults).forEach(([rel, blank]) => {
-    const abs = path.join(pr, rel);
-    if (!fs.existsSync(abs)) {
-      try { fs.writeFileSync(abs, JSON.stringify(blank, null, 2), 'utf8'); } catch {}
-    }
-  });
-
-=======
   // Watch files in the active project folder
->>>>>>> feature/chat-liveness
   targets.forEach(rel => {
     const abs = path.join(pr, rel);
     if (!fs.existsSync(abs)) return;
@@ -1234,36 +1218,6 @@ function getProjectsCached() {
   return projectsCache;
 }
 
-// Cache sprint-board.html at startup so it is not re-read on every request
-let cachedHtml = null;
-let cachedHtmlMtime = 0;
-function getHtml() {
-  const htmlPath = path.join(ROOT, 'sprint-board.html');
-  try {
-    const mtime = fs.statSync(htmlPath).mtimeMs;
-    if (!cachedHtml || mtime !== cachedHtmlMtime) {
-      cachedHtml = fs.readFileSync(htmlPath, 'utf8');
-      cachedHtmlMtime = mtime;
-    }
-  } catch {}
-  return cachedHtml || '';
-}
-// Warm the cache on startup
-getHtml();
-
-// Cache getProjects() — only invalidates on project switch or every 10s
-let projectsCache = null;
-let projectsCacheAt = 0;
-const PROJECTS_CACHE_TTL = 10000;
-function getProjectsCached() {
-  const now = Date.now();
-  if (!projectsCache || now - projectsCacheAt > PROJECTS_CACHE_TTL) {
-    projectsCache = getProjects();
-    projectsCacheAt = now;
-  }
-  return projectsCache;
-}
-
 // Start watching files for the active project
 startWatching();
 
@@ -1358,24 +1312,14 @@ const server = http.createServer(async (req, res) => {
   // -- API: MCP config (GET + POST) --------------------------------
   if (pathname === '/api/mcp/config') {
     cors(res);
-<<<<<<< HEAD
-    const CONN_FILE = path.join(ROOT, 'connections.json');
-=======
     const CONN_FILE    = path.join(ROOT, 'connections.json');
     const CLAUDE_DIR   = path.join(ROOT, '.claude');
     const SETTINGS_FILE = path.join(CLAUDE_DIR, 'settings.json');
 
->>>>>>> feature/chat-liveness
     if (req.method === 'GET') {
       const cfg = readJSON(CONN_FILE) || {};
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({
-<<<<<<< HEAD
-        db:     cfg.database?.url      || '',
-        gh:     cfg.github?.token      || '',
-        aws:    cfg.aws?.region        || '',
-        custom: cfg.custom?.mcpUrl     || '',
-=======
         db:       cfg.database?.url      || '',
         dbType:   cfg.database?.type     || 'postgres',
         gh:       cfg.github?.token      || '',
@@ -1475,26 +1419,11 @@ const server = http.createServer(async (req, res) => {
         feedbackLoop:      cfg.feedbackLoop      || false,
         maxIterations:     cfg.maxIterations     || 3,
         feedbackThreshold: cfg.feedbackThreshold || 75,
->>>>>>> feature/chat-liveness
       }));
       return;
     }
     if (req.method === 'POST') {
       try {
-<<<<<<< HEAD
-        const body = JSON.parse(await readBody(req));
-        const existing = readJSON(CONN_FILE) || {};
-        if (body.db)     { existing.database = { ...existing.database, url: body.db }; }
-        if (body.gh)     { existing.github   = { ...existing.github,   token: body.gh }; }
-        if (body.aws)    { existing.aws      = { ...existing.aws,      region: body.aws }; }
-        if (body.custom) { existing.custom   = { ...existing.custom,   mcpUrl: body.custom }; }
-        writeJSON(CONN_FILE, existing);
-        console.log(`[${new Date().toLocaleTimeString()}] MCP config saved`);
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ ok: true }));
-      } catch (e) {
-        res.writeHead(400); res.end('Bad request');
-=======
         const body     = JSON.parse(await readBody(req));
         const existing = readJSON(CONN_FILE) || {};
         existing.localLLM = {
@@ -1570,14 +1499,11 @@ const server = http.createServer(async (req, res) => {
       } catch (e) {
         res.writeHead(500, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: e.message }));
->>>>>>> feature/chat-liveness
       }
       return;
     }
   }
 
-<<<<<<< HEAD
-=======
   // -- API: Hybrid LLM test (ping both Ollama + Claude) -----------
   if (pathname === '/api/hybrid/test' && req.method === 'POST') {
     cors(res);
@@ -1688,7 +1614,6 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
->>>>>>> feature/chat-liveness
   // -- API: context file upload ------------------------------------
   if (pathname === '/api/project/upload-context' && req.method === 'POST') {
     cors(res);
