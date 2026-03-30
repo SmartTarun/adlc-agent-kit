@@ -1,0 +1,224 @@
+{
+  "requirementId": null,
+  "postedBy": "Tarun Vangari",
+  "postedAt": "2026-03-28T05:51:04.124Z",
+  "sprint": "01",
+  "type": "new_project",
+  "title": "CBRE Unified Asset Intelligence Platform",
+  "description": "Build a full-stack commercial real estate intelligence dashboard for CBRE. The platform has 5 screens: (1) Portfolio Overview — shows total properties, occupancy rate, NOI, cap rate, and asset value across Office, Retail, and Industrial property types. (2) Predictive Lease Risk Engine — AI-scored tenant table with risk levels (High/Medium/Low), lease expiry countdown, and broker action recommendations. (3) ESG & Carbon Tracker — monthly CO2 emissions chart per building with a 2030 net-zero target line and energy intensity KPIs. (4) Tenant Experience Hub — space utilization heatmap, satisfaction scores, and open maintenance tickets. (5) AI Deal Assistant — chat panel powered by Claude where users ask questions about properties and get instant insights. Data sources: RentCast API (property records, rental estimates, US commercial market data), EIA CBECS dataset (commercial building energy consumption CSV), US Census ACS API (neighborhood demographics), Kaggle Commercial Occupancy Dataset CSV (room-level occupancy sensor data). All data stored in PostgreSQL. A Python ETL scheduler pulls RentCast API every hour to simulate real-time updates. Use React 18 + TypeScript + Recharts, FastAPI backend, PostgreSQL with SQLAlchemy + Alembic, dark mode, CBRE brand color #006A4D.",
+  "businessGoal": "Showcase CBRE AI-powered CRE platform to leadership — unify portfolio data, predict lease risk, track ESG carbon goals, and deliver AI-driven deal insights in one real-time dashboard backed by live PostgreSQL data",
+  "targetUsers": "CBRE Brokers, Property Managers, Investors, Executive Leadership",
+  "techConstraints": [
+    "Python 3.11+",
+    "FastAPI",
+    "PostgreSQL",
+    "React 18 TypeScript",
+    "Recharts",
+    "SQLAlchemy",
+    "Alembic",
+    "Docker",
+    "RentCast API",
+    "EIA CBECS CSV",
+    "Census ACS API",
+    "dark mode only"
+  ],
+  "deadline": "2026-04-15",
+  "priority": "high",
+  "status": "in_sprint",
+  "projectDomain": "cre",
+  "discoveryComplete": true,
+  "requiredAgents": [
+    "kavya",
+    "vikram",
+    "rasool",
+    "kiran",
+    "rohan"
+  ],
+  "discoveryPhase": {
+    "currentRound": 1,
+    "roundStatus": "complete",
+    "fastTrack": true,
+    "startedAt": "2026-03-28T06:00:00.000Z",
+    "completedAt": "2026-03-28T06:07:00.000Z"
+  },
+  "discoveryAnswers": {
+    "round1": {
+      "region": "US-only (North America)",
+      "propertyFocus": "Office (Class A/B/C)",
+      "aiDealAssistantScope": "RAG over portfolio data + market comparisons + deal recommendations (Arjun's decision per Tarun's delegation)"
+    }
+  },
+  "domainContext": {
+    "region": "north_america",
+    "country": "US",
+    "propertyTypes": [
+      "office"
+    ],
+    "propertyClasses": [
+      "Class A",
+      "Class B",
+      "Class C"
+    ],
+    "financialMetrics": [
+      "NOI",
+      "Cap Rate",
+      "Occupancy Rate",
+      "Asset Value",
+      "DSCR",
+      "LTV"
+    ],
+    "dataSources": [
+      "RentCast API",
+      "EIA CBECS CSV",
+      "Census ACS API",
+      "Kaggle Occupancy CSV"
+    ],
+    "dataInputMethod": [
+      "api-feed",
+      "csv-upload"
+    ],
+    "leaseManagement": true,
+    "reportFormats": [
+      "dashboard"
+    ],
+    "userRoles": [
+      "broker",
+      "property-manager",
+      "investor",
+      "executive"
+    ],
+    "taxContext": "1031 exchange, depreciation 39yr commercial, cost segregation",
+    "financeContext": "SOFR-based rates, CMBS, bridge loans",
+    "marketDataSources": [
+      "CoStar",
+      "LoopNet",
+      "CBRE",
+      "FRED"
+    ]
+  },
+  "arjunDecisions": {
+    "llm": "claude-sonnet-4-6",
+    "stateStorage": "PostgreSQL",
+    "streaming": true,
+    "auth": "none-for-mvp",
+    "backend": "FastAPI + SQLAlchemy + Alembic",
+    "frontend": "React 18 + TypeScript + Recharts",
+    "region": "US-only",
+    "brandColor": "#006A4D",
+    "darkMode": true,
+    "etlScheduler": "Python APScheduler or cron — hourly RentCast pull",
+    "aiScope": "RAG over PostgreSQL portfolio data + market context from ingested data + deal recommendation prompts"
+  },
+  "productBrief": {
+    "summary": "CBRE Unified Asset Intelligence Platform — a 5-screen dark-mode CRE dashboard for US office properties. Ingests data from RentCast API (hourly ETL), EIA CBECS (energy CSV), Census ACS (demographics), and Kaggle (occupancy sensors). Screens: Portfolio Overview (KPI cards + charts), Predictive Lease Risk Engine (AI-scored tenant risk table), ESG & Carbon Tracker (emissions charts with 2030 target), Tenant Experience Hub (heatmap + satisfaction), AI Deal Assistant (Claude-powered chat with RAG over portfolio DB + market insights). Built with FastAPI, PostgreSQL, React 18 + Recharts. CBRE brand #006A4D, dark mode only.",
+    "views": [
+      {
+        "name": "Portfolio Overview",
+        "description": "KPI cards (total properties, occupancy rate, NOI, cap rate, asset value) + bar/pie charts by property class (A/B/C). Filterable by location, class, date range.",
+        "dataSource": "PostgreSQL properties + RentCast-ingested data"
+      },
+      {
+        "name": "Predictive Lease Risk Engine",
+        "description": "Sortable tenant table with AI-generated risk scores (High/Medium/Low), lease expiry countdown, DSCR, and broker action recommendations. Risk model based on lease term remaining, tenant financials, market vacancy rates.",
+        "dataSource": "PostgreSQL leases + tenants + RentCast market data"
+      },
+      {
+        "name": "ESG & Carbon Tracker",
+        "description": "Monthly CO2 emissions line chart per building with 2030 net-zero target line. Energy intensity KPIs (kWh/sqft, CO2/sqft). Building-level drill-down.",
+        "dataSource": "EIA CBECS CSV (energy consumption data)"
+      },
+      {
+        "name": "Tenant Experience Hub",
+        "description": "Space utilization heatmap (floor plan grid), satisfaction score gauges, open maintenance ticket list with status. Filterable by building/floor.",
+        "dataSource": "Kaggle Occupancy CSV + PostgreSQL maintenance tickets"
+      },
+      {
+        "name": "AI Deal Assistant",
+        "description": "Chat panel powered by claude-sonnet-4-6. RAG pipeline: user question → embed → search PostgreSQL portfolio data → Claude generates answer with citations. Supports: property lookups, portfolio analysis, market comparisons from ingested data, deal recommendations, lease negotiation context.",
+        "dataSource": "All PostgreSQL tables via RAG + Claude API"
+      }
+    ],
+    "llmPipeline": "claude-sonnet-4-6 via Anthropic API. Backend builds context from PostgreSQL query results, sends to Claude with system prompt for CRE domain expertise. Streaming responses to frontend via SSE.",
+    "techStack": {
+      "frontend": "React 18, TypeScript, Recharts, CSS variables (dark mode), CBRE brand #006A4D",
+      "backend": "Python 3.11+, FastAPI, SQLAlchemy 2.0, Alembic, Pydantic v2",
+      "database": "PostgreSQL",
+      "etl": "Python scheduler (APScheduler) — RentCast API hourly, CSV imports on startup",
+      "llm": "claude-sonnet-4-6 via Anthropic SDK",
+      "infra": "Docker Compose (local dev), AWS deployment optional"
+    },
+    "personas": [
+      "CBRE Broker — needs lease risk alerts and deal insights",
+      "Property Manager — monitors occupancy, maintenance, ESG metrics",
+      "Investor — portfolio-level KPIs, NOI trends, cap rate analysis",
+      "Executive — high-level dashboard, AI-generated summaries"
+    ],
+    "mvpScope": "All 5 screens functional with seeded data. RentCast ETL running hourly. CSV imports for CBECS and occupancy. AI Deal Assistant with basic RAG. No auth for MVP.",
+    "kpis": [
+      "All 5 screens render with real data",
+      "AI Deal Assistant answers portfolio questions accurately",
+      "ETL scheduler runs hourly without errors",
+      "Dark mode + CBRE branding consistent across all screens"
+    ],
+    "risks": [
+      "RentCast API rate limits or key issues",
+      "Large CSV imports may need chunking",
+      "Claude RAG accuracy depends on data quality in PostgreSQL"
+    ],
+    "domainSpecificNotes": "US office CRE conventions: NOI = Gross Revenue - Operating Expenses. Cap Rate = NOI / Property Value. DSCR = NOI / Debt Service. Class A/B/C classification by age, amenities, location. All financial displays in USD."
+  },
+  "agentInputs": {
+    "arjun": {
+      "received": true,
+      "summary": "Discovery complete. Product brief compiled.",
+      "questions": [],
+      "estimate": ""
+    },
+    "vikram": {
+      "received": true,
+      "summary": "AWS infra: VPC, RDS PostgreSQL 15, ECS Fargate (FastAPI+ETL), ALB, S3+CloudFront, Secrets Manager (Anthropic+RentCast), IAM, ECR. 7 modules under /infra/modules/cbre_*/",
+      "questions": [
+        "Q1: Kiran building Dockerfile.backend+Dockerfile.etl for ECR push?",
+        "Q2: FastAPI ECS memory? Default 512CPU/1024MB",
+        "Q3: RDS instance class? db.t3.micro for dev",
+        "Q4: Custom domain+ACM for CloudFront or default domain?"
+      ],
+      "estimate": "1.5 days (7 modules + root infra/cbre/)"
+    },
+    "rasool": {
+      "received": true,
+      "summary": "CBRE migration 0002 delivered. 11 tables aligned to Kiran's ORM models: properties, buildings, tenants, leases, esg_data, occupancy_data, maintenance_tickets, chat_sessions, chat_messages, etl_runs, market_data. 35 indexes. docs/db-schema.md CBRE section appended. Kiran unblocked.",
+      "questions": [],
+      "estimate": "0.5 days — delivered"
+    },
+    "kavya": {
+      "received": true,
+      "summary": "CBRE Unified Asset Intelligence Platform design tokens + component spec delivered. Dark-mode first with CBRE brand #006A4D. Full token set (colors, typography, spacing, shadows, chart palette). 15 components specced across 5 views: KpiCard, LeaseRiskTable, RiskBadge, CarbonEmissionsChart, EnergyKpiPanel, SpaceHeatmap, SatisfactionGauge, MaintenanceTicketList, AiChatPanel, ChatMessage, TemplateCard, TopBar, SideNav, FilterBar, PageShell. Rohan unblocked.",
+      "questions": [],
+      "estimate": "~5h — delivered"
+    },
+    "kiran": {
+      "received": true,
+      "summary": "CBRE backend: 7 routers (portfolio, leases, esg, tenants, chat, etl, health), 19 endpoints. SSE streaming for AI Deal Assistant via claude-sonnet-4-6 RAG over PostgreSQL. ETL service for RentCast hourly pull. No auth for MVP. Needs Rasool migration 0002 for 11 CBRE tables.",
+      "questions": [
+        "Should the AI Deal Assistant RAG query all tables or a specific subset for performance?",
+        "RentCast API key available in SSM or .env for Sprint-01?"
+      ],
+      "estimate": "3 days"
+    },
+    "rohan": {
+      "received": false,
+      "summary": "",
+      "questions": [],
+      "estimate": ""
+    },
+    "keerthi": {
+      "received": false,
+      "summary": "",
+      "questions": [],
+      "estimate": ""
+    }
+  },
+  "sprintPlan": "",
+  "approvedByTarun": true
+}

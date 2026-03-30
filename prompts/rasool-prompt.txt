@@ -156,8 +156,60 @@ Create the following in /projects/{project_id}/backend/migrations/:
   script.py.mako      — migration template
   versions/001_initial_schema.py — all tables from approved proposal
 
-Create /projects/{project_id}/docs/db-schema.md:
-  Full schema documentation with table descriptions, column types, indexes, relationships.
+Create /projects/{project_id}/docs/db-schema.md with this structure:
+
+```markdown
+# DB Schema — {project name}
+**Agent**: Rasool | **Sprint**: {sprint} | **Date**: {today}
+
+## ER Diagram
+\`\`\`erDiagram
+  {table_A} {
+    UUID id PK
+    string name
+    timestamp created_at
+  }
+  {table_B} {
+    UUID id PK
+    UUID table_a_id FK
+    timestamp created_at
+  }
+  {table_A} ||--o{ {table_B} : "has"
+\`\`\`
+(Generate a real erDiagram block using actual table names and columns from your schema.)
+
+## Tables
+
+### {table_name}
+*{one-line description}*
+
+| Column | Type | Constraints |
+|--------|------|-------------|
+| id | UUID | PRIMARY KEY |
+| ... | ... | ... |
+| created_at | TIMESTAMP | NOT NULL |
+| updated_at | TIMESTAMP | NOT NULL |
+
+(Repeat for every table. Include all columns with their exact types and constraints.)
+
+## Indexes
+- {table}({column}) — reason for index
+- {table}({col1}, {col2}) — composite index reason
+
+## Relationships
+- {table_A} 1:N {table_B} via {foreign_key}
+- {table_B} N:M {table_C} via {junction_table}
+```
+
+After writing db-schema.md, post to group-chat.json (type="db-schema", from: RASOOL, tags=["rasool","db-schema"]):
+  "🗄️ DB Schema ready for {project name}.
+
+   I've designed the complete database schema with all tables, primary keys, foreign keys, and indexes.
+   Click **Open DB Schema Canvas** to view the full table structure and ER diagram.
+
+   Tables: {comma-separated list of table names}
+   Engine: {PostgreSQL / SQLite}
+   Migrations: /projects/{id}/backend/migrations/versions/001_initial_schema.py"
 
 STANDARDS:
   Python 3.11+, SQLAlchemy + Alembic only (no raw SQL migrations)

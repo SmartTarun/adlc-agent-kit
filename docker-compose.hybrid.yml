@@ -1,0 +1,154 @@
+# Agent: Arjun | Sprint: 01 | Date: 2026-03-29
+# Team Panchayat — HYBRID LLM MODE
+# Ollama drafts code → quality scored → Claude improves if score < threshold.
+# Completely independent from docker-compose.claude.yml and docker-compose.ollama.yml.
+#
+# Usage:
+#   copy .env.hybrid .env
+#   docker compose -f docker-compose.hybrid.yml up --build
+#
+# GPU (NVIDIA):
+#   docker compose -f docker-compose.hybrid.yml --profile gpu up --build
+
+version: '3.9'
+
+volumes:
+  workspace_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${PWD}
+  ollama_data:
+
+networks:
+  panchayat:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.0.0/16
+
+services:
+
+  # ── Ollama — Local draft layer ────────────────────────────────────────────────
+  ollama:
+    image: ollama/ollama:latest
+    container_name: panchayat-hybrid-ollama
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - panchayat
+    restart: unless-stopped
+    environment:
+      - OLLAMA_KEEP_ALIVE=24h
+      - OLLAMA_NUM_PARALLEL=${OLLAMA_NUM_PARALLEL:-2}
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list || exit 1"]
+      interval: 20s
+      timeout: 10s
+      start_period: 40s
+      retries: 5
+    labels:
+      - "com.panchayat.role=llm-draft"
+      - "com.panchayat.mode=hybrid"
+
+  # ── Ollama GPU variant ─────────────────────────────────────────────────────────
+  ollama-gpu:
+    image: ollama/ollama:latest
+    container_name: panchayat-hybrid-ollama-gpu
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - panchayat
+    restart: unless-stopped
+    environment:
+      - OLLAMA_KEEP_ALIVE=24h
+      - OLLAMA_NUM_PARALLEL=4
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    profiles:
+      - gpu
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list || exit 1"]
+      interval: 20s
+      timeout: 10s
+      start_period: 40s
+      retries: 5
+
+  # ── Ollama Init — auto-pull model ─────────────────────────────────────────────
+  ollama-init:
+    image: ollama/ollama:latest
+    container_name: panchayat-hybrid-ollama-init
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - panchayat
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+    entrypoint: >
+      sh -c "
+        until ollama list > /dev/null 2>&1; do sleep 3; done;
+        if ollama list | grep -q '${OLLAMA_MODEL:-qwen2.5-coder:7b}'; then
+          echo 'Model already present.';
+        else
+          ollama pull ${OLLAMA_MODEL:-qwen2.5-coder:7b};
+        fi;
+      "
+    depends_on:
+      ollama:
+        condition: service_healthy
+    restart: "no"
+
+  # ── Dashboard — hybrid engine, both Ollama + Claude API ──────────────────────
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile.dashboard
+    container_name: panchayat-dashboard-hybrid
+    ports:
+      - "${DASHBOARD_PORT:-3000}:3000"
+    volumes:
+      - .:/workspace:rw
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - panchayat
+    restart: unless-stopped
+    environment:
+      - WORKSPACE=/workspace
+      - COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME:-panchayat-hybrid}
+      - PORT=3000
+      - LLM_MODE=hybrid
+      # Hybrid auto-config (pre-configures connections.json on startup)
+      - HYBRID_ENABLED=true
+      - HYBRID_MODE=${HYBRID_MODE:-ollama-first}
+      - HYBRID_OLLAMA_ENDPOINT=http://ollama:11434
+      - HYBRID_OLLAMA_MODEL=${OLLAMA_MODEL:-qwen2.5-coder:7b}
+      - HYBRID_CLAUDE_MODEL=${CLAUDE_MODEL:-claude-sonnet-4-6}
+      - HYBRID_QUALITY_THRESHOLD=${HYBRID_QUALITY_THRESHOLD:-75}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+    depends_on:
+      ollama:
+        condition: service_healthy
+      ollama-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+      interval: 15s
+      timeout: 5s
+      start_period: 15s
+      retries: 3
+    labels:
+      - "com.panchayat.role=dashboard"
+      - "com.panchayat.mode=hybrid"
+
+  # NOTE: No agent containers — hybrid agents are launched via
+  # launchAgentHybrid() in the dashboard (Ollama HTTP + Claude API calls).

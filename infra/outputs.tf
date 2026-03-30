@@ -1,13 +1,13 @@
 # Agent: Vikram | Sprint: 01 | Date: 2026-03-16
-# INFRAVIZ Root Module — Outputs
+# CBRE Root Module — Outputs
 
 output "api_endpoint" {
-  description = "INFRAVIZ backend API URL — give to Kiran for integration tests"
+  description = "CBRE backend API URL — give to Kiran for integration tests"
   value       = module.api_gateway.api_endpoint
 }
 
 output "frontend_url" {
-  description = "INFRAVIZ React frontend URL — give to Rohan"
+  description = "CBRE React frontend URL — give to Rohan"
   value       = "https://${module.cloudfront.domain_name}"
 }
 

@@ -1,5 +1,5 @@
 # Agent: Vikram | Sprint: 01 | Date: 2026-03-16
-# INFRAVIZ Root Module — Variables
+# CBRE Root Module — Variables
 
 variable "aws_region" {
   description = "AWS region for all resources"

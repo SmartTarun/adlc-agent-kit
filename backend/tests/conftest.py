@@ -1,22 +1,21 @@
-# Agent: kiran | Sprint: 01 | Date: 2026-03-16
-"""Shared pytest fixtures for InfraViz backend tests.
+# Agent: kiran | Sprint: 01 | Date: 2026-03-28
+"""Pytest configuration — async test client and in-memory SQLite database."""
 
-Uses an in-memory SQLite database via aiosqlite so tests run without PostgreSQL.
-All tables are created from the ORM models (not Alembic), keeping tests isolated.
-"""
+from __future__ import annotations
 
 import uuid
 from collections.abc import AsyncGenerator
+from datetime import datetime, timedelta, timezone
 
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from app.database import Base, get_db
+from app.database import Base
+from app.dependencies import get_db
 from app.main import app
-from app.models import IacTemplate, Project, StateFile, User  # noqa: F401 — ensure models registered
-from app.routers.auth import hash_password
+from app.models.cbre import Building, Lease, Property, Tenant
 
 _TEST_DB_URL = "sqlite+aiosqlite:///:memory:"
 
@@ -27,8 +26,6 @@ async def engine():
     async with eng.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     yield eng
-    async with eng.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
     await eng.dispose()
 
 
@@ -42,62 +39,85 @@ async def db_session(engine) -> AsyncGenerator[AsyncSession, None]:
 
 @pytest_asyncio.fixture
 async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
-    """Async HTTP client with overridden DB dependency."""
-
-    async def _override_db():
+    async def _override_get_db():
         yield db_session
 
-    app.dependency_overrides[get_db] = _override_db
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
-    ) as ac:
+    app.dependency_overrides[get_db] = _override_get_db
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         yield ac
     app.dependency_overrides.clear()
 
 
 @pytest_asyncio.fixture
-async def test_user(db_session: AsyncSession) -> User:
-    """A persisted test user."""
-    user = User(
+async def seed_property(db_session: AsyncSession) -> Property:
+    prop = Property(
         id=uuid.uuid4(),
-        username="testuser",
-        email="test@infraviz.dev",
-        hashed_password=hash_password("testpass123"),
-        is_active=True,
+        name="1 Market Street",
+        address="1 Market St",
+        city="San Francisco",
+        state="CA",
+        class_type="A",
+        property_type="office",
+        total_sqft=50000.0,
+        asset_value=25_000_000.0,
+        noi=1_500_000.0,
+        cap_rate=0.06,
+        occupancy_rate=0.92,
     )
-    db_session.add(user)
-    await db_session.commit()
-    await db_session.refresh(user)
-    return user
+    db_session.add(prop)
+    await db_session.flush()
+    return prop
 
 
 @pytest_asyncio.fixture
-async def auth_headers(client: AsyncClient, test_user: User) -> dict:
-    """JWT bearer headers for the test user."""
-    resp = await client.post(
-        "/auth/login",
-        json={"username": "testuser", "password": "testpass123"},
+async def seed_building(db_session: AsyncSession, seed_property: Property) -> Building:
+    building = Building(
+        id=uuid.uuid4(),
+        property_id=seed_property.id,
+        name="Tower A",
+        floors=10,
+        total_sqft=50000.0,
     )
-    assert resp.status_code == 200
-    token = resp.json()["access_token"]
-    return {"Authorization": f"Bearer {token}"}
+    db_session.add(building)
+    await db_session.flush()
+    return building
 
 
 @pytest_asyncio.fixture
-async def test_project(
-    db_session: AsyncSession, test_user: User
-) -> Project:
-    """A persisted test project."""
-    project = Project(
+async def seed_tenant(db_session: AsyncSession) -> Tenant:
+    tenant = Tenant(
         id=uuid.uuid4(),
-        name="test-project",
-        description="Test project for unit tests",
-        cloud_provider="aws",
-        region="us-east-1",
-        owner_id=test_user.id,
+        name="Acme Corp",
+        industry="Technology",
+        credit_rating="A",
+        satisfaction_score=8.5,
+    )
+    db_session.add(tenant)
+    await db_session.flush()
+    return tenant
+
+
+@pytest_asyncio.fixture
+async def seed_lease(
+    db_session: AsyncSession,
+    seed_property: Property,
+    seed_tenant: Tenant,
+) -> Lease:
+    lease = Lease(
+        id=uuid.uuid4(),
+        property_id=seed_property.id,
+        tenant_id=seed_tenant.id,
+        unit_number="Suite 100",
+        sqft=5000.0,
+        start_date=datetime.now(timezone.utc) - timedelta(days=365),
+        end_date=datetime.now(timezone.utc) + timedelta(days=180),
+        monthly_rent=25000.0,
+        dscr=1.35,
+        risk_score=42.0,
+        risk_level="Medium",
+        ai_recommendations="Monitor lease renewal. DSCR adequate but approaching 2yr threshold.",
         is_active=True,
     )
-    db_session.add(project)
-    await db_session.commit()
-    await db_session.refresh(project)
-    return project
+    db_session.add(lease)
+    await db_session.flush()
+    return lease

@@ -1,698 +1,574 @@
-# Agent: Kavya | Sprint: 01 | Date: 2026-03-16 (revised 2026-03-25)
-# InfraViz — Component Specification
+# Agent: kavya | Sprint: 01 | Date: 2026-03-28
+# CBRE Unified Asset Intelligence Platform — Component Specification
 
 > Design system reference for Rohan (Frontend Engineer).
 > All components MUST use tokens from `/frontend/src/tokens/tokens.css`.
-> No hardcoded colours. Dark mode is default.
-> Stack: React 18 + TypeScript + React Flow (@xyflow/react) + Recharts + lucide-react + react-syntax-highlighter + react-markdown
+> Stack: React 18 + TypeScript. Charts: Recharts ONLY. No hardcoded colours.
 
 ---
 
-## Design Principles
+## Table of Contents
 
-| Principle           | Guidance                                                                    |
-|---------------------|-----------------------------------------------------------------------------|
-| **Power-user first**| Cloud architects expect dense, efficient UIs — no excessive whitespace      |
-| **Dark by default** | `--color-bg-base` (#0b0e14) as page background                              |
-| **AI-centric**      | Generation status, streaming output, and loading states are first-class     |
-| **No hardcoded colours** | Every colour via CSS variable from tokens.css                          |
-| **Recharts for charts** | Only Recharts for any data viz. React Flow only for canvas topology.    |
+| # | Component | Screen |
+|---|-----------|--------|
+| 1 | [PageShell](#1-pageshell) | Global |
+| 2 | [TopBar](#2-topbar) | Global |
+| 3 | [SideNav](#3-sidenav) | Global |
+| 4 | [KpiCard](#4-kpicard) | Portfolio Overview |
+| 5 | [PortfolioBarChart](#5-portfoliobarchart) | Portfolio Overview |
+| 6 | [PropertyPieChart](#6-propertypiechare) | Portfolio Overview |
+| 7 | [RiskBadge](#7-riskbadge) | Lease Risk Engine |
+| 8 | [LeaseRiskTable](#8-leaserisktable) | Lease Risk Engine |
+| 9 | [CarbonEmissionsChart](#9-carbonemissionschart) | ESG & Carbon Tracker |
+| 10 | [EnergyKpiPanel](#10-energykpipanel) | ESG & Carbon Tracker |
+| 11 | [SpaceHeatmap](#11-spaceheatmap) | Tenant Experience Hub |
+| 12 | [SatisfactionGauge](#12-satisfactiongauge) | Tenant Experience Hub |
+| 13 | [MaintenanceTicketList](#13-maintenanceticketlist) | Tenant Experience Hub |
+| 14 | [AiChatPanel](#14-aichatpanel) | AI Deal Assistant |
+| 15 | [ChatMessage](#15-chatmessage) | AI Deal Assistant |
 
 ---
 
-## Layout System
+## 1. PageShell
 
-### AppShell
+**Purpose:** Top-level layout wrapper. Composes TopBar + SideNav + scrollable content area. All 5 screens render inside this shell.
 
+**Props:**
+```typescript
+interface PageShellProps {
+  children: React.ReactNode;
+  activeScreen: 'portfolio' | 'lease-risk' | 'esg' | 'tenant' | 'ai-assistant';
+}
 ```
-┌─────────────────────────────────────────────────────┐
-│  TopBar (height: --topbar-height = 56px)             │
-├──────────┬──────────────────────────────────────────┤
-│          │                                          │
-│ ViewNav  │  <Outlet> (Canvas / Dashboard / Terminal) │
-│  56px    │  full height, scrollable                 │
-│          │                                          │
-└──────────┴──────────────────────────────────────────┘
-```
 
-**Tokens**: `--topbar-height`, `--sidebar-collapsed`
-**Background**: `--color-bg-base`
-**ViewNav bg**: `--color-bg-surface`
-**TopBar bg**: `--color-bg-surface` + `--shadow-md`
+**Layout:**
+- Full-viewport height grid: `topbar (56px) / [sidenav (224px) | content]`
+- Content area: `overflow-y: auto`, `padding: var(--page-padding-y) var(--page-padding-x)`
+- Background: `var(--color-bg-primary)`
+
+**Tokens used:**
+- `--topbar-height`, `--sidenav-width`, `--color-bg-primary`, `--page-padding-x`, `--page-padding-y`
 
 ---
 
-## Component Catalogue
+## 2. TopBar
 
----
+**Purpose:** Fixed header. CBRE logo + app title, screen title, user avatar/initials. No nav items (nav lives in SideNav).
 
-### 1. `<TopBar>`
-
-**Purpose**: Global header — workspace name, region indicator, view switcher, user info.
-
-**Layout**: flex row, space-between
-**Height**: `--topbar-height` (56px)
-**Background**: `--color-bg-surface`
-**Border-bottom**: 1px solid `--color-border-subtle`
-
-**Slots**:
-- Left: "InfraViz" logo + wordmark (`--color-primary-400`)
-- Center: Workspace name display + dropdown (current workspace)
-- Right: Region badge + Theme toggle + User avatar (initials)
-
-**Props**:
+**Props:**
 ```typescript
 interface TopBarProps {
-  workspaceName: string;
-  region: string;
-  onThemeToggle: () => void;
-  isDarkMode: boolean;
+  screenTitle: string;
+  userName: string;      // For avatar initials
 }
 ```
 
-**Tokens**:
-- Logo text: `--color-primary-400`, `--font-weight-bold`, `--font-size-lg`
-- Workspace name: `--color-text-primary`, `--font-size-md`
-- Region badge: `--color-bg-elevated`, `--color-text-secondary`, `--radius-full`, `--font-size-sm`, `--font-family-mono`
+**Layout:**
+- Height: `var(--topbar-height)` (56px), `position: sticky; top: 0`
+- Flex row: `[CBRE logo | app name | flex-grow | screen title | avatar]`
+- Border bottom: `1px solid var(--color-border-subtle)`
+- Background: `var(--color-bg-surface)`, `z-index: var(--z-sticky)`
+
+**Design notes:**
+- CBRE logo: SVG at 24px height, coloured with `var(--color-brand-primary)`
+- App name: `"CBRE Asset Intelligence"` — `var(--font-size-base)`, `var(--font-weight-semibold)`
+- Screen title: right of centre, `var(--font-size-sm)`, `var(--color-text-secondary)`
+- Avatar: 32px circle, `var(--color-brand-primary)` fill, `var(--color-text-inverse)` initials
+
+**Tokens used:**
+- `--topbar-height`, `--color-bg-surface`, `--color-border-subtle`, `--color-brand-primary`
+- `--color-text-primary`, `--color-text-secondary`, `--color-text-inverse`
+- `--font-size-base`, `--font-size-sm`, `--font-weight-semibold`, `--z-sticky`
 
 ---
 
-### 2. `<ViewNav>`
+## 3. SideNav
 
-**Purpose**: Icon-only left navigation rail between the 3 main views.
+**Purpose:** Left navigation rail. Links to all 5 screens. Collapsible to icon-only mode.
 
-**Width**: `--sidebar-collapsed` (56px) — always collapsed, icon-only with tooltips
-**Background**: `--color-bg-surface`
-**Border-right**: 1px solid `--color-border-subtle`
-
-**Nav items**:
-| Icon (lucide) | View           | Route      |
-|---------------|----------------|------------|
-| `Layout`      | Canvas         | /canvas    |
-| `Terminal`    | Dashboard      | /dashboard |
-| `TerminalSquare` | Terminal    | /terminal  |
-
-**Active item**: `--color-primary-400` left border (3px) + `--color-bg-elevated` bg
-**Hover**: `--color-bg-elevated`
-**Icon size**: 20px (`lg`)
-**Tooltip**: appears on hover, `--color-bg-overlay` bg, `--color-text-primary`
-
----
-
-### 3. `<LoginPage>`
-
-**Purpose**: Dummy authentication entry point. Renders before AppShell when no JWT found.
-
-**Layout**: centered card on full-screen `--color-bg-base`
-**Card**: `--color-bg-surface`, `--radius-xl`, `--shadow-xl`, max-width 400px
-
-**Anatomy**:
-```
-┌────────────────────────────────┐
-│  InfraViz  (logo + wordmark)   │
-│  "AI-Powered IaC Platform"     │
-│                                │
-│  Username ________________     │
-│  Password ________________     │
-│                                │
-│  [      Sign In      ]         │
-│                                │
-│  demo: admin / password        │
-└────────────────────────────────┘
-```
-
-**Props**:
+**Props:**
 ```typescript
-interface LoginPageProps {
-  onLogin: (token: string) => void;
+interface SideNavProps {
+  activeScreen: 'portfolio' | 'lease-risk' | 'esg' | 'tenant' | 'ai-assistant';
+  collapsed?: boolean;
+  onToggle?: () => void;
 }
 ```
 
-**Tokens**:
-- Card bg: `--color-bg-surface`
-- Input bg: `--color-bg-elevated`
-- Input border: `--color-border-default` (focus: `--color-primary-400`)
-- Input text: `--color-text-primary`
-- Submit button: `--color-primary-400` bg, `--color-text-inverse` text, `--radius-md`
-- Submit hover: `--color-primary-500`
-- Hint text: `--color-text-tertiary`, `--font-size-sm`
-- Error state: `--color-danger-text`, `--color-danger-light` bg
+**Nav items:**
+| Icon | Label | Screen key |
+|------|-------|-----------|
+| BarChart2 | Portfolio Overview | `portfolio` |
+| AlertTriangle | Lease Risk Engine | `lease-risk` |
+| Leaf | ESG & Carbon | `esg` |
+| Users | Tenant Experience | `tenant` |
+| MessageSquare | AI Deal Assistant | `ai-assistant` |
 
-**Behaviour**: On submit, generate a dummy JWT and store in `localStorage`. Redirect to `/canvas`.
+**Layout:**
+- Width: `var(--sidenav-width)` expanded / `var(--sidenav-collapsed-width)` collapsed
+- Height: `calc(100vh - var(--topbar-height))`, `position: sticky; top: var(--topbar-height)`
+- Background: `var(--color-bg-surface)`, border-right: `1px solid var(--color-border-subtle)`
+- Each nav item: 44px height, flex row `[icon | label]`, `gap: var(--space-3)`
+
+**Active state:**
+- Background: `var(--color-bg-selected)`
+- Left border: `3px solid var(--color-brand-primary)`
+- Text colour: `var(--color-text-primary)`, icon: `var(--color-brand-primary)`
+
+**Tokens used:**
+- `--sidenav-width`, `--sidenav-collapsed-width`, `--topbar-height`
+- `--color-bg-surface`, `--color-bg-selected`, `--color-border-subtle`, `--color-brand-primary`
+- `--color-text-primary`, `--color-text-secondary`, `--space-3`, `--transition-fast`
 
 ---
 
-### 4. `<WorkspaceManager>`
+## 4. KpiCard
 
-**Purpose**: Create, rename, delete, and switch workspaces. Shown as a dropdown from TopBar.
+**Purpose:** Displays a single CRE metric (NOI, occupancy rate, cap rate, asset value, property count) with trend arrow.
 
-**Props**:
+**Props:**
 ```typescript
-interface Workspace {
+interface KpiCardProps {
+  label: string;                        // e.g. "Net Operating Income"
+  value: string;                        // Pre-formatted: "$4.2M" | "91.3%" | "6.8%"
+  trend: 'up' | 'down' | 'neutral';
+  trendValue?: string;                  // e.g. "+2.1% vs last month"
+  icon?: React.ReactNode;
+  loading?: boolean;
+}
+```
+
+**Layout:**
+- Background: `var(--kpi-card-bg)`, border: `1px solid var(--kpi-card-border)`
+- Border-radius: `var(--kpi-card-radius)`, padding: `var(--card-padding)`
+- Shadow: `var(--shadow-sm)`
+- Flex column: `[icon + label | value | trend]`
+
+**Typography:**
+- Label: `var(--font-size-sm)`, `var(--kpi-card-label-color)`, uppercase, `var(--letter-spacing-caps)`
+- Value: `var(--kpi-card-value-size)`, `var(--kpi-card-value-font)` (monospace), `var(--font-weight-bold)`
+- Trend: `var(--font-size-xs)` + arrow icon
+  - Positive: `var(--kpi-card-trend-positive)` (green)
+  - Negative: `var(--kpi-card-trend-negative)` (red)
+  - Neutral: `var(--kpi-card-trend-neutral)` (muted)
+
+**Loading state:** Skeleton shimmer using `var(--color-bg-interactive)` animated gradient.
+
+**Tokens used:**
+- `--kpi-card-bg`, `--kpi-card-border`, `--kpi-card-radius`, `--kpi-card-value-font`
+- `--kpi-card-value-size`, `--kpi-card-label-color`
+- `--kpi-card-trend-positive`, `--kpi-card-trend-negative`, `--kpi-card-trend-neutral`
+- `--card-padding`, `--shadow-sm`, `--font-size-sm`, `--font-size-xs`, `--letter-spacing-caps`
+
+---
+
+## 5. PortfolioBarChart
+
+**Purpose:** Recharts BarChart showing property distribution by class (A / B / C) across metrics (count, NOI, occupancy).
+
+**Props:**
+```typescript
+interface PortfolioBarChartProps {
+  data: Array<{ class: string; count: number; noi: number; occupancy: number }>;
+  metric: 'count' | 'noi' | 'occupancy';
+  height?: number;  // default 280
+}
+```
+
+**Recharts config:**
+- Component: `<BarChart>` inside `<ResponsiveContainer width="100%">`
+- Grid: `<CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid-color)"`
+- X-axis: `stroke="var(--chart-axis-color)"`, `tick={{ fill: 'var(--chart-axis-color)' }}`
+- Y-axis: same as X-axis
+- Tooltip: `contentStyle={{ background: 'var(--chart-tooltip-bg)', border: '1px solid var(--chart-tooltip-border)' }}`
+- Bar fill: `var(--chart-color-1)` (CBRE green), active fill: `var(--chart-color-2)` (lime)
+- Legend: `wrapperStyle={{ color: 'var(--chart-legend-color)' }}`
+
+**Tokens used:**
+- `--chart-color-1`, `--chart-color-2`, `--chart-grid-color`, `--chart-axis-color`
+- `--chart-tooltip-bg`, `--chart-tooltip-border`, `--chart-legend-color`
+
+---
+
+## 6. PropertyPieChart
+
+**Purpose:** Recharts PieChart showing property type breakdown (Office A/B/C by percentage of portfolio value).
+
+**Props:**
+```typescript
+interface PropertyPieChartProps {
+  data: Array<{ name: string; value: number; color: string }>;
+  height?: number;  // default 260
+  innerRadius?: number;  // default 60 — donut chart
+}
+```
+
+**Recharts config:**
+- Component: `<PieChart>` inside `<ResponsiveContainer>`
+- `<Pie dataKey="value" cx="50%" cy="50%">` with `<Cell fill={entry.color}>`
+- Colours from `--chart-color-1` through `--chart-color-4`
+- `<Legend>` at bottom, `wrapperStyle={{ color: 'var(--chart-legend-color)' }}`
+- Tooltip with same style as PortfolioBarChart
+
+**Tokens used:**
+- `--chart-color-1` through `--chart-color-4`, `--chart-tooltip-bg`, `--chart-tooltip-border`
+- `--chart-legend-color`
+
+---
+
+## 7. RiskBadge
+
+**Purpose:** Displays a tenant's AI-scored lease risk level with colour-coded pill badge.
+
+**Props:**
+```typescript
+interface RiskBadgeProps {
+  level: 'High' | 'Medium' | 'Low';
+  showDot?: boolean;  // default true
+}
+```
+
+**Styles per level:**
+
+| Level | Text colour | Background | Border |
+|-------|-------------|------------|--------|
+| High | `--color-risk-high` | `--color-risk-high-bg` | `--color-risk-high` at 30% opacity |
+| Medium | `--color-risk-medium` | `--color-risk-medium-bg` | `--color-risk-medium` at 30% opacity |
+| Low | `--color-risk-low` | `--color-risk-low-bg` | `--color-risk-low` at 30% opacity |
+
+**Layout:**
+- `display: inline-flex; align-items: center; gap: var(--space-1)`
+- Padding: `var(--space-1) var(--space-2)`
+- Border-radius: `var(--risk-badge-radius)` (4px — corporate sharp)
+- Font: `var(--risk-badge-font-size)`, `var(--risk-badge-font-weight)`, `var(--risk-badge-letter-spacing)`
+- Optional dot: 6px circle, same colour as text
+
+**Tokens used:**
+- `--color-risk-high`, `--color-risk-high-bg`, `--color-risk-medium`, `--color-risk-medium-bg`
+- `--color-risk-low`, `--color-risk-low-bg`
+- `--risk-badge-radius`, `--risk-badge-font-size`, `--risk-badge-font-weight`, `--risk-badge-letter-spacing`
+- `--space-1`, `--space-2`
+
+---
+
+## 8. LeaseRiskTable
+
+**Purpose:** Sortable data table showing all tenants with AI risk scores, lease expiry, DSCR, and broker action recommendations.
+
+**Props:**
+```typescript
+interface LeaseRiskTableRow {
+  tenantName: string;
+  property: string;
+  leaseExpiryDays: number;    // Days remaining
+  riskLevel: 'High' | 'Medium' | 'Low';
+  riskScore: number;          // 0–100
+  dscr: number;               // e.g. 1.35
+  recommendation: string;     // AI-generated broker action
+}
+
+interface LeaseRiskTableProps {
+  data: LeaseRiskTableRow[];
+  loading?: boolean;
+  onSort?: (column: keyof LeaseRiskTableRow, direction: 'asc' | 'desc') => void;
+}
+```
+
+**Layout:**
+- Full-width table, `border-collapse: collapse`
+- Header: `background: var(--risk-table-header-bg)`, text `var(--risk-table-header-color)`, uppercase, `var(--letter-spacing-caps)`
+- Row hover: `background: var(--risk-table-row-hover)`, `transition: var(--transition-fast)`
+- Row border-bottom: `1px solid var(--risk-table-border)`
+- Numeric columns (riskScore, dscr, leaseExpiryDays): `font-family: var(--risk-table-font-mono)`
+
+**Column details:**
+| Column | Width | Notes |
+|--------|-------|-------|
+| Tenant | 20% | Bold, primary text |
+| Property | 15% | Secondary text |
+| Lease Expiry | 12% | Mono font, red if < 90 days |
+| Risk | 10% | `<RiskBadge>` |
+| Score | 8% | Mono, 0–100 |
+| DSCR | 8% | Mono, coloured: green ≥ 1.25, amber 1.0–1.25, red < 1.0 |
+| Recommendation | auto | Secondary text, truncated with tooltip |
+
+**Tokens used:**
+- `--risk-table-header-bg`, `--risk-table-header-color`, `--risk-table-row-hover`
+- `--risk-table-row-selected`, `--risk-table-border`, `--risk-table-font-mono`
+- `--color-text-primary`, `--color-text-secondary`, `--letter-spacing-caps`
+- `--transition-fast`, `--color-error`, `--color-warning`, `--color-success`
+
+---
+
+## 9. CarbonEmissionsChart
+
+**Purpose:** Recharts ComposedChart showing monthly CO2 emissions per building as line(s) with a flat 2030 net-zero target reference line and optional area fill.
+
+**Props:**
+```typescript
+interface MonthlyEmission {
+  month: string;            // "Jan 2025"
+  emissions: number;        // Actual CO2 tonnes
+  target: number;           // Net-zero target (same value each month)
+}
+
+interface CarbonEmissionsChartProps {
+  data: MonthlyEmission[];
+  buildingName: string;
+  height?: number;          // default 300
+  showArea?: boolean;       // default true — fill under actual emissions
+}
+```
+
+**Recharts config:**
+- Component: `<ComposedChart>` inside `<ResponsiveContainer>`
+- Actual line: `<Line type="monotone" dataKey="emissions" stroke="var(--carbon-chart-actual)" strokeWidth={2} dot={{ r: var(--carbon-chart-dot-radius) }}`
+- Target line: `<ReferenceLine y={targetValue} stroke="var(--chart-reference-line)" strokeDasharray="6 3" label={{ value: '2030 Target', fill: 'var(--chart-reference-line)' }}`
+- Optional area: `<Area dataKey="emissions" fill="var(--carbon-chart-actual)" fillOpacity={var(--carbon-chart-area-opacity)}`
+- Grid, axes, tooltip: same pattern as PortfolioBarChart
+
+**Tokens used:**
+- `--carbon-chart-actual`, `--chart-reference-line`, `--carbon-chart-area-opacity`
+- `--carbon-chart-dot-radius`, `--chart-grid-color`, `--chart-axis-color`
+- `--chart-tooltip-bg`, `--chart-tooltip-border`
+
+---
+
+## 10. EnergyKpiPanel
+
+**Purpose:** Row of energy intensity KPI cards for the ESG screen (kWh/sqft, CO2/sqft, water intensity, energy star score).
+
+**Props:**
+```typescript
+interface EnergyKpi {
+  label: string;       // e.g. "Energy Intensity"
+  value: string;       // e.g. "18.4 kWh/sqft"
+  target: string;      // e.g. "Target: 15.0"
+  onTarget: boolean;   // Drives colour
+}
+
+interface EnergyKpiPanelProps {
+  kpis: EnergyKpi[];
+}
+```
+
+**Layout:**
+- Flex row, `gap: var(--space-4)`, wraps on smaller screens
+- Each KPI: same structure as `KpiCard` but smaller (`--font-size-2xl` value, `--font-size-xs` label)
+- `onTarget=true`: value colour `var(--color-success)` | `onTarget=false`: `var(--color-warning)`
+
+**Tokens used:**
+- Same as KpiCard plus `--color-success`, `--color-warning`, `--font-size-2xl`, `--font-size-xs`
+
+---
+
+## 11. SpaceHeatmap
+
+**Purpose:** Grid-based floor-plan heatmap showing room-level occupancy (0–100%). Data from Kaggle occupancy CSV.
+
+**Props:**
+```typescript
+interface HeatmapCell {
+  roomId: string;
+  label: string;      // e.g. "Room 3B"
+  occupancy: number;  // 0–100 (percentage)
+}
+
+interface SpaceHeatmapProps {
+  cells: HeatmapCell[];
+  columns: number;             // Grid columns, default 8
+  floorLabel: string;
+  onCellClick?: (cell: HeatmapCell) => void;
+}
+```
+
+**Layout:**
+- CSS Grid: `grid-template-columns: repeat(columns, 1fr)`, `gap: var(--heatmap-cell-gap)`
+- Each cell: `aspect-ratio: 1`, `border-radius: var(--heatmap-cell-radius)`, `cursor: pointer`
+- Occupancy → background colour mapping (CSS custom properties):
+  - 0%: `var(--heatmap-cell-empty)`
+  - 1–30%: `var(--heatmap-cell-low)`
+  - 31–70%: `var(--heatmap-cell-medium)`
+  - 71–99%: `var(--heatmap-cell-high)`
+  - 100%: `var(--heatmap-cell-full)`
+- Tooltip on hover: room label + occupancy %
+
+**Legend:** Horizontal gradient strip below grid from `--heatmap-cell-empty` to `--heatmap-cell-full`, labelled "0% — 100%".
+
+**Tokens used:**
+- `--heatmap-cell-gap`, `--heatmap-cell-radius`
+- `--heatmap-cell-empty`, `--heatmap-cell-low`, `--heatmap-cell-medium`
+- `--heatmap-cell-high`, `--heatmap-cell-full`
+
+---
+
+## 12. SatisfactionGauge
+
+**Purpose:** Recharts RadialBarChart showing a tenant satisfaction score (0–100) as a partial arc gauge.
+
+**Props:**
+```typescript
+interface SatisfactionGaugeProps {
+  score: number;          // 0–100
+  label?: string;         // default "Satisfaction"
+  size?: number;          // diameter in px, default 160
+}
+```
+
+**Recharts config:**
+- `<RadialBarChart innerRadius="70%" outerRadius="100%" startAngle={210} endAngle={-30}`
+- Single `<RadialBar>` with `data={[{ value: score }]}`
+- Fill colour derived from score:
+  - ≥ 80: `var(--gauge-excellent)` (green)
+  - 60–79: `var(--gauge-good)` (brand green)
+  - 40–59: `var(--gauge-fair)` (amber)
+  - < 40: `var(--gauge-poor)` (red)
+- Track: `<RadialBar>` at 100% with fill `var(--gauge-track)` (behind the score arc)
+- Score value displayed as centred text inside arc: `var(--font-size-3xl)`, `var(--font-mono)`, `var(--font-weight-bold)`
+- Label below arc: `var(--font-size-xs)`, `var(--color-text-secondary)`
+
+**Tokens used:**
+- `--gauge-track`, `--gauge-excellent`, `--gauge-good`, `--gauge-fair`, `--gauge-poor`
+- `--font-size-3xl`, `--font-size-xs`, `--font-mono`, `--font-weight-bold`
+- `--color-text-secondary`
+
+---
+
+## 13. MaintenanceTicketList
+
+**Purpose:** List of open maintenance tickets for the selected building/floor. Shows status, priority, description, and assigned team.
+
+**Props:**
+```typescript
+interface MaintenanceTicket {
   id: string;
-  name: string;
-  region: string;
-  updatedAt: string;
+  title: string;
+  status: 'open' | 'in_progress' | 'resolved';
+  priority: 'high' | 'medium' | 'low';
+  floor: string;
+  assignedTo: string;
+  createdAt: string;    // ISO date
 }
-interface WorkspaceManagerProps {
-  workspaces: Workspace[];
-  activeId: string;
-  onSelect: (id: string) => void;
-  onCreate: (name: string, region: string) => void;
-  onRename: (id: string, name: string) => void;
-  onDelete: (id: string) => void;
+
+interface MaintenanceTicketListProps {
+  tickets: MaintenanceTicket[];
+  maxVisible?: number;  // default 8, with "show more"
 }
 ```
 
-**Layout**: dropdown panel below TopBar workspace name, `--color-bg-elevated`, `--shadow-lg`, `--radius-lg`
+**Layout:**
+- Vertical list, `gap: var(--space-3)` between items
+- Each ticket: flex row `[status-dot | title + meta | priority badge | assignee]`
+- Status dot (6px circle):
+  - `open`: `var(--ticket-dot-open)` (red)
+  - `in_progress`: `var(--ticket-dot-progress)` (amber)
+  - `resolved`: `var(--ticket-dot-resolved)` (green)
+- Title: `var(--font-size-sm)`, `var(--font-weight-medium)`
+- Meta (floor, date): `var(--font-size-xs)`, `var(--color-text-muted)`
+- Priority badge: reuses `<RiskBadge>` with `High/Medium/Low` mapped from `priority`
 
-**Tokens**:
-- Panel bg: `--color-bg-elevated`
-- Item hover: `--color-bg-overlay`
-- Active item: `--color-primary-400` left border, `--color-bg-overlay`
-- Delete action: `--color-danger-text`
-- New workspace button: `--color-accent-400` border, `--color-accent-400` text
+**Tokens used:**
+- `--ticket-dot-open`, `--ticket-dot-progress`, `--ticket-dot-resolved`
+- `--font-size-sm`, `--font-size-xs`, `--font-weight-medium`
+- `--color-text-muted`, `--space-3`, `--color-border-subtle`
 
 ---
 
-### 5. `<CanvasView>`
+## 14. AiChatPanel
 
-**Purpose**: Main visual IaC designer — React Flow canvas with AWS service nodes.
+**Purpose:** Full-height chat interface for the AI Deal Assistant powered by Claude (claude-sonnet-4-6). Supports streaming SSE responses.
 
-**Layout**: full viewport minus TopBar and ViewNav
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│  CanvasToolbar (top strip, 44px)                             │
-├──────────────┬──────────────────────────────┬───────────────┤
-│              │                              │               │
-│ ServicePalette│   React Flow Canvas          │  ResultPanel  │
-│  200px       │   (infinite, zoomable)       │  (collapsible │
-│              │                              │   420px)      │
-│              │                              │               │
-└──────────────┴──────────────────────────────┴───────────────┘
-```
-
-**Canvas bg**: `--color-bg-base` (React Flow `<Background>` dot grid: `--color-border-subtle`)
-**Controls**: React Flow `<Controls>` with `--color-bg-surface` bg
-
----
-
-### 6. `<ServicePalette>`
-
-**Purpose**: Left sidebar listing draggable AWS service icons grouped by category.
-
-**Width**: 200px
-**Background**: `--color-bg-surface`
-**Border-right**: 1px solid `--color-border-subtle`
-**Scroll**: overflowY auto
-
-**Groups** (18 AWS services, AWS-only Sprint-01):
-
-| Category     | Services                                    |
-|--------------|---------------------------------------------|
-| Compute      | EC2, Lambda, ECS, EKS                       |
-| Storage      | S3, EBS                                     |
-| Database     | RDS, DynamoDB, ElastiCache                  |
-| Network      | VPC, ALB, CloudFront, Route53, API Gateway  |
-| Security     | IAM, Secrets Manager                        |
-| Messaging    | SQS, SNS                                    |
-
-**ServiceItem props**:
+**Props:**
 ```typescript
-interface ServiceItemProps {
-  serviceType: AWSServiceType;
-  label: string;
-  icon: ReactNode;
-  onDragStart: (event: DragEvent, serviceType: AWSServiceType) => void;
+interface AiChatPanelProps {
+  onSend: (message: string) => Promise<void>;
+  streaming?: boolean;        // true when Claude is responding
+  disabled?: boolean;
 }
 ```
 
-**Tokens**:
-- Group header: `--color-text-tertiary`, `--font-size-xs`, `--letter-spacing-caps`, `--font-weight-semibold`
-- Item hover: `--color-bg-elevated`
-- Item drag: `--color-primary-400` border, `--shadow-md`, opacity 0.8
-- Icon color: `--color-accent-400`
+**Layout:**
+- Flex column: `[message list (flex-grow, overflow-y: auto) | input bar (fixed bottom)]`
+- Background: `var(--chat-panel-bg)`
+- Message list: `padding: var(--space-4)`, `gap: var(--space-4)`
+
+**Input bar:**
+- Background: `var(--chat-input-bg)`, border: `1px solid var(--chat-input-border)`
+- Focus: border `var(--chat-input-focus-border)`, `box-shadow: var(--shadow-focus)`
+- Send button: background `var(--color-brand-primary)`, disabled when `streaming=true`
+- Placeholder: "Ask about properties, leases, deals…", colour `var(--color-text-muted)`
+
+**Streaming indicator:** Animated blinking cursor (3 dots pulse) in `var(--chat-streaming-accent)` (lime) shown while `streaming=true`.
+
+**Suggested prompts:** 4 pre-set chip buttons shown on empty state (e.g. "What's our highest NOI property?"). Chips: `var(--color-bg-elevated)`, border `var(--color-border-default)`, hover `var(--color-bg-interactive)`.
+
+**Tokens used:**
+- `--chat-panel-bg`, `--chat-input-bg`, `--chat-input-border`, `--chat-input-focus-border`
+- `--color-brand-primary`, `--color-text-muted`, `--color-bg-elevated`
+- `--color-border-default`, `--color-bg-interactive`
+- `--chat-streaming-accent`, `--shadow-focus`, `--space-4`, `--transition-fast`
 
 ---
 
-### 7. `<AWSServiceNode>` (React Flow custom node)
+## 15. ChatMessage
 
-**Purpose**: Represents a single AWS service dropped on the canvas.
+**Purpose:** Individual message bubble in the AiChatPanel. Handles both user messages and Claude assistant responses (with citation links).
 
-**Props**:
+**Props:**
 ```typescript
-interface AWSServiceNodeData {
-  serviceType: AWSServiceType;
-  label: string;
-  instanceType?: string;
-  config?: Record<string, string>;
+interface ChatMessageProps {
+  role: 'user' | 'assistant';
+  content: string;            // Plain text or markdown (assistant only)
+  timestamp?: string;
+  streaming?: boolean;        // Show streaming cursor on last assistant message
+  citations?: string[];       // Property IDs / data source refs
 }
 ```
 
-**Anatomy**:
-```
-┌────────────────┐
-│  [AWS Icon]    │
-│  ec2-web       │
-│  t3.medium     │
-└────────────────┘
-```
+**Layout:**
+- User message: right-aligned, max-width 70%
+  - Background: `var(--chat-user-bg)`, border-left: `3px solid var(--chat-user-border)`
+  - Border-radius: `var(--radius-lg)`
+- Assistant message: left-aligned, max-width 80%
+  - Background: `var(--chat-assistant-bg)`, border: `1px solid var(--chat-assistant-border)`
+  - Border-radius: `var(--radius-lg)`
 
-**Tokens**:
-- Node bg: `--color-bg-elevated`
-- Node border: `--color-border-default`
-- Node selected border: `--color-primary-400`, `--shadow-glow-primary`
-- Node label: `--color-text-primary`, `--font-size-sm`
-- Node subtext: `--color-text-tertiary`, `--font-size-xs`, `--font-family-mono`
-- Border-radius: `--radius-md`
+**Typography:**
+- Content: `var(--font-size-base)`, `var(--line-height-relaxed)`
+- Timestamp: `var(--font-size-xs)`, `var(--color-text-muted)`
+- Citations: `var(--font-size-xs)`, `var(--chat-citation-color)` (link teal), comma-separated
 
-**Handles**: React Flow source/target handles, `--color-primary-400` bg
+**Streaming cursor:** `|` character in `var(--chat-streaming-accent)`, 700ms blink animation. Only shown on last assistant message while `streaming=true`.
 
----
-
-### 8. `<GroupNode>` (React Flow custom node)
-
-**Purpose**: Container nodes — VPC, Availability Zone, Subnet — that house service nodes.
-
-**Types**: `vpc` | `az` | `subnet`
-
-**Visual**:
-
-| Type   | Border                   | Label colour              | Background                |
-|--------|--------------------------|---------------------------|---------------------------|
-| VPC    | 2px dashed `--color-primary-600` | `--color-primary-300` | `rgba(26,116,255,0.05)` |
-| AZ     | 1px dashed `--color-border-default` | `--color-text-secondary` | `rgba(255,255,255,0.02)` |
-| Subnet | 1px solid `--color-border-subtle`  | `--color-text-tertiary`  | `rgba(255,255,255,0.01)` |
-
-**Tokens**:
-- Label: `--font-size-sm`, `--font-weight-semibold`, top-left corner of node
-- Border-radius: `--radius-lg`
-- Min size: 200×120px, resizable
+**Tokens used:**
+- `--chat-user-bg`, `--chat-user-border`, `--chat-assistant-bg`, `--chat-assistant-border`
+- `--chat-streaming-accent`, `--chat-citation-color`
+- `--radius-lg`, `--font-size-base`, `--font-size-xs`
+- `--line-height-relaxed`, `--color-text-muted`
 
 ---
 
-### 9. `<CanvasToolbar>`
+## Screen-to-Component Map
 
-**Purpose**: Top strip above canvas for workspace actions and generation trigger.
+| Screen | Components |
+|--------|-----------|
+| Portfolio Overview | PageShell, TopBar, SideNav, KpiCard (×5), PortfolioBarChart, PropertyPieChart |
+| Predictive Lease Risk Engine | PageShell, TopBar, SideNav, RiskBadge, LeaseRiskTable |
+| ESG & Carbon Tracker | PageShell, TopBar, SideNav, CarbonEmissionsChart, EnergyKpiPanel |
+| Tenant Experience Hub | PageShell, TopBar, SideNav, SpaceHeatmap, SatisfactionGauge, MaintenanceTicketList |
+| AI Deal Assistant | PageShell, TopBar, SideNav, AiChatPanel, ChatMessage |
 
-**Height**: 44px
-**Background**: `--color-bg-surface`
-**Border-bottom**: 1px solid `--color-border-subtle`
+---
 
-**Controls** (left to right):
-- Workspace selector (compact)
-- Region selector (`<RegionSelector>`)
-- Divider
-- Undo | Redo (lucide `Undo2` / `Redo2`)
-- Import .tfstate (lucide `Upload`)
-- Terraform Validate (lucide `CheckCircle`)
-- Show/Hide Containers (lucide `Layers`)
-- Divider
-- **Generate IaC** button (primary CTA)
+## Token Quick-Reference for Rohan
 
-**Props**:
-```typescript
-interface CanvasToolbarProps {
-  canUndo: boolean;
-  canRedo: boolean;
-  isGenerating: boolean;
-  onUndo: () => void;
-  onRedo: () => void;
-  onImportState: () => void;
-  onValidate: () => void;
-  onToggleContainers: () => void;
-  onGenerate: () => void;
-  region: string;
-  onRegionChange: (r: string) => void;
-}
+```css
+/* Import once in main.tsx or App.tsx */
+import '../tokens/tokens.css';
+
+/* Usage pattern — never hardcode colours */
+style={{ color: 'var(--color-text-primary)' }}
+className="..."  /* or use CSS modules with var() */
 ```
 
-**Generate IaC button**:
-- Idle: `--color-primary-400` bg, `--color-text-inverse`, `--radius-md`
-- Generating: `--color-primary-600` bg + spinner (`--color-text-inverse`) + "Generating…" label
-- Tokens: `--font-weight-semibold`, `--font-size-md`
-
-**Tokens** for toolbar actions:
-- Icon buttons: `--color-text-secondary` (hover: `--color-text-primary`), `--color-bg-elevated` hover bg
-- Disabled: `--color-text-tertiary`, cursor-not-allowed
-
----
-
-### 10. `<RegionSelector>`
-
-**Purpose**: Compact dropdown to select AWS region (AWS-only, us-east-1 default).
-
-**Props**:
-```typescript
-interface RegionSelectorProps {
-  value: string;
-  onChange: (region: string) => void;
-  regions?: string[]; // default: ['us-east-1', 'us-west-2', 'eu-west-1', 'ap-southeast-1']
-}
-```
-
-**Tokens**:
-- bg: `--color-bg-elevated`
-- border: `--color-border-default`
-- text: `--color-text-secondary`, `--font-family-mono`, `--font-size-sm`
-- dropdown: `--color-bg-overlay`, `--shadow-lg`
-
----
-
-### 11. `<ResultPanel>`
-
-**Purpose**: Collapsible right panel showing Claude's 7-step generation output. Used in both CanvasView (9 tabs) and DashboardView (7 tabs).
-
-**Width**: 420px (collapsible to 0)
-**Background**: `--color-bg-surface`
-**Border-left**: 1px solid `--color-border-subtle`
-
-**Tab sets**:
-
-**CanvasView (9 tabs)**:
-| # | Tab Label        | Content type         |
-|---|-----------------|----------------------|
-| 1 | Requirements    | Markdown             |
-| 2 | Architecture    | Markdown             |
-| 3 | Terraform       | Multi-file code tabs |
-| 4 | Diagram         | ASCII in `<pre>`     |
-| 5 | Cost Estimate   | Markdown             |
-| 6 | Compliance      | Markdown checklist   |
-| 7 | Deployment      | Markdown             |
-| 8 | Variables       | HCL code             |
-| 9 | Outputs         | HCL code             |
-
-**DashboardView (7 tabs)**:
-| # | Tab Label        | Content type         |
-|---|-----------------|----------------------|
-| 1 | Requirements    | Markdown             |
-| 2 | Architecture    | Markdown             |
-| 3 | Terraform       | Multi-file code tabs |
-| 4 | Diagram         | ASCII in `<pre>`     |
-| 5 | Cost Estimate   | Markdown             |
-| 6 | Compliance      | Markdown checklist   |
-| 7 | Deployment      | Markdown             |
-
-**Props**:
-```typescript
-interface ResultPanelProps {
-  result: IaCResult | null;
-  isGenerating: boolean;
-  tabSet: 'canvas' | 'dashboard';
-  onClose?: () => void;
-}
-
-interface IaCResult {
-  parsedRequirements: string;
-  architectureDesign: string;
-  terraformFiles: { filename: string; content: string }[];
-  architectureDiagram: string;
-  costEstimate: string;
-  complianceChecklist: string;
-  deploymentGuide: string;
-}
-```
-
-**Tokens**:
-- Tab bar bg: `--color-bg-elevated`
-- Active tab: `--color-primary-400` border-bottom 2px, `--color-text-primary`
-- Inactive tab: `--color-text-tertiary`
-- Tab hover: `--color-text-secondary`
-- Content area: `--color-bg-surface`, padding `--space-4`
-- Empty/loading state: `--color-text-tertiary`, centered
-
-**Loading state**: Show shimmer placeholders (`--color-bg-elevated` → `--color-bg-overlay`) while generating.
-
----
-
-### 12. `<TerraformFileViewer>`
-
-**Purpose**: Multi-file HCL code viewer with syntax highlighting and copy button.
-
-**Library**: `react-syntax-highlighter` with `atomOneDark` theme
-
-**Props**:
-```typescript
-interface TerraformFileViewerProps {
-  files: { filename: string; content: string }[];
-}
-```
-
-**Anatomy**:
-- File tabs row (filename chips): `--color-bg-elevated`, `--font-family-mono`, `--font-size-sm`
-- Code block: `--color-bg-base` bg, `--font-family-mono`, `--font-size-sm`
-- Copy button (top-right): lucide `Copy`, `--color-text-secondary`, shows "Copied!" for 2s
-
-**Tokens**:
-- Active file tab: `--color-primary-400` bg, `--color-text-inverse`
-- Inactive file tab: `--color-bg-elevated`, `--color-text-secondary`
-- File tab border-radius: `--radius-sm`
-
----
-
-### 13. `<MarkdownSection>`
-
-**Purpose**: Renders Claude markdown output (architecture docs, cost estimates, compliance, deployment).
-
-**Library**: `react-markdown` with `remark-gfm`
-
-**Props**:
-```typescript
-interface MarkdownSectionProps {
-  content: string;
-  title?: string;
-}
-```
-
-**Styling** (applied via CSS class on the markdown wrapper):
-- Headings: `--color-text-primary`, `--font-weight-semibold`
-- `h2`: `--font-size-xl`, border-bottom 1px `--color-border-subtle`
-- `h3`: `--font-size-lg`
-- Body: `--color-text-secondary`, `--line-height-relaxed`
-- Inline code: `--color-bg-elevated`, `--color-accent-300`, `--font-family-mono`, `--radius-sm`, padding `--space-1`
-- Code blocks: `--color-bg-base`, `--font-family-mono`, `--font-size-sm`, `--radius-md`
-- Checkboxes (compliance list): `--color-success` for checked, `--color-border-default` unchecked
-- Links: `--color-primary-400`
-
----
-
-### 14. `<DashboardView>`
-
-**Purpose**: Natural-language-to-IaC view. User types a description; Claude returns structured JSON.
-
-**Layout**: two-area stacked layout (prompt input top, result panel fills remainder)
-
-```
-┌───────────────────────────────────────────────────────────┐
-│  NLPromptInput (textarea + Generate button, 160px min)    │
-├───────────────────────────────────────────────────────────┤
-│                                                           │
-│  ResultPanel (tabSet='dashboard', fills remaining height) │
-│                                                           │
-└───────────────────────────────────────────────────────────┘
-```
-
----
-
-### 15. `<NLPromptInput>`
-
-**Purpose**: Textarea for the user to describe their infrastructure in natural language.
-
-**Props**:
-```typescript
-interface NLPromptInputProps {
-  value: string;
-  onChange: (v: string) => void;
-  onGenerate: () => void;
-  isGenerating: boolean;
-  placeholder?: string;
-}
-```
-
-**Default placeholder**: `"Describe your infrastructure... e.g., 'A 3-tier web app on AWS with EC2 auto-scaling, RDS PostgreSQL, Redis, ALB, and CloudFront CDN'"`
-
-**Anatomy**:
-```
-┌─────────────────────────────────────────────────────┐
-│  Textarea (resizable, min 3 rows)                   │
-│                                                     │
-│  [Character count]        [Clear]  [Generate IaC]   │
-└─────────────────────────────────────────────────────┘
-```
-
-**Tokens**:
-- Textarea bg: `--color-bg-elevated`
-- Textarea border: `--color-border-default` (focus: `--color-primary-400`)
-- Textarea text: `--color-text-primary`, `--font-size-md`, `--line-height-relaxed`
-- Char count: `--color-text-tertiary`, `--font-size-sm`
-- Generate button: same as CanvasToolbar Generate IaC button
-
----
-
-### 16. `<TerminalView>`
-
-**Purpose**: CLI-style chat interface with SSE streaming from Claude.
-
-**Layout**: full viewport minus TopBar and ViewNav
-
-```
-┌───────────────────────────────────────────────────────────┐
-│  TerminalOutput (scrollable, fills height, auto-scroll)   │
-│                                                           │
-│  $ user types here... _                                   │
-├───────────────────────────────────────────────────────────┤
-│  TerminalInput (sticky bottom, 44px)                      │
-└───────────────────────────────────────────────────────────┘
-```
-
-**Background**: `--color-bg-base` (near-black, terminal feel)
-**Font**: `--font-family-mono` throughout
-
----
-
-### 17. `<TerminalOutput>`
-
-**Purpose**: Scrollable area displaying command history and streamed Claude responses.
-
-**Props**:
-```typescript
-interface TerminalOutputProps {
-  entries: TerminalEntry[];
-  isStreaming: boolean;
-}
-
-type TerminalEntry =
-  | { type: 'user'; text: string; timestamp: string }
-  | { type: 'assistant'; text: string; timestamp: string; isStreaming?: boolean }
-  | { type: 'system'; text: string }
-  | { type: 'error'; text: string };
-```
-
-**Entry styles**:
-| Type        | Prefix  | Colour                              |
-|-------------|---------|-------------------------------------|
-| `user`      | `$ `    | `--color-text-primary`              |
-| `assistant` | `> `    | `--color-accent-300`                |
-| `system`    | (none)  | `--color-text-tertiary`, italic     |
-| `error`     | `✗ `    | `--color-danger-text`               |
-
-**Streaming cursor**: blinking `|` appended to active assistant entry, `--color-accent-400`, animation 600ms blink
-
-**Streaming indicator**: 3-dot pulse (`...`) in `--color-accent-400` while waiting for first token
-
-**Markdown rendering**: `react-markdown` on completed assistant entries (streamed content renders as plain text during stream, converts after `[DONE]`)
-
-**Tokens**:
-- Timestamp: `--color-text-tertiary`, `--font-size-xs`
-- User prefix: `--color-primary-400`, `--font-weight-semibold`
-- Assistant prefix: `--color-accent-400`
-
----
-
-### 18. `<TerminalInput>`
-
-**Purpose**: Command input line — sticky bottom, command history navigation with arrow keys.
-
-**Props**:
-```typescript
-interface TerminalInputProps {
-  onSubmit: (command: string) => void;
-  isDisabled: boolean;
-  history: string[];
-}
-```
-
-**Behaviour**:
-- `↑` / `↓` keys: navigate command history
-- `Enter`: submit
-- `help`: print available commands
-- `clear`: clear TerminalOutput
-- Disabled while streaming (show "Generating…" placeholder)
-
-**Anatomy**: `$ [cursor] input text___`
-
-**Tokens**:
-- bg: `--color-bg-base`
-- border-top: 1px solid `--color-border-subtle`
-- Prompt `$`: `--color-primary-400`, `--font-weight-bold`
-- Input text: `--color-text-primary`, `--font-family-mono`
-- Disabled: `--color-text-tertiary`
-
----
-
-### 19. `<GenerationStatusBadge>`
-
-**Purpose**: Small indicator of the current LLM generation state. Shown in ResultPanel header and CanvasToolbar.
-
-**Variants**: `idle` | `generating` | `streaming` | `done` | `error` | `validating`
-
-**Visual**:
-| Variant      | Dot colour                  | Label text        |
-|--------------|-----------------------------|-------------------|
-| `idle`       | `--color-text-tertiary`     | "Ready"           |
-| `generating` | `--color-primary-400` pulse | "Generating…"     |
-| `streaming`  | `--color-accent-400` pulse  | "Streaming…"      |
-| `done`       | `--color-success`           | "Done"            |
-| `error`      | `--color-danger`            | "Error"           |
-| `validating` | `--color-warning` pulse     | "Validating…"     |
-
-**Pulse animation**: `box-shadow` pulse 1.5s infinite on `generating`/`streaming`/`validating`
-
----
-
-## Spacing & Grid
-
-- Page padding: `--space-6` (24px)
-- Panel gaps: `--space-4` (16px)
-- Section gap: `--space-8` (32px)
-- Canvas panel: CSS `display: flex`, `flex-direction: row`, full viewport height
-- Dashboard: CSS `display: flex`, `flex-direction: column`
-
----
-
-## Icon System
-
-Use `lucide-react` exclusively. Sizes:
-- `sm`: 14px (badges, compact rows)
-- `md`: 16px (buttons, toolbar)
-- `lg`: 20px (ViewNav, headings)
-- `xl`: 24px (empty states)
-
-All icons inherit colour from parent token — do not set icon colour inline.
-
----
-
-## Motion & Animation
-
-- Panel slide-in (ResultPanel): 200ms `ease-out`, `translateX(100%) → translateX(0)`
-- Tab content fade: 150ms `ease`, `opacity 0 → 1`
-- Loading shimmer: `--color-bg-elevated` → `--color-bg-overlay`, 1.2s loop
-- Generation pulse: `box-shadow` pulse on `--color-primary-400`, 1.5s infinite
-- Streaming cursor blink: 600ms step-end
-
----
-
-## Accessibility
-
-- All interactive elements: min 44×44px touch target
-- Focus ring: 2px solid `--color-primary-400`, 2px offset
-- Colour never conveys meaning alone — always pair with icon/text
-- ARIA labels on all icon-only buttons
-- `TerminalInput` ARIA: `role="textbox"`, `aria-label="Terminal input"`
-- `ResultPanel` tabs: `role="tablist"` / `role="tab"` / `role="tabpanel"`
-
----
-
-## Handoff Notes for Rohan
-
-1. Import `tokens.css` in `src/main.tsx` (or `index.css`) — one import at root
-2. All colours via `var(--token-name)` — **zero** hardcoded hex values
-3. React Flow (`@xyflow/react`): use `<ReactFlowProvider>` at app root; custom nodes (`AWSServiceNode`, `GroupNode`) registered via `nodeTypes` prop
-4. `react-syntax-highlighter`: use `atomOneDark` theme, override background with `--color-bg-base` via `customStyle` prop
-5. `react-markdown`: wrap in a `<div className="markdown-body">` and style headings/code via the CSS class using token vars
-6. Recharts `<Tooltip>` needs `contentStyle={{ background: 'var(--chart-tooltip-bg)', border: '1px solid var(--chart-tooltip-border)' }}` — CSS vars don't auto-apply to Recharts inline styles
-7. SSE streaming (TerminalView): use `EventSource` or `fetch` with `ReadableStream`; append token chunks to `entry.text` on each `message` event; set `isStreaming=false` on `[DONE]`
-8. Workspace state: keep in React context (`WorkspaceContext`) — Canvas nodes, edges, active workspace ID, generation result
-9. JWT: store in `localStorage` key `infraviz_token`; read on app load; redirect to `/login` if absent
-10. Undo/redo: use `useNodesState`/`useEdgesState` from React Flow + a simple history stack (max 50 steps)
+No hardcoded hex values anywhere. All colours, spacing, and typography must reference `var(--token-name)` from `tokens.css`.
