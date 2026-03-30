@@ -1536,6 +1536,36 @@ body {
 .arch-req-changes-btn:hover { background: var(--yellow-dim); }
 
 /* ══════════════════════════════════════════════════════════════════════
+   ARCH FIGMA DIAGRAM — visual system architecture before code is written
+   ══════════════════════════════════════════════════════════════════════ */
+.afd-wrap       { background:#111827;border-radius:10px;padding:20px 24px;overflow:auto; }
+.afd-title      { font-size:11px;font-weight:700;color:#64748b;letter-spacing:.08em;text-transform:uppercase;margin-bottom:16px; }
+.afd-layers     { display:flex;flex-direction:column;gap:0; }
+.afd-layer      { display:flex;flex-direction:column;gap:8px;padding:14px 0; }
+.afd-layer-label{ font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#475569;margin-bottom:4px; }
+.afd-nodes      { display:flex;gap:12px;flex-wrap:wrap;align-items:stretch; }
+.afd-node       { display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:8px;border:1.5px solid;min-width:140px;flex:1;max-width:240px;cursor:default; }
+.afd-node-icon  { font-size:20px;flex-shrink:0; }
+.afd-node-info  { display:flex;flex-direction:column;gap:2px; }
+.afd-node-name  { font-size:12px;font-weight:700;color:#f1f5f9; }
+.afd-node-tech  { font-size:10px;color:#94a3b8; }
+.afd-connector  { display:flex;justify-content:center;align-items:center;gap:6px;padding:2px 0;color:#334155;font-size:11px;user-select:none; }
+.afd-conn-line  { flex:1;max-width:120px;height:1px;background:linear-gradient(90deg,transparent,#334155,transparent); }
+.afd-divider    { height:1px;background:linear-gradient(90deg,transparent,#1e293b 20%,#1e293b 80%,transparent);margin:4px 0; }
+.afd-node.fe    { background:rgba(14,165,233,.08);border-color:rgba(14,165,233,.3); }
+.afd-node.be    { background:rgba(0,150,136,.08);border-color:rgba(0,150,136,.3); }
+.afd-node.db    { background:rgba(124,58,237,.08);border-color:rgba(124,58,237,.3); }
+.afd-node.ext   { background:rgba(188,140,255,.08);border-color:rgba(188,140,255,.3); }
+.afd-node.infra { background:rgba(36,150,237,.08);border-color:rgba(36,150,237,.3); }
+.afd-badge      { font-size:9px;padding:2px 6px;border-radius:10px;font-weight:700;margin-left:auto;flex-shrink:0;white-space:nowrap; }
+.afd-badge.fe   { background:rgba(14,165,233,.15);color:#38bdf8; }
+.afd-badge.be   { background:rgba(0,150,136,.15);color:#2dd4bf; }
+.afd-badge.db   { background:rgba(124,58,237,.15);color:#a78bfa; }
+.afd-badge.ext  { background:rgba(188,140,255,.15);color:#bc8cff; }
+.afd-badge.infra{ background:rgba(36,150,237,.15);color:#60a5fa; }
+.afd-empty      { color:#475569;font-size:12px;text-align:center;padding:32px; }
+
+/* ══════════════════════════════════════════════════════════════════════
    DB SCHEMA CANVAS SCREEN  — Rasool's database schema viewer
    ══════════════════════════════════════════════════════════════════════ */
 #db-screen {
@@ -2154,12 +2184,31 @@ const AGENT_META = {
   keerthi: { role: 'QA Agent',          model: 'Sonnet', color: '#3fb950' },
 };
 
-// Update model labels on agent cards based on active LLM mode
+// Fetch all three LLM configs in one shot and apply the correct model label.
+// Avoids race conditions from parallel loadLLMConfig / loadHybridConfig /
+// loadOpenAIConfig calls overwriting each other's label decision.
+async function refreshAllLLMLabels() {
+  try {
+    const [llmR, hybR, oaiR] = await Promise.allSettled([
+      fetch('/api/llm/config').then(r => r.ok ? r.json() : {}),
+      fetch('/api/hybrid/config').then(r => r.ok ? r.json() : {}),
+      fetch('/api/openai/config').then(r => r.ok ? r.json() : {}),
+    ]);
+    updateAgentModelLabels({
+      localLLM:    llmR.status === 'fulfilled' ? llmR.value : {},
+      hybrid:      hybR.status === 'fulfilled' ? hybR.value : {},
+      openaiCompat: oaiR.status === 'fulfilled' ? oaiR.value : {},
+    });
+    if (currentState && Object.keys(currentState).length) renderBoard(currentState);
+  } catch {}
+}
+
+// Apply model labels from the full combined config — single source of truth,
+// no debounce needed because this is always called with the complete picture.
 function updateAgentModelLabels(llmCfg) {
   let label = '';
   if (llmCfg.hybrid && llmCfg.hybrid.enabled) {
-    const ollamaModel = (llmCfg.hybrid.ollamaModel || 'ollama').split(':')[0];
-    label = `${ollamaModel}→Claude`;
+    label = (llmCfg.hybrid.ollamaModel || 'ollama').split(':')[0];
   } else if (llmCfg.openaiCompat && llmCfg.openaiCompat.enabled) {
     label = (llmCfg.openaiCompat.model || 'OpenAI').split('/').pop().substring(0, 12);
   } else if (llmCfg.localLLM && llmCfg.localLLM.enabled && llmCfg.localLLM.useForAgents) {
@@ -2168,7 +2217,6 @@ function updateAgentModelLabels(llmCfg) {
   if (label) {
     Object.keys(AGENT_META).forEach(a => { AGENT_META[a].model = label; });
   } else {
-    // Claude CLI mode — restore defaults
     AGENT_META.arjun.model = 'Opus';
     ['vikram','rasool','kavya','kiran','rohan','keerthi'].forEach(a => { AGENT_META[a].model = 'Sonnet'; });
   }
@@ -3409,6 +3457,7 @@ function openNewProjectScreen() {
   loadLLMConfig();
   loadHybridConfig();
   loadOpenAIConfig();
+  refreshAllLLMLabels();
 }
 
 function closeNewProjectScreen() {
@@ -4047,7 +4096,7 @@ function closeArchScreen() {
 
 function renderArchCanvas() {
   if (!archScreenOpen) return;
-  const req    = (currentState.requirement) || {};
+  const req    = (currentState.req) || {};
   const agents = (currentState.agents)      || {};
   const vikram = agents.vikram     || {};
   const msgs   = (currentState.chat && currentState.chat.messages) ? currentState.chat.messages : [];
@@ -4091,6 +4140,9 @@ function renderArchCanvas() {
     chatBox.scrollTop = chatBox.scrollHeight;
   }
 
+  // Render Figma-style visual plan (always shown, auto-generated from requirements)
+  renderArchFigmaDiagram(req);
+
   // Find arch-diagram message with Mermaid content
   const diagMsg = msgs.slice().reverse().find(m => m.type === 'arch-diagram');
   const container = document.getElementById('arch-mermaid-container');
@@ -4123,6 +4175,102 @@ function renderArchCanvas() {
         bar.classList.remove('approved');
       }
     }).catch(() => {});
+}
+
+function renderArchFigmaDiagram(req) {
+  const el = document.getElementById('arch-figma-diagram');
+  if (!el) return;
+  const tech  = (req.techConstraints || []).map(t => String(t).toLowerCase());
+  const title = req.title || 'System';
+
+  // Detect stack components
+  const fe = tech.some(t => /react/.test(t))   ? { icon:'⚛️', name:'React 18', tech:'TypeScript + Recharts', cls:'fe', badge:'Frontend' } :
+             tech.some(t => /vue/.test(t))      ? { icon:'💚', name:'Vue.js',   tech:'JavaScript',            cls:'fe', badge:'Frontend' } :
+             tech.some(t => /angular/.test(t))  ? { icon:'🅰️', name:'Angular',  tech:'TypeScript',            cls:'fe', badge:'Frontend' } :
+             tech.some(t => /next/.test(t))     ? { icon:'▲',  name:'Next.js',  tech:'React + SSR',           cls:'fe', badge:'Frontend' } :
+                                                  { icon:'🌐', name:'Web App',   tech:'HTML / JS',             cls:'fe', badge:'Frontend' };
+
+  const be = tech.some(t => /fastapi/.test(t)) ? { icon:'⚡', name:'FastAPI',      tech:'Python 3.11+ / Pydantic v2', cls:'be', badge:'Backend' } :
+             tech.some(t => /express/.test(t)) ? { icon:'🟢', name:'Express.js',   tech:'Node.js',                   cls:'be', badge:'Backend' } :
+             tech.some(t => /django/.test(t))  ? { icon:'🦄', name:'Django',       tech:'Python + DRF',               cls:'be', badge:'Backend' } :
+             tech.some(t => /rails/.test(t))   ? { icon:'💎', name:'Rails',        tech:'Ruby on Rails',              cls:'be', badge:'Backend' } :
+                                                 { icon:'🔧', name:'Backend API',  tech:'REST / HTTP',                cls:'be', badge:'Backend' };
+
+  const dbs = [];
+  if (tech.some(t => /postgres/.test(t)))    dbs.push({ icon:'🐘', name:'PostgreSQL', tech:'SQLAlchemy ORM + Alembic', cls:'db', badge:'Database' });
+  if (tech.some(t => /sqlite/.test(t)))      dbs.push({ icon:'💾', name:'SQLite',     tech:'SQLAlchemy + Alembic',      cls:'db', badge:'Database' });
+  if (tech.some(t => /mongo/.test(t)))       dbs.push({ icon:'🍃', name:'MongoDB',    tech:'Mongoose / Motor',          cls:'db', badge:'Database' });
+  if (tech.some(t => /mysql|mariadb/.test(t)))dbs.push({ icon:'🐬', name:'MySQL',     tech:'SQLAlchemy',                cls:'db', badge:'Database' });
+  if (tech.some(t => /redis/.test(t)))       dbs.push({ icon:'🔴', name:'Redis',      tech:'Cache / Pub-Sub',           cls:'db', badge:'Cache' });
+  if (!dbs.length)                            dbs.push({ icon:'🗄️', name:'Database',  tech:'Data Store',                cls:'db', badge:'Database' });
+
+  const exts = [];
+  if (tech.some(t => /claude|anthropic/.test(t))) exts.push({ icon:'🤖', name:'Claude API',   tech:'claude-sonnet-4-6 / SDK', cls:'ext', badge:'AI' });
+  if (tech.some(t => /openai/.test(t)))            exts.push({ icon:'🧠', name:'OpenAI API',   tech:'GPT-4 / Embeddings',      cls:'ext', badge:'AI' });
+  if (tech.some(t => /stripe/.test(t)))            exts.push({ icon:'💳', name:'Stripe',        tech:'Payments API',            cls:'ext', badge:'Payment' });
+  if (tech.some(t => /s3|aws/.test(t)))            exts.push({ icon:'☁️', name:'AWS S3',       tech:'Object Storage',          cls:'ext', badge:'Cloud' });
+  if (tech.some(t => /sendgrid|smtp|email/.test(t)))exts.push({ icon:'📧', name:'Email',        tech:'Notifications',           cls:'ext', badge:'Comms' });
+
+  const infras = [];
+  if (tech.some(t => /docker/.test(t)))      infras.push({ icon:'🐳', name:'Docker Compose', tech:'Multi-container orchestration', cls:'infra', badge:'Infra' });
+  if (tech.some(t => /terraform/.test(t)))   infras.push({ icon:'🏗️', name:'Terraform',      tech:'IaC — AWS modules',            cls:'infra', badge:'IaC' });
+  if (tech.some(t => /kubernetes|k8s/.test(t)))infras.push({ icon:'☸️', name:'Kubernetes',   tech:'Container orchestration',      cls:'infra', badge:'Infra' });
+  if (tech.some(t => /nginx/.test(t)))       infras.push({ icon:'🔀', name:'Nginx',           tech:'Reverse proxy',                cls:'infra', badge:'Proxy' });
+
+  function node(n) {
+    return `<div class="afd-node ${n.cls}" title="${escHtml(n.tech)}">
+      <span class="afd-node-icon">${n.icon}</span>
+      <div class="afd-node-info">
+        <span class="afd-node-name">${escHtml(n.name)}</span>
+        <span class="afd-node-tech">${escHtml(n.tech)}</span>
+      </div>
+      <span class="afd-badge ${n.cls}">${n.badge}</span>
+    </div>`;
+  }
+
+  function connector(label) {
+    return `<div class="afd-connector"><span class="afd-conn-line"></span><span>${label}</span><span class="afd-conn-line"></span></div>`;
+  }
+
+  let html = `<div class="afd-wrap">
+    <div class="afd-title">📐 ${escHtml(title)} — System Architecture</div>
+    <div class="afd-layers">`;
+
+  // Client layer
+  html += `<div class="afd-layer">
+    <div class="afd-layer-label">Client Layer</div>
+    <div class="afd-nodes">${node(fe)}</div>
+  </div>`;
+
+  html += connector('HTTP / REST API ↕');
+  html += `<div class="afd-divider"></div>`;
+
+  // Backend layer
+  html += `<div class="afd-layer">
+    <div class="afd-layer-label">API Layer</div>
+    <div class="afd-nodes">${node(be)}${exts.map(node).join('')}</div>
+  </div>`;
+
+  html += connector('SQLAlchemy ORM / Queries ↕');
+  html += `<div class="afd-divider"></div>`;
+
+  // Data layer
+  html += `<div class="afd-layer">
+    <div class="afd-layer-label">Data Layer</div>
+    <div class="afd-nodes">${dbs.map(node).join('')}</div>
+  </div>`;
+
+  if (infras.length) {
+    html += connector('Containerised ↕');
+    html += `<div class="afd-divider"></div>`;
+    html += `<div class="afd-layer">
+      <div class="afd-layer-label">Infrastructure</div>
+      <div class="afd-nodes">${infras.map(node).join('')}</div>
+    </div>`;
+  }
+
+  html += `</div></div>`;
+  el.innerHTML = html;
 }
 
 function sendArchFeedback() {
@@ -4185,7 +4333,7 @@ function closeDBScreen() {
 
 function loadDBSchema() {
   if (!dbScreenOpen) return;
-  const req = (currentState.requirement) || {};
+  const req = (currentState.req) || {};
   document.getElementById('db-project-name').textContent = req.title ? `— ${req.title}` : '';
 
   fetch('/api/agent/rasool/db-schema')
@@ -4446,9 +4594,6 @@ async function loadLLMConfig() {
     const fbControls = g('ollama-feedback-controls');
     if (fbControls) fbControls.style.display = cfg.feedbackLoop ? 'block' : 'none';
     updateOllamaCard(cfg.enabled, cfg.useForAgents);
-    // Update agent card model labels to reflect active LLM mode
-    updateAgentModelLabels({ localLLM: { enabled: cfg.enabled, useForAgents: cfg.useForAgents, model: cfg.model } });
-    if (currentState && Object.keys(currentState).length) renderBoard(currentState);
   } catch {}
 }
 
@@ -4485,9 +4630,7 @@ async function ollamaSave() {
       body: JSON.stringify({ enabled, useForAgents, endpoint, model, feedbackLoop, maxIterations, feedbackThreshold }),
     });
     updateOllamaCard(enabled, useForAgents);
-    // Update model labels on agent cards immediately
-    updateAgentModelLabels({ localLLM: { enabled, useForAgents, model } });
-    if (currentState && Object.keys(currentState).length) renderBoard(currentState);
+    refreshAllLLMLabels();
   } catch {}
 }
 
@@ -4561,6 +4704,7 @@ async function hybridSave() {
       body: JSON.stringify(cfg),
     });
     updateHybridCard(cfg.enabled);
+    refreshAllLLMLabels();
   } catch {}
 }
 
@@ -4661,6 +4805,7 @@ async function openaiSave() {
       body: JSON.stringify(cfg),
     });
     updateOpenAICard(cfg.enabled);
+    refreshAllLLMLabels();
   } catch {}
 }
 
@@ -4914,6 +5059,17 @@ async function npUploadContextFiles(projectId) {
           <div class="arch-progress-bar">
             <div class="arch-progress-fill" id="arch-vikram-bar" style="width:0%"></div>
           </div>
+        </div>
+      </div>
+
+      <div class="arch-section">
+        <div class="arch-section-header">
+          <span class="arch-section-icon">🎨</span>
+          <span class="arch-section-title">System Architecture — Visual Plan</span>
+          <span class="arch-section-badge" id="arch-figma-badge" style="background:#1e293b;color:#64748b">Auto-generated from requirements</span>
+        </div>
+        <div class="arch-section-body" style="padding:12px">
+          <div id="arch-figma-diagram"><div class="afd-empty">Loading architecture plan…</div></div>
         </div>
       </div>
 

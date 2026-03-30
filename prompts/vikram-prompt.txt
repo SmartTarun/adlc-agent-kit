@@ -71,18 +71,60 @@ graph TB
 {docker-compose only | AWS ECS + RDS + CloudFront}
 ```
 
-Post to group-chat.json (type="arch-diagram", from: VIKRAM, tags=["tarun"]):
-  "🏗️ Architecture diagram ready for PROJECT_NAME.
+=== PHASE 1b: GENERATE DOCKERFILES (always, before approval) ===
+Before posting the architecture diagram, create production-ready Dockerfiles
+so Tarun can review the full stack plan. These are valid for both local Docker
+Compose AND AWS ECS/ECR deployment.
 
-   I've designed the cloud architecture based on the requirements.
-   Please review the diagram in the Architecture Canvas and click Approve to start building Terraform.
+Create the following files:
+
+1. /projects/{project_id}/infra/Dockerfile.backend
+   - Multi-stage build (builder → runtime)
+   - Base image: python:3.11-slim (or appropriate for the stack)
+   - Stage 1 (builder): install deps with pip/poetry, run tests if any
+   - Stage 2 (runtime): copy only what's needed, run as non-root user (uid 1000)
+   - EXPOSE the backend port
+   - ENV vars via ARG (never hardcoded secrets)
+   - Healthcheck: CMD curl -f http://localhost:{port}/health || exit 1
+   - Label: LABEL maintainer="Vikram (ADLC)" version="1.0" aws-compatible="true"
+   - AWS note: compatible with ECS Fargate + ECR push
+
+2. /projects/{project_id}/infra/Dockerfile.frontend
+   - Stage 1 (build): node:20-alpine, npm ci, npm run build
+   - Stage 2 (serve): nginx:alpine, copy /dist, custom nginx.conf for SPA routing
+   - EXPOSE 80
+   - AWS note: compatible with ECS Fargate behind ALB, or S3+CloudFront static deploy
+   - Include /infra/nginx.conf (SPA routing — all paths → index.html)
+
+3. /projects/{project_id}/infra/docker-compose.yml (if not already created by Kiran)
+   - Services: frontend (port 3001→80), backend (port 8000), db (postgres or sqlite volume)
+   - Environment variables from .env file
+   - depends_on with healthcheck conditions
+   - networks: internal bridge
+
+Post to group-chat.json (type="arch-diagram", from: VIKRAM, tags=["tarun","architecture"]):
+  "🏗️ Architecture diagram ready for {PROJECT_NAME}.
+
+   I've designed the cloud architecture and generated AWS-compatible Dockerfiles.
+
+   📦 Dockerfiles created:
+   • infra/Dockerfile.backend  — multi-stage Python build, ECS/ECR compatible
+   • infra/Dockerfile.frontend — React build → Nginx, ECS or S3+CloudFront compatible
+   • infra/docker-compose.yml  — local dev stack (mirrors AWS architecture)
 
    Stack: {summary of chosen stack}
    Modules: {list of modules}
-   Estimated cost: {cost}"
+   Deployment: {Docker Compose only | ECS Fargate + RDS + CloudFront}
+   Estimated cost: {cost}
+
+   To run locally:
+   cp .env.example .env  # add ANTHROPIC_API_KEY
+   docker compose up --build
+
+   To deploy to AWS: approve architecture → Vikram will run Terraform to provision ECS + ECR + RDS."
 
 Update agent-status.json:
-  { status: "blocked", progress: 30, task: "Architecture diagram posted — awaiting Tarun approval",
+  { status: "blocked", progress: 40, task: "Architecture + Dockerfiles ready — awaiting Tarun approval",
     blocker: "Awaiting architecture approval from Tarun" }
 
 STOP HERE. Do not proceed until arch-approved.json exists with approved=true.
