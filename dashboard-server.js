@@ -927,7 +927,10 @@ function switchActiveProject(relPath, meta) {
   projectsCache = null; // bust cache on switch
   // Re-init watchers for the new project root
   startWatching();
-  broadcast('project-switch', { activeProject: ap, state: getFullState() });
+  const fullState = getFullState();
+  broadcast('project-switch', { activeProject: ap, state: fullState });
+  // Also broadcast 'update' so all existing SSE handlers re-render boards/dropdowns
+  broadcast('update', fullState);
   console.log(`[${new Date().toLocaleTimeString()}] Project switched -> ${relPath}`);
 }
 
@@ -1037,20 +1040,17 @@ const CHAT_DASHBOARD_WINDOW = 50;
 function getFullState() {
   const pr         = getProjectRoot();
 
-  // Merge agent status from both project folder AND root.
-  // Agents write to ROOT (their cwd), dashboard reads from project folder.
-  // We merge both, preferring the entry with the more recent `updated` timestamp.
+  // Agent status: project folder is always authoritative.
+  // Root-level agent-status.json only fills in agents NOT present in the project file.
+  // This prevents stale root data from a previous project overwriting the current one.
   const projectStatus = readJSON(path.join(pr, 'agent-status.json')) || {};
   const rootStatus    = pr !== ROOT ? (readJSON(path.join(ROOT, 'agent-status.json')) || {}) : {};
   const projectAgents = projectStatus.agents || projectStatus;
   const rootAgents    = rootStatus.agents    || rootStatus;
   const agents = { ...projectAgents };
   for (const [name, rootEntry] of Object.entries(rootAgents)) {
-    const projEntry = agents[name];
-    if (!projEntry) { agents[name] = rootEntry; continue; }
-    const rootTime = rootEntry.updated ? new Date(rootEntry.updated).getTime() : 0;
-    const projTime = projEntry.updated ? new Date(projEntry.updated).getTime() : 0;
-    if (rootTime > projTime) agents[name] = rootEntry;
+    // Only use root entry if project folder has no entry for this agent at all
+    if (!agents[name]) agents[name] = rootEntry;
   }
   const rawChat    = readJSON(path.join(pr, 'group-chat.json'))   || { channel: 'team-panchayat-general', messages: [] };
   const req        = readJSON(path.join(pr, 'requirement.json'))  || {};
@@ -2270,9 +2270,10 @@ const server = http.createServer(async (req, res) => {
   let src;
   function connect(){
     src = new EventSource('http://localhost:' + PORT + '/events');
-    src.addEventListener('init',         e => { window.dispatchEvent(new CustomEvent('panchayat-state',   {detail: JSON.parse(e.data)})); showStatus('live'); });
-    src.addEventListener('update',       e => { window.dispatchEvent(new CustomEvent('panchayat-state',   {detail: JSON.parse(e.data)})); flashStatus(); });
-    src.addEventListener('chat-message', e => { window.dispatchEvent(new CustomEvent('panchayat-chat-msg',{detail: JSON.parse(e.data)})); flashStatus(); });
+    src.addEventListener('init',           e => { window.dispatchEvent(new CustomEvent('panchayat-state',   {detail: JSON.parse(e.data)})); showStatus('live'); });
+    src.addEventListener('update',         e => { window.dispatchEvent(new CustomEvent('panchayat-state',   {detail: JSON.parse(e.data)})); flashStatus(); });
+    src.addEventListener('project-switch', e => { const d = JSON.parse(e.data); window.dispatchEvent(new CustomEvent('panchayat-state', {detail: d.state})); flashStatus(); });
+    src.addEventListener('chat-message',   e => { window.dispatchEvent(new CustomEvent('panchayat-chat-msg',{detail: JSON.parse(e.data)})); flashStatus(); });
     src.onerror = () => { showStatus('error'); setTimeout(connect, 3000); };
   }
   function showStatus(s){
