@@ -574,3 +574,114 @@ alembic downgrade 0001
 ---
 
 *Delivered by RASOOL — Database Agent | Sprint-01 | CBRE Unified Asset Intelligence Platform*
+
+
+---
+
+# Agent: rasool | Sprint: 02 | Date: 2026-03-31
+# Smart Resume Screener — DB Schema (Migration 0003)
+
+**Project**: Smart Resume Screener
+**Database**: SQLite (file: `screener.db`, volume-mounted at `./data`)
+**ORM**: SQLAlchemy 2.0 + Alembic
+**Migration file**: `backend/migrations/versions/0003_smart_resume_screener.py`
+**Chains from**: `0002` (CBRE)
+
+---
+
+## Architecture Decisions
+
+| Decision | Value | Authority |
+|---|---|---|
+| Database | SQLite — not PostgreSQL | Arjun 2026-03-31 |
+| Auth | None | Arjun |
+| LLM scoring | `claude-sonnet-4-6` returns JSON per resume | Arjun |
+| JSON columns | TEXT (SQLite has no JSONB) | Rasool |
+| Deployment | Docker Compose only — no Terraform | Arjun |
+| DB credentials | No credentials needed for SQLite | N/A |
+
+---
+
+## Table Summary
+
+| Table | Purpose |
+|---|---|
+| `screening_sessions` | One row per recruiter session (job title + JD) |
+| `resume_submissions` | One row per candidate resume; holds Claude's score + reasoning |
+
+---
+
+## Table Schemas
+
+### `screening_sessions`
+Created by the Upload screen when a recruiter submits a job description.
+
+| Column | Type | Constraints | Notes |
+|---|---|---|---|
+| `id` | VARCHAR(36) | PK, NOT NULL | UUID string |
+| `job_title` | VARCHAR(255) | NOT NULL | e.g. "Senior Python Engineer" |
+| `job_description` | TEXT | NOT NULL | Full JD text pasted by recruiter |
+| `created_at` | DATETIME | NOT NULL, default NOW() | |
+
+**Indexes**: `ix_screening_sessions_created_at`
+
+---
+
+### `resume_submissions`
+One row per candidate resume. Claude scores are written back after API call completes.
+`score` is NULL while Claude is processing; set to 0-100 on completion.
+
+| Column | Type | Constraints | Notes |
+|---|---|---|---|
+| `id` | VARCHAR(36) | PK, NOT NULL | UUID string |
+| `session_id` | VARCHAR(36) | FK → `screening_sessions.id` CASCADE | Parent session |
+| `candidate_name` | VARCHAR(255) | NOT NULL | Entered by recruiter |
+| `resume_text` | TEXT | NOT NULL | Plain text of resume |
+| `score` | INTEGER | NULLABLE | 0-100, NULL while pending |
+| `matched_skills` | TEXT | NULLABLE | JSON array e.g. `["Python","FastAPI"]` |
+| `skill_gaps` | TEXT | NULLABLE | JSON array e.g. `["Kubernetes"]` |
+| `recommendation` | VARCHAR(16) | NULLABLE | `"Strong Hire"` \| `"Hire"` \| `"No Hire"` |
+| `reasoning` | TEXT | NULLABLE | Claude's full explanation paragraph |
+| `created_at` | DATETIME | NOT NULL, default NOW() | |
+
+**Indexes**: `ix_resume_submissions_session_id`, `ix_resume_submissions_score`, `ix_resume_submissions_recommendation`, `ix_resume_submissions_created_at`
+
+---
+
+## ERD (Text) — Smart Resume Screener
+
+```
+screening_sessions
+  └── resume_submissions (session_id)
+        Claude API → score + matched_skills + skill_gaps + recommendation + reasoning
+```
+
+---
+
+## Running Migration
+
+```bash
+# SQLite — DATABASE_URL auto-configured in docker-compose.yml
+export DATABASE_URL=sqlite:///./data/screener.db
+cd backend
+alembic upgrade head     # runs 0001 → 0002 → 0003
+
+# Run only migration 0003
+alembic upgrade 0003
+
+# Rollback Smart Resume Screener tables
+alembic downgrade 0002
+```
+
+---
+
+## Files
+
+| File | Purpose |
+|---|---|
+| `backend/migrations/versions/0003_smart_resume_screener.py` | 2 tables + 5 indexes |
+| `docs/db-schema.md` | This file |
+
+---
+
+*Delivered by RASOOL — Database Agent | Sprint-02 | Smart Resume Screener*
