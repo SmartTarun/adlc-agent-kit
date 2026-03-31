@@ -1494,6 +1494,7 @@ body {
 .arch-section {
   background: var(--surface); border: 1.5px solid var(--border);
   border-radius: 12px; overflow: hidden; box-shadow: var(--shadow-sm);
+  flex-shrink: 0;
 }
 .arch-section-header {
   display: flex; align-items: center; gap: 10px; padding: 12px 16px;
@@ -1538,20 +1539,20 @@ body {
 /* ══════════════════════════════════════════════════════════════════════
    ARCH FIGMA DIAGRAM — visual system architecture before code is written
    ══════════════════════════════════════════════════════════════════════ */
-.afd-wrap       { background:#111827;border-radius:10px;padding:20px 24px;overflow:auto; }
-.afd-title      { font-size:11px;font-weight:700;color:#64748b;letter-spacing:.08em;text-transform:uppercase;margin-bottom:16px; }
-.afd-layers     { display:flex;flex-direction:column;gap:0; }
-.afd-layer      { display:flex;flex-direction:column;gap:8px;padding:14px 0; }
-.afd-layer-label{ font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#475569;margin-bottom:4px; }
-.afd-nodes      { display:flex;gap:12px;flex-wrap:wrap;align-items:stretch; }
-.afd-node       { display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:8px;border:1.5px solid;min-width:140px;flex:1;max-width:240px;cursor:default; }
-.afd-node-icon  { font-size:20px;flex-shrink:0; }
-.afd-node-info  { display:flex;flex-direction:column;gap:2px; }
-.afd-node-name  { font-size:12px;font-weight:700;color:#f1f5f9; }
-.afd-node-tech  { font-size:10px;color:#94a3b8; }
-.afd-connector  { display:flex;justify-content:center;align-items:center;gap:6px;padding:2px 0;color:#334155;font-size:11px;user-select:none; }
-.afd-conn-line  { flex:1;max-width:120px;height:1px;background:linear-gradient(90deg,transparent,#334155,transparent); }
-.afd-divider    { height:1px;background:linear-gradient(90deg,transparent,#1e293b 20%,#1e293b 80%,transparent);margin:4px 0; }
+.afd-wrap       { background:#111827;border-radius:10px;padding:10px 12px;overflow:auto; }
+.afd-title      { font-size:10px;font-weight:700;color:#64748b;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px; }
+.afd-layers     { display:flex;flex-direction:row;gap:6px;align-items:stretch; }
+.afd-layer      { display:flex;flex-direction:column;gap:5px;padding:7px 8px;flex:1;min-width:0;background:rgba(255,255,255,.02);border-radius:8px;border:1px solid rgba(255,255,255,.05); }
+.afd-layer-label{ font-size:7.5px;font-weight:700;letter-spacing:.10em;text-transform:uppercase;color:#475569;margin-bottom:2px;text-align:center; }
+.afd-nodes      { display:flex;flex-direction:column;gap:5px;align-items:stretch; }
+.afd-node       { display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:6px;border:1.5px solid;cursor:default;width:100%;box-sizing:border-box; }
+.afd-node-icon  { font-size:14px;flex-shrink:0; }
+.afd-node-info  { display:flex;flex-direction:column;gap:1px;overflow:hidden;min-width:0; }
+.afd-node-name  { font-size:11px;font-weight:700;color:#f1f5f9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+.afd-node-tech  { font-size:9px;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+.afd-connector  { display:none; }
+.afd-conn-line  { display:none; }
+.afd-divider    { display:none; }
 .afd-node.fe    { background:rgba(14,165,233,.08);border-color:rgba(14,165,233,.3); }
 .afd-node.be    { background:rgba(0,150,136,.08);border-color:rgba(0,150,136,.3); }
 .afd-node.db    { background:rgba(124,58,237,.08);border-color:rgba(124,58,237,.3); }
@@ -4271,6 +4272,20 @@ function renderArchFigmaDiagram(req) {
 
   html += `</div></div>`;
   el.innerHTML = html;
+
+  // Pre-populate feedback textarea with detected stack summary
+  const ta = document.getElementById('arch-feedback-input');
+  if (ta && !ta.value) {
+    const stackParts = [];
+    stackParts.push(fe.name);
+    stackParts.push(be.name);
+    dbs.forEach(d => stackParts.push(d.name));
+    exts.forEach(e => stackParts.push(e.name));
+    infras.forEach(i => stackParts.push(i.name));
+    ta.value = `Stack looks good: ${stackParts.join(' + ')}. `;
+    ta.setSelectionRange(ta.value.length, ta.value.length);
+    ta.focus();
+  }
 }
 
 function sendArchFeedback() {
