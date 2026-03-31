@@ -3583,7 +3583,7 @@ async function submitNewProject() {
   const description = document.getElementById('np-desc').value.trim();
   if (!title || !description) { alert('Project name and description are required.'); return; }
 
-  await saveMCPConfig();
+  saveMCPConfig(); // fire-and-forget — do not block project creation
 
   const payload = {
     title,
@@ -3593,7 +3593,6 @@ async function submitNewProject() {
     techConstraints: document.getElementById('np-constraints').value.trim()
       ? document.getElementById('np-constraints').value.split(',').map(s => s.trim()) : [],
     deadline:        document.getElementById('np-deadline').value || null,
-    mcpConfig:       Object.keys(mcpConfig).length ? mcpConfig : undefined,
     priority: 'high',
     type: 'new_project',
     sprint: '',
