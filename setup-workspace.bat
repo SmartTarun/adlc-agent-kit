@@ -56,7 +56,7 @@ REM -- Initialise group-chat.json if missing -----------------------------------
 echo.
 echo [3/7] Checking group-chat.json...
 if not exist "%ROOT%\group-chat.json" (
-    echo [] > "%ROOT%\group-chat.json"
+    (echo {"channel":"team-panchayat-general","sprint":"01","messages":[]}) > "%ROOT%\group-chat.json"
     echo     Created group-chat.json
 ) else (
     echo     Already exists -- skipped
@@ -110,8 +110,7 @@ echo  Setup complete!
 echo  Kit is ready at: %ROOT%
 echo.
 echo  NEXT STEPS:
-echo  1. Run start-agents.ps1 (in PowerShell)
-echo     OR double-click start-agents.bat
+echo  1. Double-click start-agents.bat (or: start-agents.bat autorun)
 echo.
 echo  For Docker mode (v3):
 echo     Copy .env.template to .env and add your API key

@@ -12,10 +12,12 @@
       "TodoWrite(*)",
       "TodoRead(*)",
       "WebFetch(*)",
-      "WebSearch(*)"
+      "WebSearch(*)",
+      "Agent(*)"
     ],
     "deny": []
   },
+  "bypassPermissionsMode": "dangerouslyBypassAll",
   "env": {
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
   }

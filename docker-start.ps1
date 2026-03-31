@@ -1,4 +1,4 @@
-# Agent: Arjun | Sprint: 01 | Date: 2026-03-16
+﻿# Agent: Arjun | Sprint: 01 | Date: 2026-03-16
 # Team Panchayat -- Docker Cluster Launcher
 # Usage:
 #   .\docker-start.ps1              -- start main cluster
@@ -27,7 +27,7 @@ function Write-Info   { param($msg) Write-Host "  >>  $msg" -ForegroundColor Gra
 Write-Host ""
 Write-Host "  ============================================" -ForegroundColor Cyan
 Write-Host "  TEAM PANCHAYAT -- DOCKER CLUSTER" -ForegroundColor Cyan
-Write-Host "  Sprint-01 | Cost Anomaly Detection Platform" -ForegroundColor Gray
+Write-Host "  ADLC Agent Kit -- Multi-Project AI Dev Team" -ForegroundColor Gray
 Write-Host "  ============================================" -ForegroundColor Cyan
 Write-Host ""
 

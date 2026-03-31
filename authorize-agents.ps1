@@ -174,8 +174,8 @@ Write-Host "  Permissions: all tools pre-approved in .claude\settings.json" -For
 Write-Host "  Agents    : will run WITHOUT permission prompts" -ForegroundColor White
 Write-Host ""
 Write-Host "  NEXT STEPS:" -ForegroundColor Cyan
-Write-Host "  -- Standard mode  : .\start-agents.ps1" -ForegroundColor Yellow
-Write-Host "  -- Auto-run mode  : .\start-agents.ps1 -AutoRun" -ForegroundColor Yellow
+Write-Host "  -- Standard mode  : start-agents.bat" -ForegroundColor Yellow
+Write-Host "  -- Auto-run mode  : start-agents.bat autorun" -ForegroundColor Yellow
 Write-Host "  -- Docker mode    : .\docker-start.ps1" -ForegroundColor Yellow
 Write-Host ""
 Read-Host "Press Enter to close"

@@ -9,17 +9,22 @@ RUN apk add --no-cache git curl bash python3 make g++
 # ── Install Claude Code CLI globally ────────────────────────────────────
 RUN npm install -g @anthropic-ai/claude-code
 
+# ── Non-root user (required by claude --dangerously-skip-permissions) ────
+RUN addgroup -S claude && adduser -S claude -G claude
+
 # ── App directory ────────────────────────────────────────────────────────
 WORKDIR /app
 
 # ── Entrypoint script ────────────────────────────────────────────────────
 COPY docker-entrypoint.sh /app/entrypoint.sh
-RUN chmod +x /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh && chown claude:claude /app/entrypoint.sh
 
 # ── Environment ──────────────────────────────────────────────────────────
 ENV CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 \
     WORKSPACE=/workspace \
     NODE_ENV=production
+
+USER claude
 
 # ── Health check — verifies agent updated status in last 5 minutes ───────
 HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=3 \

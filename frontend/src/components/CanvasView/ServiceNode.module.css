@@ -1,0 +1,43 @@
+/* Agent: rohan | Sprint: 01 | Date: 2026-03-16 */
+.node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-bg-elevated);
+  border: 1.5px solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+  min-width: 72px;
+  cursor: default;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.node:hover {
+  border-color: var(--color-primary-400);
+}
+
+.selected {
+  border-color: var(--color-primary-400);
+  box-shadow: var(--shadow-glow-primary);
+}
+
+.icon {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.label {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  text-align: center;
+  font-family: var(--font-family-mono);
+  white-space: nowrap;
+}
+
+.handle {
+  width: 8px;
+  height: 8px;
+  background: var(--color-primary-400);
+  border: none;
+}
