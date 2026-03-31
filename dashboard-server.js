@@ -34,6 +34,7 @@ const PORT        = (() => { const i = process.argv.indexOf('--port'); return i 
 const AGENTS      = ['arjun','vikram','rasool','kavya','kiran','rohan','keerthi'];
 const UPLOADS_DIR = path.join(ROOT, 'chat-uploads');
 const LOGS_DIR    = path.join(ROOT, 'agent-logs');
+const CONN_FILE   = path.join(ROOT, 'connections.json');
 
 // Ensure required directories exist on startup
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
