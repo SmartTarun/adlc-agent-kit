@@ -799,8 +799,10 @@ function launchAgent(agentName) {
     '--allowedTools', 'Bash,Read,Write,Edit,Glob,Grep,WebFetch',
   ], { cwd: ROOT, shell: true, stdio: ['pipe', 'pipe', 'pipe'] });
 
-  proc.stdin.write(contextBlock + promptContent);
-  proc.stdin.end();
+  proc.stdin.on('error', () => {}); // suppress EPIPE if process exits before stdin drains
+  try { proc.stdin.write(contextBlock + promptContent); proc.stdin.end(); } catch (e) {
+    fs.appendFileSync(logPath, `[ERR] stdin write failed: ${e.message}\n`);
+  }
 
   agentProcesses[agentName] = { proc, pid: proc.pid, startedAt: new Date().toISOString() };
 
@@ -2177,6 +2179,45 @@ const server = http.createServer(async (req, res) => {
     }
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(status));
+    return;
+  }
+
+  // -- API: Agent log SSE stream ----------------------------------
+  if (pathname.startsWith('/api/logs/') && pathname.endsWith('/stream') && req.method === 'GET') {
+    cors(res);
+    const agentName = pathname.split('/')[3];
+    const logFile   = path.join(LOGS_DIR, `${agentName}.log`);
+    res.writeHead(200, {
+      'Content-Type':  'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection':    'keep-alive',
+    });
+    const send = (type, content) => res.write(`data: ${JSON.stringify({ type, content })}\n\n`);
+
+    // Send existing content
+    try {
+      const existing = fs.existsSync(logFile) ? fs.readFileSync(logFile, 'utf8') : `No log file found for ${agentName}.`;
+      send('init', existing);
+    } catch { send('init', 'Error reading log file.'); }
+
+    // Watch for new lines
+    let lastSize = fs.existsSync(logFile) ? fs.statSync(logFile).size : 0;
+    const watcher = setInterval(() => {
+      try {
+        if (!fs.existsSync(logFile)) return;
+        const size = fs.statSync(logFile).size;
+        if (size > lastSize) {
+          const fd = fs.openSync(logFile, 'r');
+          const buf = Buffer.alloc(size - lastSize);
+          fs.readSync(fd, buf, 0, buf.length, lastSize);
+          fs.closeSync(fd);
+          send('append', buf.toString('utf8'));
+          lastSize = size;
+        }
+      } catch {}
+    }, 1000);
+
+    req.on('close', () => clearInterval(watcher));
     return;
   }
 
