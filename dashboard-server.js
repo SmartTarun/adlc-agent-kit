@@ -39,6 +39,10 @@ const LOGS_DIR    = path.join(ROOT, 'agent-logs');
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 if (!fs.existsSync(LOGS_DIR))    fs.mkdirSync(LOGS_DIR,    { recursive: true });
 
+// Global safety net — prevent any uncaught error from killing the server
+process.on('uncaughtException',  err  => console.error('[Server] uncaughtException:', err.message));
+process.on('unhandledRejection', reason => console.error('[Server] unhandledRejection:', reason));
+
 // -- Agent process tracking --------------------------------------------------
 const agentProcesses = {}; // { agentName: { proc, pid, startedAt } }
 
