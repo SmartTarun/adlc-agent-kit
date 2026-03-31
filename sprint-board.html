@@ -2288,6 +2288,7 @@ let startTime      = Date.now();
 let logWrap        = false;
 let chatOpen       = true;
 let scaleTarget    = null;
+let mcpConfig      = {}; // declared early to avoid TDZ in saveMCPConfig
 
 // ── Uptime counter ────────────────────────────────────────────────────────────
 setInterval(() => {
@@ -4621,8 +4622,6 @@ function renderDBErd(schemaText) {
 }
 
 // ── MCP Configuration ──────────────────────────────────────────────────────
-let mcpConfig = {};
-
 const MCP_FIELDS = {
   db:     { input: 'mcp-db-url',     status: 'mcp-db-status',     card: 'mcp-db-card'     },
   mysql:  { input: 'mcp-mysql-url',  status: 'mcp-mysql-status',  card: 'mcp-mysql-card'  },
