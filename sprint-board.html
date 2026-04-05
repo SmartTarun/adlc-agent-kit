@@ -2341,10 +2341,9 @@ function onProjectSelectChange(value) {
   .then(r => r.json())
   .then(d => {
     if (d.ok) {
-      console.log('Switched project to:', value);
+      reloadProjectState();
     } else {
       alert('Could not switch project: ' + (d.error || 'unknown error'));
-      // Reset select to current active
       renderProjectSwitcher(currentState);
     }
   })
@@ -2369,19 +2368,31 @@ function approveAndStartNext() {
   .then(r => r.json())
   .then(d => {
     if (d.ok) {
-      const btn = document.getElementById('btn-approve-next');
-      if (btn) btn.style.display = 'none';
-      // Show toast
-      const t = document.createElement('div');
-      t.style.cssText = 'position:fixed;top:72px;right:20px;background:#16a34a;color:#fff;padding:12px 20px;border-radius:8px;font-weight:700;z-index:9999;font-size:14px;box-shadow:0 4px 12px rgba(0,0,0,.3)';
-      t.textContent = 'Switched to: ' + next.name;
-      document.body.appendChild(t);
-      setTimeout(() => t.remove(), 3500);
+      reloadProjectState();
     } else {
       alert('Switch failed: ' + (d.error || 'unknown error'));
     }
   })
   .catch(err => alert('Error: ' + err.message));
+}
+
+// ── Reload full state after project switch ────────────────────────────────────
+function reloadProjectState() {
+  archMermaidRendered = false;
+  dbErdRendered       = false;
+  fetch('/api/state')
+    .then(r => r.json())
+    .then(state => {
+      currentState = state;
+      renderBoard(state);
+      renderProjectSwitcher(state);
+      renderTeamDiscovery(state);
+      maybeShowNewProjectScreen(state);
+      if (document.getElementById('ux-screen').classList.contains('open'))   renderUXScreen();
+      if (document.getElementById('arch-screen').classList.contains('open')) renderArchCanvas();
+      if (document.getElementById('db-screen').classList.contains('open'))   renderDBScreen();
+    })
+    .catch(console.error);
 }
 
 // ── Receive state updates ─────────────────────────────────────────────────────
