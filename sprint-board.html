@@ -2289,6 +2289,7 @@ let logWrap        = false;
 let chatOpen       = true;
 let scaleTarget    = null;
 let mcpConfig      = {}; // declared early to avoid TDZ in saveMCPConfig
+let npUploadedFiles = []; // declared early to avoid TDZ in npUploadContextFiles
 
 // ── Uptime counter ────────────────────────────────────────────────────────────
 setInterval(() => {
@@ -4951,8 +4952,6 @@ async function testOpenAI() {
 }
 
 // ── Context Document Upload ────────────────────────────────────────────────
-let npUploadedFiles = [];
-
 function npFileIcon(name) {
   const ext = name.split('.').pop().toLowerCase();
   const icons = { pdf: '📄', docx: '📝', xlsx: '📊', csv: '📋', json: '🗂️', md: '📑', txt: '📃' };
