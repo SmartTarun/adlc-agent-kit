@@ -1892,12 +1892,9 @@ const server = http.createServer(async (req, res) => {
       postToChat('TARUN', 'Product Owner', 'broadcast',
         `${reqObj.description}${reqObj.businessGoal ? ' | Goal: ' + reqObj.businessGoal : ''}${reqObj.targetUsers ? ' | Users: ' + reqObj.targetUsers : ''}${reqObj.techConstraints.length ? ' | Constraints: ' + reqObj.techConstraints.join(', ') : ''}`,
         ['requirement-detail']);
-      postToChat('ARJUN', 'Orchestrator', 'broadcast',
-        `All agents - new requirement received: "${reqObj.title}". Read requirement.json and post your analysis.`,
-        ['action-required', 'all-agents']);
-      postToChat('ARJUN', 'Orchestrator', 'system',
-        `🚀 Analysis started for "${reqObj.title}"! I'm spinning up the discovery phase now — Vikram, Rasool, Kiran, Kavya, Rohan: please review requirement.json and report your estimates back here. Keerthi stands by for QA once all agents are done.`,
-        ['analysis-started', 'all-agents']);
+      postToChat('ARJUN', 'Orchestrator', 'discovery',
+        `📋 New project received: "${reqObj.title}". Starting PM discovery with Tarun before briefing the team.`,
+        ['discovery', 'tarun']);
 
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ ok: true, requirementId: req_id, projectId: projectSlug || path.basename(pr) }));
