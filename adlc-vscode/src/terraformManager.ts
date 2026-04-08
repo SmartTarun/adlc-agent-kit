@@ -37,6 +37,385 @@ export class TerraformManager {
     this.loadTFEConfig();
   }
 
+  // ── ENTRY POINT: generate arch diagram → get approval → then generate TF ──
+
+  async generateAndApproveArchitecture(
+    context:       vscode.ExtensionContext,
+    outputChannel: vscode.OutputChannel,
+    cancelToken:   vscode.CancellationToken,
+  ): Promise<void> {
+    const req  = this.projectMgr.getRequirement();
+    const pr   = this.projectMgr.getProjectRoot();
+    const infra = this.inferInfraNeeds(req);
+
+    outputChannel.appendLine(`[VIKRAM] Generating architecture diagram for: ${req.title}`);
+    outputChannel.appendLine(`[VIKRAM] Resources: ${infra.resources.join(', ')}`);
+    outputChannel.appendLine('─'.repeat(60));
+
+    const modelId = vscode.workspace.getConfiguration('adlc').get<string>('copilotModel') || 'gpt-4o';
+    const [model] = await vscode.lm.selectChatModels({ vendor: 'copilot', family: modelId });
+
+    if (!model) {
+      outputChannel.appendLine('[ERROR] GitHub Copilot model not available.');
+      vscode.window.showErrorMessage('ADLC Vikram: GitHub Copilot not found.');
+      return;
+    }
+
+    this.setAgentStatus('wip', 10, 'Generating architecture diagram…');
+
+    // ── Generate Mermaid + draw.io in parallel ──────────────────────────────
+    outputChannel.appendLine('\n[VIKRAM] Calling Copilot to generate architecture diagram…\n');
+
+    let mermaidCode = '';
+    let drawioXml   = '';
+
+    try {
+      [mermaidCode, drawioXml] = await Promise.all([
+        this.generateMermaidDiagram(model, req, infra, cancelToken),
+        this.generateDrawIOXML(model, req, infra, cancelToken),
+      ]);
+    } catch (err: any) {
+      outputChannel.appendLine(`[ERROR] Diagram generation failed: ${err.message}`);
+      this.setAgentStatus('blocked', 0, 'Diagram generation failed', err.message);
+      return;
+    }
+
+    // ── Save diagram files ──────────────────────────────────────────────────
+    const docsDir = path.join(pr, 'docs');
+    fs.mkdirSync(docsDir, { recursive: true });
+    fs.writeFileSync(path.join(docsDir, 'architecture.mmd'), mermaidCode, 'utf8');
+    outputChannel.appendLine('[VIKRAM] Saved: docs/architecture.mmd');
+
+    if (drawioXml) {
+      fs.writeFileSync(path.join(docsDir, 'architecture.drawio'), drawioXml, 'utf8');
+      outputChannel.appendLine('[VIKRAM] Saved: docs/architecture.drawio  (open in draw.io extension)');
+    }
+
+    this.setAgentStatus('wip', 30, 'Architecture diagram ready — awaiting approval');
+
+    // ── Show WebView panel and wait for Tarun's decision ────────────────────
+    outputChannel.appendLine('\n[VIKRAM] Opening architecture diagram for approval…');
+    const decision = await this.showArchDiagramPanel(context, req, infra, mermaidCode, drawioXml, pr);
+
+    if (decision === 'regenerate') {
+      outputChannel.appendLine('\n[VIKRAM] Regenerating architecture diagram…');
+      await this.generateAndApproveArchitecture(context, outputChannel, cancelToken);
+      return;
+    }
+
+    if (decision !== 'approved') {
+      outputChannel.appendLine('[VIKRAM] Diagram approval cancelled — Terraform generation skipped.');
+      this.setAgentStatus('blocked', 30, 'Pending architecture approval');
+      return;
+    }
+
+    outputChannel.appendLine('\n[VIKRAM] Architecture APPROVED — generating Terraform code…\n');
+    this.setAgentStatus('wip', 40, 'Approved — generating Terraform…');
+    await this.autoGenerate(outputChannel, cancelToken);
+  }
+
+  // ── Generate Mermaid architecture diagram via Copilot ────────────────────
+
+  private async generateMermaidDiagram(
+    model:       vscode.LanguageModelChat,
+    req:         any,
+    infra:       ReturnType<TerraformManager['inferInfraNeeds']>,
+    cancelToken: vscode.CancellationToken,
+  ): Promise<string> {
+    const prompt = [
+      `You are Vikram, Cloud Architect. Generate a Mermaid architecture diagram for this AWS infrastructure.`,
+      ``,
+      `Project: "${req.title}" — ${req.description}`,
+      `AWS Region: ${infra.region}`,
+      ``,
+      `Resources to diagram:`,
+      ...infra.resources.map(r => `  - ${r}`),
+      ``,
+      `RULES:`,
+      `- Use Mermaid graph TD (top-down) syntax`,
+      `- Group resources in subgraphs: VPC, Compute, Data, CDN, Security, Monitoring`,
+      `- Show data flow arrows between services (user → ALB → ECS → RDS, etc.)`,
+      `- Label every arrow with the protocol (HTTPS, SQL, Redis, SQS, etc.)`,
+      `- Use icons in node labels: 🌐 Internet, ⚡ Lambda/ECS, 🗄️ RDS, 📦 S3, 🔐 Cognito, 📊 CloudWatch`,
+      `- Include Tarun (developer) as the entry point at the top`,
+      `- Keep it concise — max 30 nodes`,
+      ``,
+      `Output ONLY the raw Mermaid code starting with "graph TD" — no markdown fences, no explanation.`,
+    ].join('\n');
+
+    const response = await model.sendRequest(
+      [vscode.LanguageModelChatMessage.User(prompt)], {}, cancelToken,
+    );
+    let text = '';
+    for await (const chunk of response.text) { text += chunk; }
+
+    // Strip markdown fences if Copilot included them
+    return text.replace(/^```(?:mermaid)?\n?/m, '').replace(/\n?```$/m, '').trim();
+  }
+
+  // ── Generate draw.io XML via Copilot ─────────────────────────────────────
+
+  private async generateDrawIOXML(
+    model:       vscode.LanguageModelChat,
+    req:         any,
+    infra:       ReturnType<TerraformManager['inferInfraNeeds']>,
+    cancelToken: vscode.CancellationToken,
+  ): Promise<string> {
+    const prompt = [
+      `You are Vikram, Cloud Architect. Generate a draw.io XML architecture diagram for this AWS infrastructure.`,
+      ``,
+      `Project: "${req.title}"`,
+      `AWS Region: ${infra.region}`,
+      `Resources: ${infra.resources.join(', ')}`,
+      ``,
+      `RULES:`,
+      `- Output valid draw.io XML starting with <mxfile> and ending with </mxfile>`,
+      `- Use AWS shape stencils (shape=mxgraph.aws4.*) for AWS services`,
+      `- Group services in swim lanes: VPC boundary, Compute, Data Layer, CDN/Edge, Security`,
+      `- Connect services with labeled edges showing data flow`,
+      `- Position services logically: internet entry at top, data at bottom`,
+      `- Use standard draw.io colors: blue=#dae8fc, green=#d5e8d4, orange=#ffe6cc for layers`,
+      ``,
+      `Output ONLY the raw XML starting with <mxfile — no explanation, no code fences.`,
+    ].join('\n');
+
+    try {
+      const response = await model.sendRequest(
+        [vscode.LanguageModelChatMessage.User(prompt)], {}, cancelToken,
+      );
+      let text = '';
+      for await (const chunk of response.text) { text += chunk; }
+      // Extract XML if wrapped in code fences
+      const match = text.match(/<mxfile[\s\S]*<\/mxfile>/);
+      return match ? match[0] : text.trim();
+    } catch {
+      return ''; // draw.io is optional — don't fail the whole flow
+    }
+  }
+
+  // ── WebView panel: shows diagram + Approve / Regenerate buttons ───────────
+
+  private showArchDiagramPanel(
+    context:   vscode.ExtensionContext,
+    req:       any,
+    infra:     ReturnType<TerraformManager['inferInfraNeeds']>,
+    mermaid:   string,
+    drawioXml: string,
+    pr:        string,
+  ): Promise<'approved' | 'regenerate' | 'cancelled'> {
+    return new Promise(resolve => {
+      const panel = vscode.window.createWebviewPanel(
+        'vikramArchDiagram',
+        `Vikram — Architecture: ${req.title}`,
+        vscode.ViewColumn.One,
+        {
+          enableScripts: true,
+          retainContextWhenHidden: true,
+        },
+      );
+
+      panel.webview.html = this.buildDiagramHtml(req, infra, mermaid, drawioXml);
+
+      // Listen for messages from WebView buttons
+      panel.webview.onDidReceiveMessage(
+        (msg: { command: string; notes?: string }) => {
+          if (msg.command === 'approve') {
+            // Save approval notes to group chat
+            const notes = msg.notes?.trim() || '';
+            this.postToGroupChat(pr,
+              `✅ Architecture diagram APPROVED by Tarun for "${req.title}".\n` +
+              (notes ? `Notes: ${notes}\n` : '') +
+              `Proceeding with Terraform generation.`,
+              ['arjun', 'kiran', 'rasool'],
+            );
+            panel.dispose();
+            resolve('approved');
+          } else if (msg.command === 'regenerate') {
+            panel.dispose();
+            resolve('regenerate');
+          } else if (msg.command === 'downloadDrawio') {
+            // Write draw.io file and open it
+            const drawioPath = path.join(pr, 'docs', 'architecture.drawio');
+            if (fs.existsSync(drawioPath)) {
+              vscode.commands.executeCommand('vscode.open', vscode.Uri.file(drawioPath));
+            }
+          }
+        },
+        undefined,
+        context.subscriptions,
+      );
+
+      panel.onDidDispose(() => resolve('cancelled'), undefined, context.subscriptions);
+    });
+  }
+
+  // ── Build WebView HTML with Mermaid.js rendered diagram ───────────────────
+
+  private buildDiagramHtml(
+    req:       any,
+    infra:     ReturnType<TerraformManager['inferInfraNeeds']>,
+    mermaid:   string,
+    drawioXml: string,
+  ): string {
+    const resourceList = infra.resources
+      .map(r => `<li>${r}</li>`)
+      .join('\n');
+
+    const escapedMermaid = mermaid
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+
+    const hasDrawio = drawioXml.trim().length > 0;
+
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vikram Architecture Diagram</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #1e1e1e; color: #d4d4d4;
+      padding: 20px; min-height: 100vh;
+    }
+    .header {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 20px; padding-bottom: 16px;
+      border-bottom: 1px solid #3e3e3e;
+    }
+    .header h1 { font-size: 18px; color: #569cd6; }
+    .header .badge {
+      background: #264f78; color: #9cdcfe;
+      padding: 2px 10px; border-radius: 12px; font-size: 12px;
+    }
+    .layout { display: grid; grid-template-columns: 1fr 280px; gap: 20px; }
+    .diagram-panel {
+      background: #252526; border: 1px solid #3e3e3e;
+      border-radius: 8px; padding: 20px; overflow: auto;
+    }
+    .diagram-panel h2 { font-size: 13px; color: #9d9d9d; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 1px; }
+    .mermaid { background: #fff; border-radius: 6px; padding: 16px; min-height: 400px; }
+    .sidebar { display: flex; flex-direction: column; gap: 16px; }
+    .card {
+      background: #252526; border: 1px solid #3e3e3e;
+      border-radius: 8px; padding: 16px;
+    }
+    .card h3 { font-size: 13px; color: #9d9d9d; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px; }
+    .resource-list { list-style: none; }
+    .resource-list li {
+      padding: 6px 0; font-size: 12px; color: #d4d4d4;
+      border-bottom: 1px solid #2d2d2d;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .resource-list li::before { content: '✓'; color: #4ec9b0; }
+    textarea {
+      width: 100%; height: 80px; background: #1e1e1e;
+      border: 1px solid #3e3e3e; color: #d4d4d4;
+      border-radius: 4px; padding: 8px; font-size: 12px;
+      resize: vertical; font-family: inherit;
+    }
+    textarea::placeholder { color: #6d6d6d; }
+    .btn {
+      width: 100%; padding: 10px; border: none;
+      border-radius: 6px; cursor: pointer; font-size: 13px;
+      font-weight: 600; transition: opacity 0.15s;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn-approve  { background: #4caf50; color: #fff; }
+    .btn-regen    { background: #264f78; color: #9cdcfe; margin-top: 8px; }
+    .btn-drawio   { background: #2d2d2d; color: #9d9d9d; border: 1px solid #3e3e3e; margin-top: 8px; font-size: 11px; }
+    .approval-label { font-size: 11px; color: #9d9d9d; margin-bottom: 6px; }
+    .region-tag {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: #264f78; color: #9cdcfe; padding: 3px 10px;
+      border-radius: 12px; font-size: 11px; margin-bottom: 12px;
+    }
+    .mermaid-src {
+      margin-top: 16px; background: #1e1e1e; border: 1px solid #3e3e3e;
+      border-radius: 6px; padding: 12px; font-family: monospace;
+      font-size: 11px; color: #9d9d9d; white-space: pre-wrap;
+      max-height: 200px; overflow: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Vikram — Infrastructure Architecture</h1>
+    <span class="badge">Awaiting Approval</span>
+  </div>
+
+  <div class="layout">
+    <div class="diagram-panel">
+      <h2>Architecture Diagram</h2>
+      <div class="region-tag">🌍 AWS Region: ${infra.region}</div>
+      <div class="mermaid">${escapedMermaid}</div>
+      <details style="margin-top:16px">
+        <summary style="cursor:pointer; color:#9d9d9d; font-size:12px">View Mermaid source</summary>
+        <div class="mermaid-src">${escapedMermaid}</div>
+      </details>
+    </div>
+
+    <div class="sidebar">
+      <div class="card">
+        <h3>Project</h3>
+        <div style="font-size:13px; color:#9cdcfe; margin-bottom:8px">${req.title}</div>
+        <div style="font-size:11px; color:#9d9d9d">${req.description || ''}</div>
+      </div>
+
+      <div class="card">
+        <h3>Infrastructure Resources</h3>
+        <ul class="resource-list">
+          ${resourceList}
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3>Approval</h3>
+        <div class="approval-label">Notes for Vikram (optional)</div>
+        <textarea id="notes" placeholder="e.g. Use us-west-2 instead, add Redis for caching…"></textarea>
+        <button class="btn btn-approve" onclick="approve()">
+          ✅ Approve &amp; Generate Terraform
+        </button>
+        <button class="btn btn-regen" onclick="regenerate()">
+          🔄 Regenerate Diagram
+        </button>
+        ${hasDrawio ? `<button class="btn btn-drawio" onclick="openDrawio()">
+          📐 Open in draw.io
+        </button>` : ''}
+      </div>
+    </div>
+  </div>
+
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'default',
+      securityLevel: 'loose',
+    });
+
+    const vscode = acquireVsCodeApi();
+
+    function approve() {
+      const notes = document.getElementById('notes').value;
+      vscode.postMessage({ command: 'approve', notes });
+    }
+
+    function regenerate() {
+      vscode.postMessage({ command: 'regenerate' });
+    }
+
+    function openDrawio() {
+      vscode.postMessage({ command: 'downloadDrawio' });
+    }
+  </script>
+</body>
+</html>`;
+  }
+
   // ── AUTO: called by agentRunner when Vikram is launched ─────────────────
   // Reads requirement.json, infers the full infra needed, generates TF code.
   // No questions asked — fully automatic.

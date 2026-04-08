@@ -22,12 +22,17 @@ export class AgentRunner {
   private terraform: TerraformManager | null = null;
   private rasool:    RasoolManager    | null = null;
   private kiran:     KiranManager     | null = null;
+  private context:   vscode.ExtensionContext | null = null;
 
   constructor(
     private readonly kitPath: string,
     private readonly projectMgr: ProjectManager,
     private readonly memoryMgr: MemoryManager,
   ) {}
+
+  setContext(context: vscode.ExtensionContext) {
+    this.context = context;
+  }
 
   setTerraformManager(terraform: TerraformManager) {
     this.terraform = terraform;
@@ -42,14 +47,19 @@ export class AgentRunner {
   }
 
   async launchAgent(agentName: string): Promise<void> {
-    // ── Vikram: auto-generate Terraform from requirement — no prompt needed ──
+    // ── Vikram: show arch diagram for approval, then generate Terraform ───────
     if (agentName === 'vikram' && this.terraform) {
       const outputChannel = vscode.window.createOutputChannel('ADLC — VIKRAM (Terraform)');
       outputChannel.show(true);
-      outputChannel.appendLine('[ADLC] Vikram auto-generating Terraform from requirement.json…');
+      outputChannel.appendLine('[ADLC] Vikram generating architecture diagram for approval…');
       const tokenSource = new vscode.CancellationTokenSource();
-      await this.terraform.autoGenerate(outputChannel, tokenSource.token);
-      this.memoryMgr.updateMemory('vikram', { lastStepCompleted: 'Auto-generated Terraform from requirement' });
+      if (this.context) {
+        await this.terraform.generateAndApproveArchitecture(this.context, outputChannel, tokenSource.token);
+      } else {
+        // Fallback if context not set — skip diagram, go straight to TF
+        await this.terraform.autoGenerate(outputChannel, tokenSource.token);
+      }
+      this.memoryMgr.updateMemory('vikram', { lastStepCompleted: 'Architecture approved + Terraform generated' });
       return;
     }
 

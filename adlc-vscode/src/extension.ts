@@ -24,6 +24,7 @@ export async function activate(context: vscode.ExtensionContext) {
   const projectMgr = new ProjectManager(kitPath);
   const memoryMgr  = new MemoryManager(kitPath);
   const runner     = new AgentRunner(kitPath, projectMgr, memoryMgr);
+  runner.setContext(context); // needed for Vikram's arch diagram WebView panel
   const sidebar    = new SidebarProvider(kitPath, projectMgr, runner, memoryMgr, context);
   const watcher    = new FileWatcher(kitPath, () => sidebar.refresh());
 
