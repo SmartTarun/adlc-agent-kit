@@ -1,0 +1,150 @@
+{
+  "name": "team-panchayat-agents",
+  "displayName": "Team Panchayat — Custom AI Agents",
+  "description": "7 specialized AI agents for software development: PM, Cloud Architect, UX Designer, Backend/Frontend Engineers, Database Architect, and QA Engineer",
+  "version": "1.0.0",
+  "publisher": "SmartTarun",
+  "repository": "https://github.com/tarun-vangari/ADLC-Agent-Kit",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "AI",
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "chatParticipants": [
+      {
+        "id": "arjun-pm",
+        "name": "Arjun",
+        "fullName": "Arjun - Project Manager",
+        "description": "Project management, sprint planning, and team orchestration",
+        "isSticky": true,
+        "commands": [
+          { "name": "plan", "description": "Create a project plan" },
+          { "name": "status", "description": "Get project status" },
+          { "name": "risks", "description": "Assess project risks" },
+          { "name": "groupchat", "description": "Team coordination" },
+          { "name": "dashboard", "description": "View live dashboard" }
+        ]
+      },
+      {
+        "id": "vikram-architect",
+        "name": "Vikram",
+        "fullName": "Vikram - Cloud Architect",
+        "description": "Infrastructure design, Terraform, AWS architecture",
+        "isSticky": true,
+        "commands": [
+          { "name": "design", "description": "Design cloud architecture" },
+          { "name": "terraform", "description": "Generate Terraform code" },
+          { "name": "security", "description": "Security assessment" },
+          { "name": "diagrams", "description": "View architecture diagrams" }
+        ]
+      },
+      {
+        "id": "kavya-ux",
+        "name": "Kavya",
+        "fullName": "Kavya - UX Designer",
+        "description": "User experience design, wireframes, and user research",
+        "isSticky": true,
+        "commands": [
+          { "name": "design", "description": "Create UX design" },
+          { "name": "research", "description": "User research analysis" },
+          { "name": "prototype", "description": "Design prototyping" },
+          { "name": "designs", "description": "View design artifacts" },
+          { "name": "groupchat", "description": "Join group chat coordination" },
+          { "name": "dashboard", "description": "Open live dashboard" }
+        ]
+      },
+      {
+        "id": "kiran-backend",
+        "name": "Kiran",
+        "fullName": "Kiran - Backend Engineer",
+        "description": "API development, database design, server-side logic",
+        "isSticky": true,
+        "commands": [
+          { "name": "api", "description": "Design API endpoints" },
+          { "name": "database", "description": "Database schema design" },
+          { "name": "security", "description": "Backend security" },
+          { "name": "groupchat", "description": "Join group chat coordination" },
+          { "name": "dashboard", "description": "Open live dashboard" }
+        ]
+      },
+      {
+        "id": "rasool-database",
+        "name": "Rasool",
+        "fullName": "Rasool - Database Architect",
+        "description": "Database design, optimization, and data architecture",
+        "isSticky": true,
+        "commands": [
+          { "name": "schema", "description": "Design database schema" },
+          { "name": "optimize", "description": "Performance optimization" },
+          { "name": "migrate", "description": "Data migration planning" },
+          { "name": "groupchat", "description": "Join group chat coordination" },
+          { "name": "dashboard", "description": "Open live dashboard" }
+        ]
+      },
+      {
+        "id": "rohan-frontend",
+        "name": "Rohan",
+        "fullName": "Rohan - Frontend Engineer",
+        "description": "React components, UI development, and user interfaces",
+        "isSticky": true,
+        "commands": [
+          { "name": "component", "description": "Create React component" },
+          { "name": "ui", "description": "Design user interface" },
+          { "name": "responsive", "description": "Responsive design" },
+          { "name": "groupchat", "description": "Join group chat coordination" },
+          { "name": "dashboard", "description": "Open live dashboard" }
+        ]
+      },
+      {
+        "id": "keerthi-qa",
+        "name": "Keerthi",
+        "fullName": "Keerthi - QA Engineer",
+        "description": "Testing strategies, automation, and quality assurance",
+        "isSticky": true,
+        "commands": [
+          { "name": "test", "description": "Create test plan" },
+          { "name": "automate", "description": "Test automation" },
+          { "name": "quality", "description": "Quality assessment" },
+          { "name": "groupchat", "description": "Join group chat coordination" },
+          { "name": "dashboard", "description": "Open live dashboard" }
+        ]
+      }
+    ],
+    "commands": [
+      {
+        "command": "teamPanchayat.agents",
+        "title": "Team Panchayat: Show All Agents"
+      }
+    ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "teamPanchayat.agents",
+          "when": "false"
+        }
+      ]
+    }
+  },
+  "extensionDependencies": [
+    "GitHub.copilot-chat"
+  ],
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.90.0",
+    "typescript": "^5.4.0",
+    "@vscode/vsce": "^2.22.0"
+  }
+}

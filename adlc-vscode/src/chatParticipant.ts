@@ -123,7 +123,7 @@ export function registerChatParticipant(
 
     // Stream recent chat context so Arjun has full picture
     const chatHistory = loadChatMessages(pr, 10);
-    const historyText = chatHistory.map(m => `${m.from}: ${m.message}`).join('\n');
+    const historyText = chatHistory.map((m: any) => `${m.from}: ${m.message}`).join('\n');
 
     // Select Copilot model
     const modelId = vscode.workspace.getConfiguration('adlc').get<string>('copilotModel') || 'gpt-4o';
@@ -161,21 +161,7 @@ export function registerChatParticipant(
     }
   });
 
-  // Register slash commands shown in chat
-  participant.commandProvider = {
-    provideCommands: () => [
-      { name: 'history',          description: 'Show last 20 group chat messages' },
-      { name: 'status',           description: 'Show all agent statuses and progress' },
-      { name: 'agents',           description: 'Launch all agents via GitHub Copilot' },
-      { name: 'approve',          description: 'Approve the sprint plan — start the build' },
-      { name: 'ux',               description: 'Kavya: UX design flow with Figma' },
-      { name: 'ux-feedback',      description: "Kavya: review + iterate on Figma designs" },
-      { name: 'infra',            description: 'Vikram: generate Terraform (uses TFE modules if connected)' },
-      { name: 'infra-plan',       description: 'Vikram: run terraform plan' },
-      { name: 'infra-validate',   description: 'Vikram: run terraform validate' },
-      { name: 'infra-modules',    description: 'Vikram: list modules from Terraform Enterprise/Cloud' },
-    ],
-  };
+  // Commands handled inline via req.command in the message handler above
 
   participant.iconPath = new vscode.ThemeIcon('organization');
   context.subscriptions.push(participant);

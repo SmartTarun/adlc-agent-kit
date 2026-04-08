@@ -1,27 +1,24 @@
 {
   "arjun": {
-    "role": "Orchestrator",
-    "status": "wip",
+    "status": "blocked",
     "progress": 5,
-    "task": "Project selection — awaiting Tarun's direction for Team Panchayat E2E Test Sprint 04",
-    "blocker": "",
-    "updated": "2026-03-29T12:00:00.000Z"
+    "task": "Agent starting…",
+    "blocker": "Exited with code 1",
+    "updated": "2026-04-05T07:26:15.158Z"
   },
   "kavya": {
-    "role": "UX Designer",
-    "status": "queue",
-    "progress": 0,
-    "task": "Design tokens + component spec for Smart Resume Screener",
-    "blocker": "",
-    "updated": "2026-03-29T10:05:00.000Z"
+    "status": "blocked",
+    "progress": 5,
+    "task": "Agent starting…",
+    "blocker": "Exited with code 1",
+    "updated": "2026-04-05T07:26:11.985Z"
   },
   "vikram": {
-    "role": "Cloud Architect",
-    "status": "queue",
-    "progress": 0,
-    "task": "Not required for Sprint-02 — Docker Compose only, no Terraform",
-    "blocker": "",
-    "updated": "2026-03-29T10:05:00.000Z"
+    "status": "blocked",
+    "progress": 5,
+    "task": "Agent starting…",
+    "blocker": "Exited with code 1",
+    "updated": "2026-04-05T07:26:17.251Z"
   },
   "rasool": {
     "role": "Database Agent",
@@ -32,27 +29,24 @@
     "updated": "2026-03-31T00:00:00.000Z"
   },
   "kiran": {
-    "role": "Backend Developer",
-    "status": "queue",
-    "progress": 0,
-    "task": "FastAPI backend — 6 endpoints + Claude scoring. Rasool migration ready.",
-    "blocker": "",
-    "updated": "2026-03-31T00:00:00.000Z"
+    "status": "blocked",
+    "progress": 5,
+    "task": "Agent starting…",
+    "blocker": "Exited with code 1",
+    "updated": "2026-04-05T07:26:13.424Z"
   },
   "rohan": {
-    "role": "Frontend Developer",
-    "status": "queue",
-    "progress": 0,
-    "task": "2 screens: Upload & Screen + Results Dashboard. Blocked on Kavya tokens.",
-    "blocker": "Kavya tokens",
-    "updated": "2026-03-29T10:05:00.000Z"
+    "status": "blocked",
+    "progress": 5,
+    "task": "Agent starting…",
+    "blocker": "Exited with code 1",
+    "updated": "2026-04-05T07:26:38.830Z"
   },
   "keerthi": {
-    "role": "QA Engineer",
-    "status": "queue",
-    "progress": 0,
-    "task": "Waiting for all 4 agents to complete before QA activation",
-    "blocker": "All agents must be done",
-    "updated": "2026-03-29T10:05:00.000Z"
+    "status": "blocked",
+    "progress": 5,
+    "task": "Agent starting…",
+    "blocker": "Exited with code 1",
+    "updated": "2026-04-05T07:26:16.346Z"
   }
 }

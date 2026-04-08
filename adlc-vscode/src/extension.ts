@@ -173,18 +173,24 @@ async function newProjectWizard(runner: AgentRunner, projectMgr: ProjectManager,
   const goal = await vscode.window.showInputBox({ prompt: 'Business goal (optional)', placeHolder: 'Why are you building it?' }) || '';
   const users = await vscode.window.showInputBox({ prompt: 'Target users (optional)' }) || '';
 
-  await vscode.window.withProgress(
-    { location: vscode.ProgressLocation.Notification, title: `Creating project: ${title}…`, cancellable: false },
-    async () => {
-      projectMgr.createProject({ title, description, businessGoal: goal, targetUsers: users, type: 'new_project', priority: 'high' });
-      sidebar.refresh();
-      const cfg = vscode.workspace.getConfiguration('adlc');
-      if (cfg.get<boolean>('autoLaunchArjun')) {
-        await runner.launchAgent('arjun');
+  try {
+    await vscode.window.withProgress(
+      { location: vscode.ProgressLocation.Notification, title: `Creating project: ${title}…`, cancellable: false },
+      async () => {
+        const projectPath = projectMgr.createProject({ title, description, businessGoal: goal, targetUsers: users, type: 'new_project', priority: 'high' });
+        sidebar.refresh();
+        const cfg = vscode.workspace.getConfiguration('adlc');
+        if (cfg.get<boolean>('autoLaunchArjun')) {
+          await runner.launchAgent('arjun');
+        }
+        return projectPath;
       }
-    }
-  );
-  vscode.window.showInformationMessage(`Project "${title}" created! Arjun is starting discovery.`);
+    );
+    vscode.window.showInformationMessage(`✅ Project "${title}" created! Agents are ready.`);
+  } catch (err: any) {
+    vscode.window.showErrorMessage(`❌ Failed to create project: ${err.message}`);
+    console.error('[ADLC] Project creation error:', err);
+  }
 }
 
 async function pickAgent(): Promise<string | undefined> {

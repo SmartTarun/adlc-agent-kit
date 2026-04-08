@@ -76,7 +76,7 @@ export class TerraformManager {
       ]);
     } catch (err: any) {
       outputChannel.appendLine(`[ERROR] Diagram generation failed: ${err.message}`);
-      this.setAgentStatus('blocked', 0, 'Diagram generation failed', err.message);
+      this.setAgentStatus('blocked', 0, 'Diagram generation failed');
       return;
     }
 
@@ -439,7 +439,7 @@ export class TerraformManager {
 
     if (!model) {
       outputChannel.appendLine(`[ERROR] GitHub Copilot model "${modelId}" not available.`);
-      this.setAgentStatus('blocked', 0, 'Copilot not available', 'Install GitHub Copilot extension');
+      this.setAgentStatus('blocked', 0, 'Copilot not available');
       return;
     }
 
@@ -473,7 +473,7 @@ export class TerraformManager {
       }
     } catch (err: any) {
       outputChannel.appendLine(`\n[ERROR] Copilot error: ${err.message}`);
-      this.setAgentStatus('blocked', 0, `Copilot error: ${err.message}`, err.message);
+      this.setAgentStatus('blocked', 0, `Copilot error: ${err.message}`);
       return;
     }
 

@@ -63,46 +63,56 @@ export class ProjectManager {
   }
 
   createProject(data: { title: string; description: string; businessGoal?: string; targetUsers?: string; type?: string; priority?: string }) {
-    const slug      = data.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').substring(0, 50);
-    const folder    = slug + '-' + Date.now();
-    const absDir    = path.join(this.kitPath, 'projects', folder);
-    const relPath   = 'projects/' + folder;
+    try {
+      const slug      = data.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').substring(0, 50);
+      const folder    = slug + '-' + Date.now();
+      const projectsBase = path.join(this.kitPath, 'projects');
+      const absDir    = path.join(projectsBase, folder);
+      const relPath   = 'projects/' + folder;
 
-    fs.mkdirSync(absDir, { recursive: true });
-    ['agent-logs', 'agent-memory', 'chat-uploads', 'infra', 'backend', 'frontend', 'docs'].forEach(d => {
-      fs.mkdirSync(path.join(absDir, d), { recursive: true });
-    });
+      // Ensure projects folder exists
+      if (!fs.existsSync(projectsBase)) {
+        fs.mkdirSync(projectsBase, { recursive: true });
+      }
 
-    const req = {
-      requirementId:    `REQ-${Date.now()}`,
-      postedBy:         'Tarun Vangari',
-      postedAt:         new Date().toISOString(),
-      title:            data.title,
-      description:      data.description,
-      businessGoal:     data.businessGoal || '',
-      targetUsers:      data.targetUsers  || '',
-      type:             data.type         || 'new_project',
-      priority:         data.priority     || 'high',
-      sprint:           '01',
-      status:           'pending_analysis',
-      discoveryComplete: false,
-      approvedByTarun:  false,
-      agentInputs:      Object.fromEntries(
-        ['arjun','vikram','rasool','kavya','kiran','rohan','keerthi'].map(a => [a, { received: false, summary: '', questions: [], estimate: '' }])
-      ),
-      sprintPlan: '',
-    };
+      fs.mkdirSync(absDir, { recursive: true });
+      ['agent-logs', 'agent-memory', 'chat-uploads', 'infra', 'backend', 'frontend', 'docs'].forEach(d => {
+        fs.mkdirSync(path.join(absDir, d), { recursive: true });
+      });
 
-    fs.writeFileSync(path.join(absDir, 'requirement.json'), JSON.stringify(req, null, 2), 'utf8');
-    fs.writeFileSync(path.join(absDir, 'group-chat.json'), JSON.stringify({ channel: 'team-panchayat-general', messages: [] }, null, 2), 'utf8');
+      const req = {
+        requirementId:    `REQ-${Date.now()}`,
+        postedBy:         'Tarun Vangari',
+        postedAt:         new Date().toISOString(),
+        title:            data.title,
+        description:      data.description,
+        businessGoal:     data.businessGoal || '',
+        targetUsers:      data.targetUsers  || '',
+        type:             data.type         || 'new_project',
+        priority:         data.priority     || 'high',
+        sprint:           '01',
+        status:           'pending_analysis',
+        discoveryComplete: false,
+        approvedByTarun:  false,
+        agentInputs:      Object.fromEntries(
+          ['arjun','vikram','rasool','kavya','kiran','rohan','keerthi'].map(a => [a, { received: false, summary: '', questions: [], estimate: '' }])
+        ),
+        sprintPlan: '',
+      };
 
-    const status = { sprint: '01', agents: Object.fromEntries(
-      ['arjun','vikram','rasool','kavya','kiran','rohan','keerthi'].map(a => [a, { status: 'queue', progress: 0, task: 'Awaiting requirement analysis', blocker: '', updated: new Date().toISOString() }])
-    )};
-    fs.writeFileSync(path.join(absDir, 'agent-status.json'), JSON.stringify(status, null, 2), 'utf8');
+      fs.writeFileSync(path.join(absDir, 'requirement.json'), JSON.stringify(req, null, 2), 'utf8');
+      fs.writeFileSync(path.join(absDir, 'group-chat.json'), JSON.stringify({ channel: 'team-panchayat-general', messages: [] }, null, 2), 'utf8');
 
-    this.switchProject(relPath);
-    return relPath;
+      const status = { sprint: '01', agents: Object.fromEntries(
+        ['arjun','vikram','rasool','kavya','kiran','rohan','keerthi'].map(a => [a, { status: 'queue', progress: 0, task: 'Awaiting requirement analysis', blocker: '', updated: new Date().toISOString() }])
+      )};
+      fs.writeFileSync(path.join(absDir, 'agent-status.json'), JSON.stringify(status, null, 2), 'utf8');
+
+      this.switchProject(relPath);
+      return relPath;
+    } catch (err: any) {
+      throw new Error(`Project creation failed: ${err.message}`);
+    }
   }
 
   private readActiveProject(): any {
