@@ -10,6 +10,7 @@ import { registerChatParticipant } from './chatParticipant';
 import { FigmaDesigner }       from './figmaDesigner';
 import { TerraformManager }    from './terraformManager';
 import { RasoolManager }       from './rasoolManager';
+import { KiranManager }        from './kiranManager';
 
 export async function activate(context: vscode.ExtensionContext) {
   const kitPath = resolveKitPath();
@@ -92,6 +93,10 @@ export async function activate(context: vscode.ExtensionContext) {
   const rasool = new RasoolManager(kitPath, projectMgr);
   await rasool.loadSnowflakeConfigFromSecrets(context);
   runner.setRasoolManager(rasool); // auto-generate on launchAgent('rasool')
+
+  // FastAPI generator (Kiran) — coordinates with Arjun + Rasool + Kavya
+  const kiran = new KiranManager(kitPath, projectMgr);
+  runner.setKiranManager(kiran); // auto-generate on launchAgent('kiran')
 
   // Register @adlc chat participant (VS Code Copilot Chat panel)
   registerChatParticipant(context, projectMgr, runner, terraform);

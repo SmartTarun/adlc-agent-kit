@@ -6,6 +6,7 @@ import { ProjectManager }  from './projectManager';
 import { MemoryManager }   from './memoryManager';
 import { TerraformManager } from './terraformManager';
 import { RasoolManager }    from './rasoolManager';
+import { KiranManager }     from './kiranManager';
 
 const AGENT_ROLES: Record<string, string> = {
   arjun:   'PM / Orchestrator',
@@ -20,6 +21,7 @@ const AGENT_ROLES: Record<string, string> = {
 export class AgentRunner {
   private terraform: TerraformManager | null = null;
   private rasool:    RasoolManager    | null = null;
+  private kiran:     KiranManager     | null = null;
 
   constructor(
     private readonly kitPath: string,
@@ -35,6 +37,10 @@ export class AgentRunner {
     this.rasool = rasool;
   }
 
+  setKiranManager(kiran: KiranManager) {
+    this.kiran = kiran;
+  }
+
   async launchAgent(agentName: string): Promise<void> {
     // ── Vikram: auto-generate Terraform from requirement — no prompt needed ──
     if (agentName === 'vikram' && this.terraform) {
@@ -44,6 +50,17 @@ export class AgentRunner {
       const tokenSource = new vscode.CancellationTokenSource();
       await this.terraform.autoGenerate(outputChannel, tokenSource.token);
       this.memoryMgr.updateMemory('vikram', { lastStepCompleted: 'Auto-generated Terraform from requirement' });
+      return;
+    }
+
+    // ── Kiran: auto-generate FastAPI coordinated with Arjun + Rasool + Kavya ──
+    if (agentName === 'kiran' && this.kiran) {
+      const outputChannel = vscode.window.createOutputChannel('ADLC — KIRAN (FastAPI)');
+      outputChannel.show(true);
+      outputChannel.appendLine('[ADLC] Kiran reading requirement.json + DB models + component spec…');
+      const tokenSource = new vscode.CancellationTokenSource();
+      await this.kiran.autoGenerate(outputChannel, tokenSource.token);
+      this.memoryMgr.updateMemory('kiran', { lastStepCompleted: 'Auto-generated FastAPI from requirement + DB + UI spec' });
       return;
     }
 
