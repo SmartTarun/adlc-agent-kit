@@ -5,7 +5,8 @@ import * as fs     from 'fs';
 import * as path   from 'path';
 import { ProjectManager } from './projectManager';
 import { AgentRunner }    from './agentRunner';
-import { FigmaDesigner }  from './figmaDesigner';
+import { FigmaDesigner }     from './figmaDesigner';
+import { TerraformManager } from './terraformManager';
 
 const AGENT_COLORS: Record<string, string> = {
   arjun:   '🟣', vikram: '🔴', rasool: '🟡',
@@ -16,6 +17,7 @@ export function registerChatParticipant(
   context:    vscode.ExtensionContext,
   projectMgr: ProjectManager,
   runner:     AgentRunner,
+  terraform:  TerraformManager,
 ) {
   const figma = new FigmaDesigner(
     vscode.workspace.getConfiguration('adlc').get<string>('kitPath') || '',
@@ -62,6 +64,41 @@ export function registerChatParticipant(
         '✅ Sprint plan APPROVED by Tarun. All agents — sprint is GO. Begin execution now.',
         ['approved']);
       stream.markdown('✅ **Sprint plan approved!** Agents will begin execution.\n');
+      return;
+    }
+
+    // ── /infra — trigger Vikram Terraform flow ─────────────────────────────
+    if (command === 'infra') {
+      await terraform.runVikramFlow(stream, token);
+      return;
+    }
+
+    // ── /infra-plan — run terraform plan ───────────────────────────────────
+    if (command === 'infra-plan') {
+      await terraform.runTerraformPlan(stream);
+      return;
+    }
+
+    // ── /infra-validate — run terraform validate ───────────────────────────
+    if (command === 'infra-validate') {
+      await terraform.runTerraformValidate(stream);
+      return;
+    }
+
+    // ── /infra-modules — list TFE modules ──────────────────────────────────
+    if (command === 'infra-modules') {
+      if (!terraform.isConnected()) {
+        stream.markdown(`⚠️ Not connected to Terraform Enterprise/Cloud.\n\nRun: **ADLC: Connect Terraform Enterprise** to login.\n`);
+        return;
+      }
+      stream.markdown(`### 📦 Fetching modules from ${terraform.getConnectionInfo()}…\n\n`);
+      const modules = await terraform.fetchTFEModules();
+      if (modules.length === 0) {
+        stream.markdown('No modules found in the private registry.\n');
+        return;
+      }
+      stream.markdown(`| Module | Provider | Version | Source |\n|--------|----------|---------|--------|\n`);
+      modules.forEach(m => stream.markdown(`| \`${m.name}\` | ${m.provider} | ${m.version} | \`${m.source}\` |\n`));
       return;
     }
 
@@ -127,11 +164,16 @@ export function registerChatParticipant(
   // Register slash commands shown in chat
   participant.commandProvider = {
     provideCommands: () => [
-      { name: 'history', description: 'Show last 20 group chat messages' },
-      { name: 'status',  description: 'Show all agent statuses and progress' },
-      { name: 'agents',  description: 'Launch all agents via GitHub Copilot' },
-      { name: 'approve', description: 'Approve the sprint plan — start the build' },
-      { name: 'ux',      description: 'Trigger Kavya UX design flow with Figma' },
+      { name: 'history',          description: 'Show last 20 group chat messages' },
+      { name: 'status',           description: 'Show all agent statuses and progress' },
+      { name: 'agents',           description: 'Launch all agents via GitHub Copilot' },
+      { name: 'approve',          description: 'Approve the sprint plan — start the build' },
+      { name: 'ux',               description: 'Kavya: UX design flow with Figma' },
+      { name: 'ux-feedback',      description: "Kavya: review + iterate on Figma designs" },
+      { name: 'infra',            description: 'Vikram: generate Terraform (uses TFE modules if connected)' },
+      { name: 'infra-plan',       description: 'Vikram: run terraform plan' },
+      { name: 'infra-validate',   description: 'Vikram: run terraform validate' },
+      { name: 'infra-modules',    description: 'Vikram: list modules from Terraform Enterprise/Cloud' },
     ],
   };
 

@@ -52,7 +52,9 @@
       { "command": "adlc.switchProject",   "title": "ADLC: Switch Project" },
       { "command": "adlc.viewMemory",      "title": "ADLC: View Agent Memory" },
       { "command": "adlc.clearMemory",     "title": "ADLC: Clear Agent Memory" },
-      { "command": "adlc.uxDesign",        "title": "ADLC: Open UX Design (Kavya + Figma)" }
+      { "command": "adlc.uxDesign",        "title": "ADLC: Open UX Design (Kavya + Figma)" },
+      { "command": "adlc.connectTFE",     "title": "ADLC: Connect Terraform Enterprise / Cloud" },
+      { "command": "adlc.disconnectTFE",  "title": "ADLC: Disconnect Terraform Enterprise / Cloud" }
     ],
     "menus": {
       "view/item/context": [

@@ -8,8 +8,9 @@ import { MemoryManager }       from './memoryManager';
 import { FileWatcher }         from './fileWatcher';
 import { registerChatParticipant } from './chatParticipant';
 import { FigmaDesigner }       from './figmaDesigner';
+import { TerraformManager }    from './terraformManager';
 
-export function activate(context: vscode.ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext) {
   const kitPath = resolveKitPath();
   if (!kitPath) {
     vscode.window.showWarningMessage(
@@ -81,13 +82,31 @@ export function activate(context: vscode.ExtensionContext) {
     }),
   );
 
+  // Terraform Enterprise/Cloud manager (Vikram)
+  const terraform = new TerraformManager(kitPath, projectMgr);
+  await terraform.loadTFEConfigFromSecrets(context);
+
   // Register @adlc chat participant (VS Code Copilot Chat panel)
-  registerChatParticipant(context, projectMgr, runner);
+  registerChatParticipant(context, projectMgr, runner, terraform);
 
   // Register UX feedback commands using Figma
   const figma = new FigmaDesigner(kitPath, projectMgr);
 
   context.subscriptions.push(
+    vscode.commands.registerCommand('adlc.connectTFE', async () => {
+      const cfg = await TerraformManager.loginWizard(context);
+      if (cfg) {
+        await terraform.loadTFEConfigFromSecrets(context);
+        sidebar.refresh();
+      }
+    }),
+
+    vscode.commands.registerCommand('adlc.disconnectTFE', async () => {
+      await TerraformManager.logout(context);
+      await terraform.loadTFEConfigFromSecrets(context);
+      sidebar.refresh();
+    }),
+
     vscode.commands.registerCommand('adlc.uxDesign', async () => {
       const panel = vscode.window.createOutputChannel('ADLC — Kavya UX');
       panel.show();
