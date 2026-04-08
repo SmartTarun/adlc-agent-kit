@@ -2,8 +2,9 @@
 import * as vscode from 'vscode';
 import * as fs     from 'fs';
 import * as path   from 'path';
-import { ProjectManager } from './projectManager';
-import { MemoryManager }  from './memoryManager';
+import { ProjectManager }  from './projectManager';
+import { MemoryManager }   from './memoryManager';
+import { TerraformManager } from './terraformManager';
 
 const AGENT_ROLES: Record<string, string> = {
   arjun:   'PM / Orchestrator',
@@ -16,13 +17,30 @@ const AGENT_ROLES: Record<string, string> = {
 };
 
 export class AgentRunner {
+  private terraform: TerraformManager | null = null;
+
   constructor(
     private readonly kitPath: string,
     private readonly projectMgr: ProjectManager,
     private readonly memoryMgr: MemoryManager,
   ) {}
 
+  setTerraformManager(terraform: TerraformManager) {
+    this.terraform = terraform;
+  }
+
   async launchAgent(agentName: string): Promise<void> {
+    // ── Vikram: auto-generate Terraform from requirement — no prompt needed ──
+    if (agentName === 'vikram' && this.terraform) {
+      const outputChannel = vscode.window.createOutputChannel('ADLC — VIKRAM (Terraform)');
+      outputChannel.show(true);
+      outputChannel.appendLine('[ADLC] Vikram auto-generating Terraform from requirement.json…');
+      const tokenSource = new vscode.CancellationTokenSource();
+      await this.terraform.autoGenerate(outputChannel, tokenSource.token);
+      this.memoryMgr.updateMemory('vikram', { lastStepCompleted: 'Auto-generated Terraform from requirement' });
+      return;
+    }
+
     // Select GitHub Copilot model
     const modelId = vscode.workspace.getConfiguration('adlc').get<string>('copilotModel') || 'gpt-4o';
     const [model] = await vscode.lm.selectChatModels({ vendor: 'copilot', family: modelId });

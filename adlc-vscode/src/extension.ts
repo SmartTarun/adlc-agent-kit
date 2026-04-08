@@ -85,6 +85,7 @@ export async function activate(context: vscode.ExtensionContext) {
   // Terraform Enterprise/Cloud manager (Vikram)
   const terraform = new TerraformManager(kitPath, projectMgr);
   await terraform.loadTFEConfigFromSecrets(context);
+  runner.setTerraformManager(terraform); // auto-generate on launchAgent('vikram')
 
   // Register @adlc chat participant (VS Code Copilot Chat panel)
   registerChatParticipant(context, projectMgr, runner, terraform);
