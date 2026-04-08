@@ -5,11 +5,12 @@ import * as path   from 'path';
 import { ProjectManager }  from './projectManager';
 import { MemoryManager }   from './memoryManager';
 import { TerraformManager } from './terraformManager';
+import { RasoolManager }    from './rasoolManager';
 
 const AGENT_ROLES: Record<string, string> = {
   arjun:   'PM / Orchestrator',
   vikram:  'Cloud Architect / Terraform',
-  rasool:  'Database Agent / PostgreSQL',
+  rasool:  'Database Agent / PostgreSQL + Snowflake',
   kavya:   'UX Designer / Design Tokens',
   kiran:   'Backend Engineer / FastAPI',
   rohan:   'Frontend Engineer / React',
@@ -18,6 +19,7 @@ const AGENT_ROLES: Record<string, string> = {
 
 export class AgentRunner {
   private terraform: TerraformManager | null = null;
+  private rasool:    RasoolManager    | null = null;
 
   constructor(
     private readonly kitPath: string,
@@ -29,6 +31,10 @@ export class AgentRunner {
     this.terraform = terraform;
   }
 
+  setRasoolManager(rasool: RasoolManager) {
+    this.rasool = rasool;
+  }
+
   async launchAgent(agentName: string): Promise<void> {
     // ── Vikram: auto-generate Terraform from requirement — no prompt needed ──
     if (agentName === 'vikram' && this.terraform) {
@@ -38,6 +44,17 @@ export class AgentRunner {
       const tokenSource = new vscode.CancellationTokenSource();
       await this.terraform.autoGenerate(outputChannel, tokenSource.token);
       this.memoryMgr.updateMemory('vikram', { lastStepCompleted: 'Auto-generated Terraform from requirement' });
+      return;
+    }
+
+    // ── Rasool: auto-generate DB schema/migrations from dbConfig ─────────────
+    if (agentName === 'rasool' && this.rasool) {
+      const outputChannel = vscode.window.createOutputChannel('ADLC — RASOOL (Database)');
+      outputChannel.show(true);
+      outputChannel.appendLine('[ADLC] Rasool auto-generating DB schema from requirement.json dbConfig…');
+      const tokenSource = new vscode.CancellationTokenSource();
+      await this.rasool.autoGenerate(outputChannel, tokenSource.token);
+      this.memoryMgr.updateMemory('rasool', { lastStepCompleted: 'Auto-generated DB schema from requirement' });
       return;
     }
 

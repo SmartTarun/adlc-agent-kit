@@ -9,6 +9,7 @@ import { FileWatcher }         from './fileWatcher';
 import { registerChatParticipant } from './chatParticipant';
 import { FigmaDesigner }       from './figmaDesigner';
 import { TerraformManager }    from './terraformManager';
+import { RasoolManager }       from './rasoolManager';
 
 export async function activate(context: vscode.ExtensionContext) {
   const kitPath = resolveKitPath();
@@ -87,6 +88,11 @@ export async function activate(context: vscode.ExtensionContext) {
   await terraform.loadTFEConfigFromSecrets(context);
   runner.setTerraformManager(terraform); // auto-generate on launchAgent('vikram')
 
+  // Snowflake + DB schema manager (Rasool) — keypair auth only
+  const rasool = new RasoolManager(kitPath, projectMgr);
+  await rasool.loadSnowflakeConfigFromSecrets(context);
+  runner.setRasoolManager(rasool); // auto-generate on launchAgent('rasool')
+
   // Register @adlc chat participant (VS Code Copilot Chat panel)
   registerChatParticipant(context, projectMgr, runner, terraform);
 
@@ -105,6 +111,20 @@ export async function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand('adlc.disconnectTFE', async () => {
       await TerraformManager.logout(context);
       await terraform.loadTFEConfigFromSecrets(context);
+      sidebar.refresh();
+    }),
+
+    vscode.commands.registerCommand('adlc.connectSnowflake', async () => {
+      const cfg = await RasoolManager.loginWizard(context);
+      if (cfg) {
+        await rasool.loadSnowflakeConfigFromSecrets(context);
+        sidebar.refresh();
+      }
+    }),
+
+    vscode.commands.registerCommand('adlc.disconnectSnowflake', async () => {
+      await RasoolManager.logout(context);
+      await rasool.loadSnowflakeConfigFromSecrets(context);
       sidebar.refresh();
     }),
 
