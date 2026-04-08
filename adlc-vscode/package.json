@@ -1,0 +1,85 @@
+{
+  "name": "adlc-agent-kit",
+  "displayName": "ADLC Agent Kit — Team Panchayat",
+  "description": "AI-driven lifecycle management with multi-agent orchestration powered by GitHub Copilot",
+  "version": "1.0.0",
+  "publisher": "SmartTarun",
+  "engines": { "vscode": "^1.90.0" },
+  "categories": ["AI", "Other"],
+  "activationEvents": ["onStartupFinished"],
+  "main": "./out/extension.js",
+  "icon": "media/icon.png",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "adlc-sidebar",
+          "title": "ADLC Agents",
+          "icon": "media/adlc-icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "adlc-sidebar": [
+        { "id": "adlc-project",  "name": "Active Project",  "type": "tree" },
+        { "id": "adlc-agents",   "name": "Agent Status",    "type": "tree" },
+        { "id": "adlc-memory",   "name": "Agent Memory",    "type": "tree" }
+      ]
+    },
+    "commands": [
+      { "command": "adlc.openDashboard",   "title": "ADLC: Open Sprint Dashboard" },
+      { "command": "adlc.newProject",      "title": "ADLC: New Project" },
+      { "command": "adlc.launchAgent",     "title": "ADLC: Launch Agent" },
+      { "command": "adlc.launchAllAgents", "title": "ADLC: Launch All Agents" },
+      { "command": "adlc.switchProject",   "title": "ADLC: Switch Project" },
+      { "command": "adlc.viewMemory",      "title": "ADLC: View Agent Memory" },
+      { "command": "adlc.clearMemory",     "title": "ADLC: Clear Agent Memory" }
+    ],
+    "menus": {
+      "view/item/context": [
+        {
+          "command": "adlc.launchAgent",
+          "when": "viewItem == agent",
+          "group": "inline"
+        },
+        {
+          "command": "adlc.viewMemory",
+          "when": "viewItem == agent",
+          "group": "inline"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "ADLC Agent Kit",
+      "properties": {
+        "adlc.kitPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to your ADLC-Agent-Kit folder (leave blank to auto-detect from workspace)"
+        },
+        "adlc.copilotModel": {
+          "type": "string",
+          "default": "gpt-4o",
+          "enum": ["gpt-4o", "gpt-4o-mini", "o1", "o3-mini", "claude-3.5-sonnet"],
+          "description": "GitHub Copilot model to use for all agents"
+        },
+        "adlc.autoLaunchArjun": {
+          "type": "boolean",
+          "default": true,
+          "description": "Auto-launch Arjun after creating a new project"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.90.0",
+    "typescript": "^5.4.0"
+  }
+}
