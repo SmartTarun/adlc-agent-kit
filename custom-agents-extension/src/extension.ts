@@ -7,15 +7,37 @@ import * as path from 'path';
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 function getKitPath(): string {
+  // 1. Explicit user setting (set once globally — persists across all windows)
   const cfg = vscode.workspace.getConfiguration('adlc').get<string>('kitPath') as string;
-  if (cfg && cfg.trim()) { return cfg.trim(); }
-  const folders = vscode.workspace.workspaceFolders;
-  if (!folders) { return ''; }
+  if (cfg && cfg.trim() && fs.existsSync(cfg.trim())) { return cfg.trim(); }
+
+  // 2. Open workspace folder that IS the kit
+  const folders = vscode.workspace.workspaceFolders || [];
   for (const f of folders) {
-    const p = f.uri.fsPath;
-    if (fs.existsSync(path.join(p, 'dashboard-server.js'))) { return p; }
+    if (fs.existsSync(path.join(f.uri.fsPath, 'dashboard-server.js'))) {
+      return f.uri.fsPath;
+    }
   }
-  return folders[0]?.uri.fsPath || '';
+
+  // 3. Common install locations — check automatically, no prompt needed
+  const home = process.env.USERPROFILE || process.env.HOME || '';
+  const candidates = [
+    path.join(home, 'Downloads', 'ADLC-Agent-Kit'),
+    path.join(home, 'Documents', 'ADLC-Agent-Kit'),
+    path.join(home, 'Desktop',   'ADLC-Agent-Kit'),
+    path.join(home, 'ADLC-Agent-Kit'),
+    'C:\\Users\\admin\\Downloads\\ADLC-Agent-Kit',
+    '/Users/admin/Downloads/ADLC-Agent-Kit',
+  ];
+  for (const c of candidates) {
+    if (fs.existsSync(path.join(c, 'dashboard-server.js'))) {
+      // Auto-save so it never searches again
+      vscode.workspace.getConfiguration('adlc').update('kitPath', c, vscode.ConfigurationTarget.Global);
+      return c;
+    }
+  }
+
+  return '';
 }
 
 function readJSON(filePath: string): any {
@@ -368,15 +390,8 @@ export async function activate(context: vscode.ExtensionContext) {
   updateStatusBarProject(statusBar);
   context.subscriptions.push(statusBar);
 
-  // ── Show setup prompt on first activation if no kit path ─────────────────
-  const kitPath = getKitPath();
-  if (!kitPath) {
-    const action = await vscode.window.showInformationMessage(
-      'Team Panchayat agents are ready! Set the ADLC-Agent-Kit path to start creating projects.',
-      'Set Kit Path', 'Later',
-    );
-    if (action === 'Set Kit Path') { await ensureKitPath(); updateStatusBarProject(statusBar); }
-  }
+  // Kit path is auto-detected — only show status bar, no prompt needed
+  updateStatusBarProject(statusBar);
 
   // ── ARJUN — PM / Orchestrator ─────────────────────────────────────────────
   const arjun = vscode.chat.createChatParticipant('arjun-pm', async (request, _ctx, response, token) => {
