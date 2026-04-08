@@ -218,6 +218,149 @@ async function callCopilot(persona, context, userMsg, response, token, retries =
     }
     return '';
 }
+// ── Ensure kit path is configured — prompt on first use ──────────────────────
+async function ensureKitPath() {
+    let kitPath = getKitPath();
+    if (kitPath) {
+        return kitPath;
+    }
+    const pick = await vscode.window.showWarningMessage('Team Panchayat: ADLC-Agent-Kit folder not found. Set the path to enable project creation.', 'Browse for folder', 'Enter path manually', 'Cancel');
+    if (pick === 'Browse for folder') {
+        const uris = await vscode.window.showOpenDialog({
+            canSelectFiles: false, canSelectFolders: true, canSelectMany: false,
+            title: 'Select your ADLC-Agent-Kit folder',
+        });
+        if (uris && uris[0]) {
+            kitPath = uris[0].fsPath;
+            await vscode.workspace.getConfiguration('adlc').update('kitPath', kitPath, vscode.ConfigurationTarget.Global);
+            vscode.window.showInformationMessage(`Kit path set to: ${kitPath}`);
+        }
+    }
+    else if (pick === 'Enter path manually') {
+        const entered = await vscode.window.showInputBox({
+            prompt: 'Enter full path to ADLC-Agent-Kit folder',
+            placeHolder: 'C:\\Users\\you\\Downloads\\ADLC-Agent-Kit',
+            ignoreFocusOut: true,
+        });
+        if (entered && fs.existsSync(entered)) {
+            kitPath = entered.trim();
+            await vscode.workspace.getConfiguration('adlc').update('kitPath', kitPath, vscode.ConfigurationTarget.Global);
+            vscode.window.showInformationMessage(`Kit path set to: ${kitPath}`);
+        }
+        else if (entered) {
+            vscode.window.showErrorMessage(`Folder not found: ${entered}`);
+        }
+    }
+    return kitPath;
+}
+// ── New project wizard ────────────────────────────────────────────────────────
+async function runNewProjectWizard() {
+    const kitPath = await ensureKitPath();
+    if (!kitPath) {
+        return;
+    }
+    const title = await vscode.window.showInputBox({
+        prompt: 'Project name',
+        placeHolder: 'e.g. Cost Anomaly Detection Platform',
+        ignoreFocusOut: true,
+        validateInput: v => v.trim().length > 2 ? null : 'Enter at least 3 characters',
+    });
+    if (!title) {
+        return;
+    }
+    const description = await vscode.window.showInputBox({
+        prompt: 'What are you building?',
+        placeHolder: 'e.g. A real-time dashboard to detect cloud cost anomalies using ML',
+        ignoreFocusOut: true,
+        validateInput: v => v.trim().length > 5 ? null : 'Enter a brief description',
+    });
+    if (!description) {
+        return;
+    }
+    const goal = await vscode.window.showInputBox({
+        prompt: 'Business goal (optional — press Enter to skip)',
+        placeHolder: 'e.g. Reduce cloud spend by 20% by catching anomalies early',
+        ignoreFocusOut: true,
+    }) || '';
+    const users = await vscode.window.showInputBox({
+        prompt: 'Target users (optional — press Enter to skip)',
+        placeHolder: 'e.g. DevOps engineers, FinOps teams',
+        ignoreFocusOut: true,
+    }) || '';
+    const dbPick = await vscode.window.showQuickPick([
+        { label: '$(database) PostgreSQL', description: 'Relational — OLTP, transactional apps, APIs', value: 'postgresql' },
+        { label: '$(cloud) Snowflake', description: 'Data warehouse — analytics, BI, large-scale reporting', value: 'snowflake' },
+        { label: '$(server) Both', description: 'PostgreSQL for live data + Snowflake for analytics', value: 'both' },
+        { label: '$(question) Other / Not sure yet', description: 'Decide later', value: 'other' },
+    ], { placeHolder: 'Which database does this project need?', ignoreFocusOut: true });
+    const dbChoice = dbPick?.value || 'postgresql';
+    await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: `Creating project: ${title}…`, cancellable: false }, async () => {
+        try {
+            const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').substring(0, 50);
+            const folder = slug + '-' + Date.now();
+            const projectsBase = path.join(kitPath, 'projects');
+            const absDir = path.join(projectsBase, folder);
+            const relPath = 'projects/' + folder;
+            fs.mkdirSync(absDir, { recursive: true });
+            ['agent-logs', 'agent-memory', 'chat-uploads', 'infra', 'backend', 'frontend', 'docs'].forEach(d => {
+                fs.mkdirSync(path.join(absDir, d), { recursive: true });
+            });
+            const dbConfig = {
+                primary: dbChoice === 'both' ? 'postgresql' : dbChoice,
+                analytics: dbChoice === 'both' || dbChoice === 'snowflake' ? 'snowflake' : 'none',
+                existing: false,
+                provisionNew: true,
+                connectionHint: '',
+            };
+            const req = {
+                requirementId: `REQ-${Date.now()}`,
+                postedBy: 'Tarun Vangari',
+                postedAt: new Date().toISOString(),
+                title, description,
+                businessGoal: goal,
+                targetUsers: users,
+                type: 'new_project',
+                priority: 'high',
+                sprint: '01',
+                status: 'pending_analysis',
+                discoveryComplete: false,
+                approvedByTarun: false,
+                dbConfig,
+                agentInputs: Object.fromEntries(['arjun', 'vikram', 'rasool', 'kavya', 'kiran', 'rohan', 'keerthi']
+                    .map(a => [a, { received: false, summary: '', questions: [], estimate: '' }])),
+                sprintPlan: '',
+            };
+            fs.writeFileSync(path.join(absDir, 'requirement.json'), JSON.stringify(req, null, 2), 'utf8');
+            fs.writeFileSync(path.join(absDir, 'group-chat.json'), JSON.stringify({
+                channel: 'team-panchayat-general', messages: [{
+                        id: `msg-${Date.now()}`, from: 'ARJUN', role: 'Project Manager',
+                        type: 'message', timestamp: new Date().toISOString(),
+                        message: `📋 New project created: "${title}". Starting discovery with Tarun.`,
+                        tags: ['arjun', 'tarun', 'discovery'],
+                    }],
+            }, null, 2), 'utf8');
+            const agentStatus = { sprint: '01', agents: Object.fromEntries(['arjun', 'vikram', 'rasool', 'kavya', 'kiran', 'rohan', 'keerthi'].map(a => [
+                    a, { status: 'queue', progress: 0, task: 'Awaiting requirement analysis', blocker: '', updated: new Date().toISOString() }
+                ])) };
+            fs.writeFileSync(path.join(absDir, 'agent-status.json'), JSON.stringify(agentStatus, null, 2), 'utf8');
+            // Switch active project
+            const ap = { current: relPath, name: title, sprint: '01', status: 'pending_analysis', updatedAt: new Date().toISOString() };
+            fs.writeFileSync(path.join(kitPath, 'active-project.json'), JSON.stringify(ap, null, 2), 'utf8');
+        }
+        catch (err) {
+            vscode.window.showErrorMessage(`Failed to create project: ${err.message}`);
+            return;
+        }
+    });
+    const action = await vscode.window.showInformationMessage(`✅ Project "${title}" created! Talk to @Arjun in Copilot Chat to start discovery.`, 'Open Copilot Chat', 'Open Dashboard');
+    if (action === 'Open Copilot Chat') {
+        vscode.commands.executeCommand('workbench.action.chat.open', `@Arjun Let's start discovery for "${title}". ${description}`);
+    }
+    else if (action === 'Open Dashboard') {
+        const port = vscode.workspace.getConfiguration('adlc').get('serverPort') || 3000;
+        vscode.env.openExternal(vscode.Uri.parse(`http://localhost:${port}`));
+    }
+}
 // ── Status bar item showing active agent ─────────────────────────────────────
 function createStatusBar() {
     const item = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
@@ -227,15 +370,52 @@ function createStatusBar() {
     item.show();
     return item;
 }
+function updateStatusBarProject(item) {
+    const kitPath = getKitPath();
+    if (!kitPath) {
+        item.text = '$(hubot) Team Panchayat — no kit path';
+        return;
+    }
+    const ap = (() => { try {
+        return JSON.parse(fs.readFileSync(path.join(kitPath, 'active-project.json'), 'utf8'));
+    }
+    catch {
+        return null;
+    } })();
+    if (ap?.name) {
+        item.text = `$(hubot) ${ap.name}`;
+        item.tooltip = `Active: ${ap.name} | Sprint ${ap.sprint || '01'} — click to show agents`;
+    }
+    else {
+        item.text = '$(hubot) Team Panchayat — no project';
+    }
+}
 // ── Activate ──────────────────────────────────────────────────────────────────
 async function activate(context) {
     const statusBar = createStatusBar();
+    updateStatusBarProject(statusBar);
     context.subscriptions.push(statusBar);
+    // ── Show setup prompt on first activation if no kit path ─────────────────
+    const kitPath = getKitPath();
+    if (!kitPath) {
+        const action = await vscode.window.showInformationMessage('Team Panchayat agents are ready! Set the ADLC-Agent-Kit path to start creating projects.', 'Set Kit Path', 'Later');
+        if (action === 'Set Kit Path') {
+            await ensureKitPath();
+            updateStatusBarProject(statusBar);
+        }
+    }
     // ── ARJUN — PM / Orchestrator ─────────────────────────────────────────────
     const arjun = vscode.chat.createChatParticipant('arjun-pm', async (request, _ctx, response, token) => {
         const kitPath = getKitPath();
-        const projectCtx = buildProjectContext(kitPath);
         const cmd = request.command;
+        // /new — trigger the full project creation wizard
+        if (cmd === 'new') {
+            response.markdown(`**👔 Arjun — Project Manager**\n\nOpening new project wizard…\n`);
+            await runNewProjectWizard();
+            updateStatusBarProject(statusBar);
+            return;
+        }
+        const projectCtx = buildProjectContext(kitPath);
         statusBar.text = '$(hubot) Arjun — thinking…';
         updateAgentStatus(kitPath, 'arjun', 'wip', 20, 'Responding in chat');
         response.markdown(`**👔 Arjun — Project Manager**\n\n`);
@@ -424,17 +604,74 @@ async function activate(context) {
     });
     keerthi.iconPath = new vscode.ThemeIcon('beaker');
     // ── Commands ──────────────────────────────────────────────────────────────
-    context.subscriptions.push(vscode.commands.registerCommand('teamPanchayat.agents', () => {
-        vscode.window.showInformationMessage('Team Panchayat Agents — use in Copilot Chat:\n' +
-            '@Arjun (PM)  @Vikram (Infra)  @Kavya (UX)\n' +
-            '@Kiran (API) @Rasool (DB)     @Rohan (Frontend) @Keerthi (QA)', 'Open Dashboard').then(sel => {
-            if (sel === 'Open Dashboard') {
-                vscode.commands.executeCommand('adlc.openDashboard');
+    context.subscriptions.push(
+    // New project — full wizard
+    vscode.commands.registerCommand('teamPanchayat.newProject', async () => {
+        await runNewProjectWizard();
+        updateStatusBarProject(statusBar);
+    }), 
+    // Switch project
+    vscode.commands.registerCommand('teamPanchayat.switchProject', async () => {
+        const kp = await ensureKitPath();
+        if (!kp) {
+            return;
+        }
+        const projectsDir = path.join(kp, 'projects');
+        if (!fs.existsSync(projectsDir)) {
+            vscode.window.showInformationMessage('No projects found. Create one first with "Team Panchayat: New Project".');
+            return;
+        }
+        const projects = fs.readdirSync(projectsDir)
+            .filter(f => fs.existsSync(path.join(projectsDir, f, 'requirement.json')))
+            .map(f => {
+            const req = (() => { try {
+                return JSON.parse(fs.readFileSync(path.join(projectsDir, f, 'requirement.json'), 'utf8'));
             }
+            catch {
+                return {};
+            } })();
+            return { label: req.title || f, description: `Sprint ${req.sprint || '01'} — ${req.status || ''}`, relPath: 'projects/' + f };
         });
-    }), vscode.commands.registerCommand('teamPanchayat.openDashboard', () => {
+        if (projects.length === 0) {
+            vscode.window.showInformationMessage('No projects found. Create one first.');
+            return;
+        }
+        const picked = await vscode.window.showQuickPick(projects, { placeHolder: 'Select project to switch to' });
+        if (!picked) {
+            return;
+        }
+        const abs = path.resolve(kp, picked.relPath);
+        const req = (() => { try {
+            return JSON.parse(fs.readFileSync(path.join(abs, 'requirement.json'), 'utf8'));
+        }
+        catch {
+            return {};
+        } })();
+        const ap = { current: picked.relPath, name: req.title || picked.relPath, sprint: req.sprint || '01', status: req.status || 'pending_analysis', updatedAt: new Date().toISOString() };
+        fs.writeFileSync(path.join(kp, 'active-project.json'), JSON.stringify(ap, null, 2), 'utf8');
+        updateStatusBarProject(statusBar);
+        vscode.window.showInformationMessage(`✅ Switched to: ${picked.label}`);
+    }), 
+    // Open dashboard in browser (server must be running)
+    vscode.commands.registerCommand('teamPanchayat.openDashboard', () => {
         const port = vscode.workspace.getConfiguration('adlc').get('serverPort') || 3000;
         vscode.env.openExternal(vscode.Uri.parse(`http://localhost:${port}`));
+    }), 
+    // Set kit path
+    vscode.commands.registerCommand('teamPanchayat.setKitPath', async () => {
+        await ensureKitPath();
+        updateStatusBarProject(statusBar);
+    }), 
+    // Show agents list
+    vscode.commands.registerCommand('teamPanchayat.agents', () => {
+        vscode.window.showInformationMessage('Team Panchayat — use in Copilot Chat:  @Arjun /new  @Arjun /status  @Vikram /terraform  @Kavya /design  @Kiran /api  @Rasool /schema  @Rohan /component  @Keerthi /test', 'New Project', 'Open Dashboard').then(sel => {
+            if (sel === 'New Project') {
+                vscode.commands.executeCommand('teamPanchayat.newProject');
+            }
+            if (sel === 'Open Dashboard') {
+                vscode.commands.executeCommand('teamPanchayat.openDashboard');
+            }
+        });
     }), arjun, vikram, kavya, kiran, rasool, rohan, keerthi);
 }
 function deactivate() { }
