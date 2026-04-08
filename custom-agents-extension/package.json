@@ -2,7 +2,7 @@
   "name": "team-panchayat-agents",
   "displayName": "Team Panchayat — Custom AI Agents",
   "description": "7 specialized AI agents for software development: PM, Cloud Architect, UX Designer, Backend/Frontend Engineers, Database Architect, and QA Engineer",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "publisher": "SmartTarun",
   "repository": "https://github.com/tarun-vangari/ADLC-Agent-Kit",
   "engines": {

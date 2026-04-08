@@ -142,15 +142,49 @@ function buildProjectContext(kitPath) {
     ].join('\n');
 }
 // ── Copilot LLM call with retry on overload ──────────────────────────────────
-async function callCopilot(persona, context, userMsg, response, token, retries = 2) {
-    const modelId = vscode.workspace.getConfiguration('adlc').get('copilotModel') || 'gpt-4o';
-    const [model] = await vscode.lm.selectChatModels({ vendor: 'copilot', family: modelId });
+// ── Pick best available Copilot model ────────────────────────────────────────
+// VS Code exposes different family names depending on Copilot plan/version.
+// We try the configured model first, then fall back through known families.
+async function selectModel() {
+    const configured = vscode.workspace.getConfiguration('adlc').get('copilotModel') || 'gpt-4o';
+    // Try families in priority order
+    const families = [configured, 'gpt-4o', 'claude-3.5-sonnet', 'gpt-4', 'gpt-4-turbo', 'gpt-3.5-turbo'];
+    const seen = new Set();
+    for (const family of families) {
+        if (seen.has(family)) {
+            continue;
+        }
+        seen.add(family);
+        try {
+            const models = await vscode.lm.selectChatModels({ vendor: 'copilot', family });
+            if (models.length > 0) {
+                return models[0];
+            }
+        }
+        catch { }
+    }
+    // Last resort: pick any available Copilot model
+    try {
+        const all = await vscode.lm.selectChatModels({ vendor: 'copilot' });
+        if (all.length > 0) {
+            return all[0];
+        }
+    }
+    catch { }
+    return null;
+}
+async function callCopilot(persona, context, userMsg, response, token, retries = 3) {
+    const model = await selectModel();
     if (!model) {
-        const msg = `GitHub Copilot (${modelId}) not available. Make sure Copilot is installed and signed in.`;
-        response.markdown(`> ⚠️ ${msg}`);
+        response.markdown(`> ⚠️ **No Copilot model available.**\n>\n` +
+            `> Make sure:\n` +
+            `> 1. **GitHub Copilot** extension is installed and you're signed in\n` +
+            `> 2. **GitHub Copilot Chat** extension is installed\n` +
+            `> 3. Your Copilot subscription is active\n` +
+            `> 4. Try: \`Ctrl+Shift+P\` → *"GitHub Copilot: Sign In"*\n`);
         return '';
     }
-    const prompt = `${persona}\n\n${context}\n\n=== USER MESSAGE ===\n${userMsg}`;
+    const prompt = [persona, context, '=== USER MESSAGE ===', userMsg].filter(Boolean).join('\n\n');
     for (let attempt = 0; attempt <= retries; attempt++) {
         try {
             const messages = [vscode.LanguageModelChatMessage.User(prompt)];
@@ -163,14 +197,22 @@ async function callCopilot(persona, context, userMsg, response, token, retries =
             return full;
         }
         catch (err) {
-            const isOverloaded = err?.message?.includes('529') || err?.message?.toLowerCase().includes('overload');
-            if (isOverloaded && attempt < retries) {
-                const wait = (attempt + 1) * 3000;
-                response.markdown(`\n> ⏳ Model temporarily overloaded — retrying in ${wait / 1000}s…\n\n`);
+            const msg = err?.message || String(err);
+            const isOverloaded = msg.includes('529') || msg.toLowerCase().includes('overload');
+            const isRateLimit = msg.includes('429') || msg.toLowerCase().includes('rate limit');
+            const isRetryable = isOverloaded || isRateLimit;
+            if (isRetryable && attempt < retries) {
+                const wait = (attempt + 1) * 4000;
+                response.markdown(`\n> ⏳ Copilot temporarily busy — retrying in ${wait / 1000}s… (attempt ${attempt + 1}/${retries})\n\n`);
                 await new Promise(r => setTimeout(r, wait));
                 continue;
             }
-            response.markdown(`\n> ❌ Error: ${err?.message || err}\n`);
+            if (msg.includes('403') || msg.toLowerCase().includes('unauthorized')) {
+                response.markdown(`\n> ❌ **Copilot access denied.** Check your subscription and sign-in status.\n`);
+            }
+            else {
+                response.markdown(`\n> ❌ **Error:** ${msg}\n`);
+            }
             return '';
         }
     }
