@@ -1,0 +1,188 @@
+{
+  "name": "team-panchayat-agents",
+  "displayName": "Team Panchayat — Custom AI Agents",
+  "description": "7 specialized AI agents for software development: PM, Cloud Architect, UX Designer, Backend/Frontend Engineers, Database Architect, and QA Engineer",
+  "version": "1.0.5",
+  "publisher": "SmartTarun",
+  "repository": "https://github.com/tarun-vangari/ADLC-Agent-Kit",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": ["AI", "Other"],
+  "activationEvents": ["onStartupFinished"],
+  "main": "./out/extension.js",
+  "contributes": {
+    "chatParticipants": [
+      {
+        "id": "arjun-pm",
+        "name": "Arjun",
+        "fullName": "Arjun - Project Manager",
+        "description": "Project management, sprint planning, and team orchestration",
+        "isSticky": true,
+        "commands": [
+          { "name": "new",       "description": "Start a new project (guided wizard)" },
+          { "name": "plan",      "description": "Create a project plan" },
+          { "name": "status",    "description": "Get project status" },
+          { "name": "risks",     "description": "Assess project risks" },
+          { "name": "approve",   "description": "Approve the sprint plan" },
+          { "name": "groupchat", "description": "Team coordination" },
+          { "name": "dashboard", "description": "Open the sprint dashboard" }
+        ]
+      },
+      {
+        "id": "vikram-architect",
+        "name": "Vikram",
+        "fullName": "Vikram - Cloud Architect",
+        "description": "Infrastructure design, Terraform, AWS architecture",
+        "isSticky": true,
+        "commands": [
+          { "name": "design",    "description": "Design cloud architecture" },
+          { "name": "terraform", "description": "Generate Terraform code" },
+          { "name": "security",  "description": "Security assessment" },
+          { "name": "diagrams",  "description": "Architecture diagrams" }
+        ]
+      },
+      {
+        "id": "kavya-ux",
+        "name": "Kavya",
+        "fullName": "Kavya - UX Designer",
+        "description": "User experience design, wireframes, and user research",
+        "isSticky": true,
+        "commands": [
+          { "name": "design",    "description": "Create UX design" },
+          { "name": "research",  "description": "User research analysis" },
+          { "name": "prototype", "description": "Design prototyping" }
+        ]
+      },
+      {
+        "id": "kiran-backend",
+        "name": "Kiran",
+        "fullName": "Kiran - Backend Engineer",
+        "description": "FastAPI, Python backend, API design",
+        "isSticky": true,
+        "commands": [
+          { "name": "api",      "description": "Design API endpoints" },
+          { "name": "database", "description": "Database schema design" },
+          { "name": "security", "description": "Backend security" }
+        ]
+      },
+      {
+        "id": "rasool-database",
+        "name": "Rasool",
+        "fullName": "Rasool - Database Architect",
+        "description": "PostgreSQL, Snowflake, database design",
+        "isSticky": true,
+        "commands": [
+          { "name": "schema",   "description": "Design database schema" },
+          { "name": "optimize", "description": "Performance optimization" },
+          { "name": "migrate",  "description": "Data migration planning" }
+        ]
+      },
+      {
+        "id": "rohan-frontend",
+        "name": "Rohan",
+        "fullName": "Rohan - Frontend Engineer",
+        "description": "React 18, TypeScript, Recharts components",
+        "isSticky": true,
+        "commands": [
+          { "name": "component",  "description": "Create React component" },
+          { "name": "ui",         "description": "Design user interface" },
+          { "name": "responsive", "description": "Responsive design" }
+        ]
+      },
+      {
+        "id": "keerthi-qa",
+        "name": "Keerthi",
+        "fullName": "Keerthi - QA Engineer",
+        "description": "Testing strategies, automation, quality assurance",
+        "isSticky": true,
+        "commands": [
+          { "name": "test",     "description": "Create test plan" },
+          { "name": "automate", "description": "Test automation" },
+          { "name": "quality",  "description": "Quality assessment" }
+        ]
+      }
+    ],
+    "commands": [
+      {
+        "command": "teamPanchayat.newProject",
+        "title": "Team Panchayat: New Project",
+        "category": "Team Panchayat"
+      },
+      {
+        "command": "teamPanchayat.switchProject",
+        "title": "Team Panchayat: Switch Project",
+        "category": "Team Panchayat"
+      },
+      {
+        "command": "teamPanchayat.openDashboard",
+        "title": "Team Panchayat: Open Dashboard",
+        "category": "Team Panchayat"
+      },
+      {
+        "command": "teamPanchayat.setKitPath",
+        "title": "Team Panchayat: Set Kit Path",
+        "category": "Team Panchayat"
+      },
+      {
+        "command": "teamPanchayat.connectGitHub",
+        "title": "Team Panchayat: Connect GitHub (MCP)",
+        "category": "Team Panchayat"
+      },
+      {
+        "command": "teamPanchayat.createGitHubIssue",
+        "title": "Team Panchayat: Create GitHub Issue",
+        "category": "Team Panchayat"
+      },
+      {
+        "command": "teamPanchayat.agents",
+        "title": "Team Panchayat: Show All Agents",
+        "category": "Team Panchayat"
+      }
+    ],
+    "configuration": {
+      "title": "Team Panchayat Agents",
+      "properties": {
+        "adlc.kitPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to your ADLC-Agent-Kit folder. E.g. C:\\Users\\you\\Downloads\\ADLC-Agent-Kit"
+        },
+        "adlc.copilotModel": {
+          "type": "string",
+          "default": "gpt-4o",
+          "enum": ["gpt-4o", "gpt-4o-mini", "claude-3.5-sonnet", "gpt-4", "o1", "o3-mini"],
+          "description": "GitHub Copilot model to use for all agents"
+        },
+        "adlc.serverPort": {
+          "type": "number",
+          "default": 3000,
+          "description": "Port where dashboard-server.js is running"
+        },
+        "adlc.githubToken": {
+          "type": "string",
+          "default": "",
+          "description": "GitHub Personal Access Token for MCP integration (repo, issues, PRs)"
+        },
+        "adlc.githubRepo": {
+          "type": "string",
+          "default": "",
+          "description": "GitHub repo in owner/repo format (e.g. SmartTarun/adlc-agent-kit)"
+        }
+      }
+    }
+  },
+  "extensionDependencies": ["GitHub.copilot-chat"],
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.90.0",
+    "typescript": "^5.4.0",
+    "@vscode/vsce": "^2.22.0"
+  }
+}

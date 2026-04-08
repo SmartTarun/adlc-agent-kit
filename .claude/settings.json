@@ -1,24 +1,11 @@
-﻿{
-  "permissions": {
-    "allow": [
-      "Bash(*)",
-      "Read(*)",
-      "Write(*)",
-      "Edit(*)",
-      "MultiEdit(*)",
-      "Glob(*)",
-      "Grep(*)",
-      "LS(*)",
-      "TodoWrite(*)",
-      "TodoRead(*)",
-      "WebFetch(*)",
-      "WebSearch(*)",
-      "Agent(*)"
-    ],
-    "deny": []
-  },
-  "bypassPermissionsMode": "dangerouslyBypassAll",
-  "env": {
-    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+{
+  "mcpServers": {
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PERSONAL_ACCESS_TOKEN}"
+      }
+    }
   }
 }

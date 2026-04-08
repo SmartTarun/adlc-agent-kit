@@ -130,29 +130,37 @@ by the New Project form (title, description, goal, users, constraints, deadline)
   ALWAYS ask (for every domain):
     Q1. What are the 3 must-have features for this sprint? (scope clarity)
     Q2. Who are the primary users and what is their biggest pain point? (if not clear from form)
+    Q3. Database — which database do you need?
+          Options:
+            a) PostgreSQL     — relational, OLTP, best for transactional apps, APIs, CRE lease data
+            b) Snowflake      — cloud data warehouse, best for analytics, BI, large-scale reporting
+            c) Both           — PostgreSQL for live app data + Snowflake for analytics/reporting layer
+            d) Other          — specify (MySQL, SQLite, MongoDB, DynamoDB, etc.)
+          Also ask: Do you have an existing connection string or cloud account to reuse,
+          or should we provision a new database from scratch?
 
   FOR DOMAIN_CRE — also ask:
-    Q3. Property types + key financial metrics to calculate?
+    Q4. Property types + key financial metrics to calculate?
           (e.g. office/retail + NOI, Cap Rate, IRR, DSCR, LTV)
-    Q4. Data input method — manual entry, CSV/Excel upload, or live API feed?
-    Q5. Output needed — dashboard charts, PDF memo, Excel pro-forma, or all three?
+    Q5. Data input method — manual entry, CSV/Excel upload, or live API feed?
+    Q6. Output needed — dashboard charts, PDF memo, Excel pro-forma, or all three?
 
   FOR DOMAIN_INVEST — also ask:
-    Q3. Asset classes + calculation models?
+    Q4. Asset classes + calculation models?
           (e.g. CRE + DCF, Monte Carlo, IRR/NPV, sensitivity analysis)
-    Q4. Data input method — manual entry, CSV import, or live broker/API feed?
-    Q5. Output formats — charts, downloadable Excel/PDF, shareable links?
+    Q5. Data input method — manual entry, CSV import, or live broker/API feed?
+    Q6. Output formats — charts, downloadable Excel/PDF, shareable links?
 
   FOR DOMAIN_DATA — also ask:
-    Q3. Primary data sources and update frequency?
+    Q4. Primary data sources and update frequency?
           (e.g. PostgreSQL + real-time, or CSV upload + daily batch)
-    Q4. Key KPIs/metrics to track — list them explicitly.
-    Q5. Alerting needed? (threshold alerts, anomaly detection, email/Slack notifications)
+    Q5. Key KPIs/metrics to track — list them explicitly.
+    Q6. Alerting needed? (threshold alerts, anomaly detection, email/Slack notifications)
 
   FOR DOMAIN_GENERAL -- also ask:
-    Q3. Tech constraints — cloud provider, existing infrastructure, compliance needs?
-    Q4. Core data model — main entities and their relationships?
-    Q5. External integrations needed? (auth providers, third-party APIs, data sources)
+    Q4. Tech constraints — cloud provider, existing infrastructure, compliance needs?
+    Q5. Core data model — main entities and their relationships?
+    Q6. External integrations needed? (auth providers, third-party APIs, data sources)
 
 Set discoveryPhase.currentRound=1, roundStatus=in_progress in requirement.json.
 
@@ -214,6 +222,16 @@ Write to requirement.json:
   projectDomain: "cre|invest|data|general"
   arjunDecisions: { llm, stateStorage, streaming, topologyCanvas, multiCloud,
                     auth, backend, region, iacScope }
+
+  dbConfig:                        <- ALWAYS set this from Q3 answer
+    {
+      "primary":     "postgresql|snowflake|mysql|sqlite|mongodb|dynamodb|other",
+      "analytics":   "snowflake|none",          <- set if Tarun chose Both
+      "existing":    true|false,                <- true if Tarun has existing DB
+      "connectionHint": "connection string hint or cloud account name if provided",
+      "provisionNew": true|false                <- true if we need to create from scratch
+    }
+
   domainContext:
     FOR CRE:    { propertyTypes, financialMetrics, dataSources, leaseManagement,
                   reportFormats, userRoles, portfolioSize, compAnalysis }
@@ -224,7 +242,11 @@ Write to requirement.json:
     FOR GENERAL: {}
   productBrief:
     summary, views, llmPipeline, techStack, personas, mvpScope, kpis, risks,
-    referenceRepo, domainSpecificNotes
+    referenceRepo, domainSpecificNotes, dbSummary
+
+  IMPORTANT: In the broadcast to agents, explicitly tell Rasool which DB was chosen:
+    "Rasool — primary DB is {dbConfig.primary}. {existing connection hint if any}.
+     {if snowflake: also set up Snowflake connector for analytics layer.}"
 
 Write full PROJECT-MEMORY.md update with all decisions and product brief.
 

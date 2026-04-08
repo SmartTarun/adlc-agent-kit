@@ -1,0 +1,202 @@
+{
+  "name": "adlc-agent-kit",
+  "displayName": "ADLC Agent Kit — Team Panchayat",
+  "description": "AI-driven lifecycle management with multi-agent orchestration powered by GitHub Copilot",
+  "version": "1.0.0",
+  "publisher": "SmartTarun",
+  "repository": "https://github.com/tarun-vangari/ADLC-Agent-Kit",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "AI",
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "extensionDependencies": [
+    "GitHub.copilot-chat"
+  ],
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "adlc-sidebar",
+          "title": "ADLC Agents",
+          "icon": "media/adlc-icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "adlc-sidebar": [
+        {
+          "id": "adlc-project",
+          "name": "Active Project",
+          "type": "tree"
+        },
+        {
+          "id": "adlc-agents",
+          "name": "Agent Status",
+          "type": "tree"
+        },
+        {
+          "id": "adlc-memory",
+          "name": "Agent Memory",
+          "type": "tree"
+        }
+      ]
+    },
+    "chatParticipants": [
+      {
+        "id": "adlc.team",
+        "name": "adlc",
+        "fullName": "ADLC Team Panchayat",
+        "description": "Chat with Arjun (PM), Kavya (UX), Vikram (Infra) and the whole team. Use /ux for Figma designs.",
+        "isSticky": true,
+        "commands": [
+          {
+            "name": "history",
+            "description": "Show last 20 group chat messages"
+          },
+          {
+            "name": "status",
+            "description": "Show all agent statuses"
+          },
+          {
+            "name": "agents",
+            "description": "Launch all agents via GitHub Copilot"
+          },
+          {
+            "name": "approve",
+            "description": "Approve the sprint plan"
+          },
+          {
+            "name": "ux",
+            "description": "Start Kavya UX design flow with Figma"
+          },
+          {
+            "name": "ux-feedback",
+            "description": "Send feedback on Kavya's Figma designs"
+          }
+        ]
+      }
+    ],
+    "commands": [
+      {
+        "command": "adlc.openDashboard",
+        "title": "ADLC: Open Sprint Dashboard"
+      },
+      {
+        "command": "adlc.newProject",
+        "title": "ADLC: New Project"
+      },
+      {
+        "command": "adlc.launchAgent",
+        "title": "ADLC: Launch Agent"
+      },
+      {
+        "command": "adlc.launchAllAgents",
+        "title": "ADLC: Launch All Agents"
+      },
+      {
+        "command": "adlc.switchProject",
+        "title": "ADLC: Switch Project"
+      },
+      {
+        "command": "adlc.viewMemory",
+        "title": "ADLC: View Agent Memory"
+      },
+      {
+        "command": "adlc.clearMemory",
+        "title": "ADLC: Clear Agent Memory"
+      },
+      {
+        "command": "adlc.uxDesign",
+        "title": "ADLC: Open UX Design (Kavya + Figma)"
+      },
+      {
+        "command": "adlc.connectTFE",
+        "title": "ADLC: Connect Terraform Enterprise / Cloud"
+      },
+      {
+        "command": "adlc.disconnectTFE",
+        "title": "ADLC: Disconnect Terraform Enterprise / Cloud"
+      },
+      {
+        "command": "adlc.connectSnowflake",
+        "title": "ADLC: Connect Snowflake (Rasool — keypair auth)"
+      },
+      {
+        "command": "adlc.disconnectSnowflake",
+        "title": "ADLC: Disconnect Snowflake"
+      }
+    ],
+    "menus": {
+      "view/item/context": [
+        {
+          "command": "adlc.launchAgent",
+          "when": "viewItem == agent",
+          "group": "inline"
+        },
+        {
+          "command": "adlc.viewMemory",
+          "when": "viewItem == agent",
+          "group": "inline"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "ADLC Agent Kit",
+      "properties": {
+        "adlc.kitPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to your ADLC-Agent-Kit folder (leave blank to auto-detect from workspace)"
+        },
+        "adlc.copilotModel": {
+          "type": "string",
+          "default": "gpt-4o",
+          "enum": [
+            "gpt-4o",
+            "gpt-4o-mini",
+            "o1",
+            "o3-mini",
+            "claude-3.5-sonnet"
+          ],
+          "description": "GitHub Copilot model to use for all agents"
+        },
+        "adlc.autoLaunchArjun": {
+          "type": "boolean",
+          "default": true,
+          "description": "Auto-launch Arjun after creating a new project"
+        },
+        "adlc.figmaToken": {
+          "type": "string",
+          "default": "",
+          "description": "Figma personal access token for Kavya UX design. Get one at figma.com → Settings → Personal access tokens."
+        },
+        "adlc.serverPort": {
+          "type": "number",
+          "default": 3000,
+          "description": "Port where dashboard-server.js is running (for WebView proxy)"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext ts",
+    "package": "vsce package",
+    "vsce:package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.90.0",
+    "@vscode/vsce": "^3.7.1",
+    "typescript": "^5.4.0"
+  }
+}
