@@ -40,6 +40,7 @@ exports.deactivate = deactivate;
 const vscode = __importStar(require("vscode"));
 const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
+const https = __importStar(require("https"));
 // ── Helpers ──────────────────────────────────────────────────────────────────
 function getKitPath() {
     // 1. Explicit user setting (set once globally — persists across all windows)
@@ -153,6 +154,9 @@ function buildProjectContext(kitPath) {
         `=== AGENT STATUS ===`,
         agentLines,
         ``,
+        `=== GITHUB MCP ===`,
+        buildGitHubContext(kitPath),
+        ``,
         `=== YOUR ROLE ===`,
     ].join('\n');
 }
@@ -232,6 +236,126 @@ async function callCopilot(persona, context, userMsg, response, token, retries =
         }
     }
     return '';
+}
+// ── GitHub MCP helpers ────────────────────────────────────────────────────────
+function getGitHubToken(kitPath) {
+    // Priority: env var → .claude/settings.json → adlc.githubToken setting
+    if (process.env.GITHUB_PERSONAL_ACCESS_TOKEN) {
+        return process.env.GITHUB_PERSONAL_ACCESS_TOKEN;
+    }
+    try {
+        const settings = JSON.parse(fs.readFileSync(path.join(kitPath, '.claude', 'settings.json'), 'utf8'));
+        const tok = settings?.mcpServers?.github?.env?.GITHUB_PERSONAL_ACCESS_TOKEN;
+        if (tok && !tok.startsWith('${')) {
+            return tok;
+        }
+    }
+    catch { }
+    return vscode.workspace.getConfiguration('adlc').get('githubToken') || '';
+}
+function githubRequest(token, method, apiPath, body) {
+    return new Promise((resolve, reject) => {
+        const payload = body ? JSON.stringify(body) : undefined;
+        const req = https.request({
+            hostname: 'api.github.com',
+            path: apiPath,
+            method,
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/vnd.github+json',
+                'User-Agent': 'ADLC-TeamPanchayat/1.0',
+                'X-GitHub-Api-Version': '2022-11-28',
+                ...(payload ? { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(payload) } : {}),
+            },
+        }, res => {
+            let data = '';
+            res.on('data', c => { data += c; });
+            res.on('end', () => {
+                try {
+                    resolve(JSON.parse(data));
+                }
+                catch {
+                    resolve(data);
+                }
+            });
+        });
+        req.on('error', reject);
+        if (payload) {
+            req.write(payload);
+        }
+        req.end();
+    });
+}
+async function saveGitHubToken(kitPath, token) {
+    // Save into .claude/settings.json mcpServers block
+    const settingsPath = path.join(kitPath, '.claude', 'settings.json');
+    fs.mkdirSync(path.dirname(settingsPath), { recursive: true });
+    let settings = {};
+    try {
+        settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+    }
+    catch { }
+    settings.mcpServers = settings.mcpServers || {};
+    settings.mcpServers.github = {
+        command: 'npx',
+        args: ['-y', '@modelcontextprotocol/server-github'],
+        env: { GITHUB_PERSONAL_ACCESS_TOKEN: token },
+    };
+    fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2), 'utf8');
+    // Also save to VS Code global setting
+    await vscode.workspace.getConfiguration('adlc').update('githubToken', token, vscode.ConfigurationTarget.Global);
+}
+async function connectGitHubWizard(kitPath) {
+    const existing = getGitHubToken(kitPath);
+    if (existing) {
+        const reuse = await vscode.window.showInformationMessage('GitHub token already configured. Re-enter to replace it?', 'Keep existing', 'Replace');
+        if (reuse !== 'Replace') {
+            return existing;
+        }
+    }
+    const token = await vscode.window.showInputBox({
+        prompt: 'Enter your GitHub Personal Access Token',
+        placeHolder: 'ghp_xxxxxxxxxxxxxxxxxxxx',
+        password: true,
+        ignoreFocusOut: true,
+        validateInput: v => v.startsWith('ghp_') || v.startsWith('github_pat_') ? null : 'Token should start with ghp_ or github_pat_',
+    });
+    if (!token) {
+        return null;
+    }
+    // Verify token works
+    try {
+        const user = await githubRequest(token, 'GET', '/user');
+        if (!user.login) {
+            throw new Error('Invalid token response');
+        }
+        await saveGitHubToken(kitPath, token);
+        vscode.window.showInformationMessage(`✅ GitHub connected as @${user.login}`);
+        return token;
+    }
+    catch (e) {
+        vscode.window.showErrorMessage(`GitHub token verification failed: ${e.message}`);
+        return null;
+    }
+}
+// ── GitHub MCP context for agent prompts ─────────────────────────────────────
+function buildGitHubContext(kitPath) {
+    const token = getGitHubToken(kitPath);
+    if (!token) {
+        return '(GitHub not connected — run "Team Panchayat: Connect GitHub" to enable)';
+    }
+    const req = readJSON(path.join(kitPath, 'active-project.json'));
+    const repoSlug = vscode.workspace.getConfiguration('adlc').get('githubRepo') || 'SmartTarun/adlc-agent-kit';
+    return [
+        `GitHub repo   : ${repoSlug}`,
+        `GitHub token  : configured (use GitHub MCP tools to create issues/PRs)`,
+        ``,
+        `Available GitHub MCP actions (use when relevant):`,
+        `  - Create issue for this task`,
+        `  - Create branch + PR for generated code`,
+        `  - List open issues / PRs`,
+        `  - Add comment to existing issue or PR`,
+    ].join('\n');
 }
 // ── Ensure kit path is configured — prompt on first use ──────────────────────
 async function ensureKitPath() {
@@ -669,6 +793,87 @@ async function activate(context) {
     vscode.commands.registerCommand('teamPanchayat.setKitPath', async () => {
         await ensureKitPath();
         updateStatusBarProject(statusBar);
+    }), 
+    // Connect GitHub MCP
+    vscode.commands.registerCommand('teamPanchayat.connectGitHub', async () => {
+        const kp = await ensureKitPath();
+        if (!kp) {
+            return;
+        }
+        await connectGitHubWizard(kp);
+        updateStatusBarProject(statusBar);
+    }), 
+    // Create GitHub issue from active project
+    vscode.commands.registerCommand('teamPanchayat.createGitHubIssue', async () => {
+        const kp = await ensureKitPath();
+        if (!kp) {
+            return;
+        }
+        const token = getGitHubToken(kp);
+        if (!token) {
+            vscode.window.showWarningMessage('GitHub not connected.', 'Connect GitHub').then(s => {
+                if (s) {
+                    vscode.commands.executeCommand('teamPanchayat.connectGitHub');
+                }
+            });
+            return;
+        }
+        const repo = vscode.workspace.getConfiguration('adlc').get('githubRepo') || '';
+        if (!repo) {
+            const entered = await vscode.window.showInputBox({
+                prompt: 'GitHub repo (owner/repo)',
+                placeHolder: 'SmartTarun/adlc-agent-kit',
+                ignoreFocusOut: true,
+            });
+            if (!entered) {
+                return;
+            }
+            await vscode.workspace.getConfiguration('adlc').update('githubRepo', entered, vscode.ConfigurationTarget.Global);
+        }
+        const finalRepo = vscode.workspace.getConfiguration('adlc').get('githubRepo') || repo;
+        const req = readJSON(path.join(kp, (() => { try {
+            const ap = JSON.parse(fs.readFileSync(path.join(kp, 'active-project.json'), 'utf8'));
+            return ap.current === '.' ? '' : ap.current;
+        }
+        catch {
+            return '';
+        } })(), 'requirement.json')) || {};
+        const title = await vscode.window.showInputBox({
+            prompt: 'Issue title',
+            value: req.title ? `[${req.title}] ` : '',
+            ignoreFocusOut: true,
+        });
+        if (!title) {
+            return;
+        }
+        const body = await vscode.window.showInputBox({
+            prompt: 'Issue description (optional)',
+            value: req.description || '',
+            ignoreFocusOut: true,
+        }) || '';
+        const labelPick = await vscode.window.showQuickPick([
+            { label: 'feature', picked: true },
+            { label: 'bug', picked: false },
+            { label: 'enhancement', picked: false },
+            { label: 'sprint', picked: false },
+            { label: 'agent-task', picked: true },
+        ], { canPickMany: true, placeHolder: 'Select labels' });
+        const labels = (labelPick || []).map(l => l.label);
+        try {
+            const [owner, repoName] = finalRepo.split('/');
+            const issue = await githubRequest(token, 'POST', `/repos/${owner}/${repoName}/issues`, {
+                title, body, labels,
+            });
+            if (issue.html_url) {
+                const action = await vscode.window.showInformationMessage(`✅ Issue #${issue.number} created: ${title}`, 'Open in Browser');
+                if (action) {
+                    vscode.env.openExternal(vscode.Uri.parse(issue.html_url));
+                }
+            }
+        }
+        catch (e) {
+            vscode.window.showErrorMessage(`Failed to create issue: ${e.message}`);
+        }
     }), 
     // Show agents list
     vscode.commands.registerCommand('teamPanchayat.agents', () => {

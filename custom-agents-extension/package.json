@@ -2,7 +2,7 @@
   "name": "team-panchayat-agents",
   "displayName": "Team Panchayat — Custom AI Agents",
   "description": "7 specialized AI agents for software development: PM, Cloud Architect, UX Designer, Backend/Frontend Engineers, Database Architect, and QA Engineer",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "publisher": "SmartTarun",
   "repository": "https://github.com/tarun-vangari/ADLC-Agent-Kit",
   "engines": {
@@ -125,6 +125,16 @@
         "category": "Team Panchayat"
       },
       {
+        "command": "teamPanchayat.connectGitHub",
+        "title": "Team Panchayat: Connect GitHub (MCP)",
+        "category": "Team Panchayat"
+      },
+      {
+        "command": "teamPanchayat.createGitHubIssue",
+        "title": "Team Panchayat: Create GitHub Issue",
+        "category": "Team Panchayat"
+      },
+      {
         "command": "teamPanchayat.agents",
         "title": "Team Panchayat: Show All Agents",
         "category": "Team Panchayat"
@@ -148,6 +158,16 @@
           "type": "number",
           "default": 3000,
           "description": "Port where dashboard-server.js is running"
+        },
+        "adlc.githubToken": {
+          "type": "string",
+          "default": "",
+          "description": "GitHub Personal Access Token for MCP integration (repo, issues, PRs)"
+        },
+        "adlc.githubRepo": {
+          "type": "string",
+          "default": "",
+          "description": "GitHub repo in owner/repo format (e.g. SmartTarun/adlc-agent-kit)"
         }
       }
     }
