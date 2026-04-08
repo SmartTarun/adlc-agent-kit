@@ -217,7 +217,108 @@ export class DashboardPanel {
 })();
 </script>`;
 
-    return html.replace('<head>', '<head>' + patchScript);
+    // ── VS Code DOM patches (applied after load via inline script) ────────────
+    // These run AFTER DOMContentLoaded so they can safely query and modify DOM:
+    //  • Remove chat input row, attach button, file input
+    //  • Replace chat panel header with "Agent Activity" + @agent buttons
+    //  • Remove UX and Arch chat input areas
+    //  • Add openVSCodeAgent() deep-link function
+    const vscodePatchScript = `
+<script>
+(function applyVSCodePatches() {
+  // Run after DOM is ready
+  function patch() {
+
+    // ── 1. openVSCodeAgent: deep-link to Copilot Chat ──────────────────────
+    window.openVSCodeAgent = function(agentName) {
+      const uri = 'vscode://GitHub.copilot-chat/chat?query=' + encodeURIComponent('@' + agentName + ' ');
+      window.open(uri, '_self');
+    };
+
+    // ── 2. Replace chat header label + strip input row ─────────────────────
+    const chatHeader = document.getElementById('chat-header');
+    if (chatHeader) {
+      chatHeader.innerHTML =
+        '<span style="font-weight:700;font-size:13px;color:#fff">📡 Agent Activity</span>' +
+        '<small id="chat-msg-count" style="color:rgba(255,255,255,.7);font-size:11px;margin-left:8px">0 messages</small>' +
+        '<div style="margin-left:auto;display:flex;gap:5px;align-items:center;flex-wrap:wrap;">' +
+          '<span style="font-size:10px;color:rgba(255,255,255,.55)">Chat in VS Code:</span>' +
+          ['Arjun','Vikram','Kavya','Kiran','Rasool','Rohan','Keerthi'].map(a =>
+            '<button onclick="openVSCodeAgent(\\''+a+'\\')" style="font-size:10px;padding:2px 8px;border-radius:10px;border:none;background:rgba(255,255,255,.18);color:#fff;cursor:pointer;white-space:nowrap">@'+a+'</button>'
+          ).join('') +
+        '</div>';
+    }
+
+    // ── 3. Hide chat input row, attach button, file input ─────────────────
+    ['chat-input-row','chat-attach-btn','chat-file-input','chat-input',
+     'chat-send','attach-preview','chat-toggle','chat-attach-count'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) { el.style.display = 'none'; }
+    });
+
+    // ── 4. Expand chat-messages to fill freed space ────────────────────────
+    const msgs = document.getElementById('chat-messages');
+    if (msgs) {
+      msgs.style.flex = '1';
+      msgs.style.overflowY = 'auto';
+    }
+
+    // ── 5. Replace UX chat input with VS Code button ───────────────────────
+    const uxInput = document.getElementById('ux-chat-input-area');
+    if (uxInput) {
+      uxInput.innerHTML =
+        '<div style="display:flex;align-items:center;gap:10px;font-size:12px;color:#7c3aed;">' +
+          '<span>💬 Chat with Kavya directly in VS Code:</span>' +
+          '<button onclick="openVSCodeAgent(\\'Kavya\\')" style="padding:5px 14px;border-radius:8px;border:none;background:#7c3aed;color:#fff;cursor:pointer;font-size:12px;font-weight:600">@Kavya in Copilot Chat →</button>' +
+        '</div>';
+      uxInput.style.padding = '10px 14px';
+    }
+
+    // ── 6. Replace Arch chat input with VS Code button ─────────────────────
+    const archInput = document.getElementById('arch-chat-input-area');
+    if (archInput) {
+      archInput.innerHTML =
+        '<div style="display:flex;align-items:center;gap:10px;font-size:12px;color:#1d4ed8;">' +
+          '<span>💬 Chat with Vikram directly in VS Code:</span>' +
+          '<button onclick="openVSCodeAgent(\\'Vikram\\')" style="padding:5px 14px;border-radius:8px;border:none;background:#1d4ed8;color:#fff;cursor:pointer;font-size:12px;font-weight:600">@Vikram in Copilot Chat →</button>' +
+        '</div>';
+      archInput.style.padding = '10px 14px';
+    }
+
+    // ── 7. Stub out send functions so no errors if called ─────────────────
+    window.sendChat        = function() {};
+    window.chatKey         = function() {};
+    window.sendUXFeedback  = function() { openVSCodeAgent('Kavya');  };
+    window.sendArchFeedback= function() { openVSCodeAgent('Vikram'); };
+    window.toggleChat      = function() {};
+
+    // ── 8. Add VS Code banner above kanban ────────────────────────────────
+    const kanban = document.getElementById('kanban');
+    if (kanban && !document.getElementById('vsc-banner')) {
+      const banner = document.createElement('div');
+      banner.id = 'vsc-banner';
+      banner.style.cssText = 'background:linear-gradient(90deg,#1e1e2e,#264f78);border-radius:8px;padding:8px 14px;margin-bottom:10px;display:flex;align-items:center;gap:12px;font-size:12px;color:#9cdcfe;';
+      banner.innerHTML =
+        '<span style="font-size:16px">$(vscode-logo)</span>' +
+        '<span style="flex:1">Chat with agents in <strong style="color:#fff">VS Code Copilot Chat</strong> — activity appears here live</span>' +
+        ['Arjun','Vikram','Kavya','Kiran'].map(a =>
+          '<button onclick="openVSCodeAgent(\\''+a+'\\')" style="padding:3px 10px;border-radius:8px;border:1px solid rgba(156,220,254,.3);background:transparent;color:#9cdcfe;cursor:pointer;font-size:11px">@'+a+'</button>'
+        ).join('');
+      kanban.parentNode.insertBefore(banner, kanban);
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', patch);
+  } else {
+    patch();
+  }
+})();
+</script>`;
+
+    return html
+      .replace('<head>', '<head>' + patchScript)
+      .replace('</body>', vscodePatchScript + '</body>');
   }
 
   private async proxyToServer(method: string, apiPath: string, body?: any): Promise<any> {
