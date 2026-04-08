@@ -9,6 +9,7 @@
   "activationEvents": ["onStartupFinished"],
   "main": "./out/extension.js",
   "icon": "media/icon.png",
+  "extensionDependencies": ["GitHub.copilot-chat"],
   "contributes": {
     "viewsContainers": {
       "activitybar": [
@@ -26,6 +27,23 @@
         { "id": "adlc-memory",   "name": "Agent Memory",    "type": "tree" }
       ]
     },
+    "chatParticipants": [
+      {
+        "id":          "adlc.team",
+        "name":        "adlc",
+        "fullName":    "ADLC Team Panchayat",
+        "description": "Chat with Arjun (PM), Kavya (UX), Vikram (Infra) and the whole team. Use /ux for Figma designs.",
+        "isSticky":    true,
+        "commands": [
+          { "name": "history",     "description": "Show last 20 group chat messages" },
+          { "name": "status",      "description": "Show all agent statuses" },
+          { "name": "agents",      "description": "Launch all agents via GitHub Copilot" },
+          { "name": "approve",     "description": "Approve the sprint plan" },
+          { "name": "ux",          "description": "Start Kavya UX design flow with Figma" },
+          { "name": "ux-feedback", "description": "Send feedback on Kavya's Figma designs" }
+        ]
+      }
+    ],
     "commands": [
       { "command": "adlc.openDashboard",   "title": "ADLC: Open Sprint Dashboard" },
       { "command": "adlc.newProject",      "title": "ADLC: New Project" },
@@ -33,7 +51,8 @@
       { "command": "adlc.launchAllAgents", "title": "ADLC: Launch All Agents" },
       { "command": "adlc.switchProject",   "title": "ADLC: Switch Project" },
       { "command": "adlc.viewMemory",      "title": "ADLC: View Agent Memory" },
-      { "command": "adlc.clearMemory",     "title": "ADLC: Clear Agent Memory" }
+      { "command": "adlc.clearMemory",     "title": "ADLC: Clear Agent Memory" },
+      { "command": "adlc.uxDesign",        "title": "ADLC: Open UX Design (Kavya + Figma)" }
     ],
     "menus": {
       "view/item/context": [
@@ -67,6 +86,16 @@
           "type": "boolean",
           "default": true,
           "description": "Auto-launch Arjun after creating a new project"
+        },
+        "adlc.figmaToken": {
+          "type": "string",
+          "default": "",
+          "description": "Figma personal access token for Kavya UX design. Get one at figma.com → Settings → Personal access tokens."
+        },
+        "adlc.serverPort": {
+          "type": "number",
+          "default": 3000,
+          "description": "Port where dashboard-server.js is running (for WebView proxy)"
         }
       }
     }

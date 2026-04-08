@@ -1,11 +1,13 @@
 // Agent: vscode-extension | Sprint: 01 | Date: 2026-04-08
 import * as vscode from 'vscode';
-import { ProjectManager }  from './projectManager';
-import { AgentRunner }     from './agentRunner';
-import { SidebarProvider } from './sidebar';
-import { DashboardPanel }  from './webviewPanel';
-import { MemoryManager }   from './memoryManager';
-import { FileWatcher }     from './fileWatcher';
+import { ProjectManager }      from './projectManager';
+import { AgentRunner }         from './agentRunner';
+import { SidebarProvider }     from './sidebar';
+import { DashboardPanel }      from './webviewPanel';
+import { MemoryManager }       from './memoryManager';
+import { FileWatcher }         from './fileWatcher';
+import { registerChatParticipant } from './chatParticipant';
+import { FigmaDesigner }       from './figmaDesigner';
 
 export function activate(context: vscode.ExtensionContext) {
   const kitPath = resolveKitPath();
@@ -76,6 +78,21 @@ export function activate(context: vscode.ExtensionContext) {
       memoryMgr.clearMemory(agentName);
       sidebar.refresh();
       vscode.window.showInformationMessage(`Memory cleared for ${agentName}`);
+    }),
+  );
+
+  // Register @adlc chat participant (VS Code Copilot Chat panel)
+  registerChatParticipant(context, projectMgr, runner);
+
+  // Register UX feedback commands using Figma
+  const figma = new FigmaDesigner(kitPath, projectMgr);
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('adlc.uxDesign', async () => {
+      const panel = vscode.window.createOutputChannel('ADLC — Kavya UX');
+      panel.show();
+      // UX flow is driven through @adlc /ux in chat
+      vscode.commands.executeCommand('workbench.action.chat.open', '@adlc /ux');
     }),
   );
 
